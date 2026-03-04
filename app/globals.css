@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* 1. Import Material Theme files */
+@import "../styles/theme/light.css";
+@import "../styles/theme/light-hc.css";
+@import "../styles/theme/light-mc.css";
+@import "../styles/theme/dark.css";
+@import "../styles/theme/dark-hc.css";
+@import "../styles/theme/dark-mc.css";
+
+/* 2. Tailwind v4 Theme Mapping */
+@theme {
+  --color-primary: var(--md-sys-color-primary);
+  --color-on-primary: var(--md-sys-color-on-primary);
+  --color-secondary: var(--md-sys-color-secondary);
+  --color-surface: var(--md-sys-color-surface);
+  --color-on-surface: var(--md-sys-color-on-surface);
+  --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
+  --color-background: var(--md-sys-color-background);
+  --color-on-background: var(--md-sys-color-on-background);
+  --color-outline: var(--md-sys-color-outline);
+  --color-surface-container: var(--md-sys-color-surface-container);
+  --color-surface-container-low: var(--md-sys-color-surface-container-low);
+  --color-surface-container-lowest: var(--md-sys-color-surface-container-lowest);
+}
+
+/* 3. The Variable Bridge */
+/* We force the high-level variables to point to whatever the active Material class defines */
+:root, .light, .dark {
+  --primary: var(--md-sys-color-primary);
+  --background: var(--md-sys-color-background);
+  --on-background: var(--md-sys-color-on-background);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--on-background);
+  font-family: var(--font-geist-sans), sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+}
+
+/* Helper for the Hero Text */
+.text-outline {
+  -webkit-text-stroke: 1px var(--on-background);
+  opacity: 0.3;
+}
