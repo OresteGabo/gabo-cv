@@ -13,25 +13,34 @@ const geistMono = Geist_Mono({
     subsets: ["latin"],
 });
 
-export const metadata = {
+export const metadata: Metadata = {
     title: "Gabo | Systems Architect",
-    description: "High-performance software engineering and digital infrastructure.",
+    description: "Ingénieur Stagiaire Fullstack & DevOps - Architecture V2 & Infrastructure Digitale.",
+    metadataBase: new URL('https://votre-site.com'), // Replace with your real domain later
+    openGraph: {
+        title: "Gabo | Systems Architect",
+        description: "De l'audit système legacy au déploiement d'architectures modernes.",
+        url: 'https://votre-site.com',
+        siteName: 'Gabo Portfolio',
+        locale: 'fr_FR',
+        type: 'website',
+        // Next.js looks for a file named 'opengraph-image.png' in your /app folder automatically
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: "Gabo | Systems Architect",
+        description: "Fullstack & DevOps Engineer Intern.",
+    },
     icons: {
-        icon: [
-            {
-                url: "/icon.svg",
-                type: "image/svg+xml",
-            },
-        ],
-        // This ensures iPhones see your "G" logo when bookmarked
+        icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
         apple: "/icon.svg",
     },
 };
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en">
-        {/* Switch this class to 'light', 'dark', 'dark-hc', dark-medium-contrast etc. to change the whole site */}
-        <body className="light">
+        <html lang="fr" className={`${geistSans.variable} ${geistMono.variable}`}>
+        <body className="light antialiased transition-colors duration-300">
         {children}
         </body>
         </html>
