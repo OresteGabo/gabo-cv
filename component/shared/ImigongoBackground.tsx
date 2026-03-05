@@ -27,12 +27,9 @@ export const ImigongoBackground = () => {
 
         let raf: number;
 
-        // Function to grab HSL or RGB from CSS Variables
         const getThemeColor = (varName: string) => {
             const style = getComputedStyle(document.documentElement);
-            const value = style.getPropertyValue(varName).trim();
-            // If the variable is just numbers (Tailwind style), wrap it
-            return value.includes(",") || value.includes(" ") ? `hsl(${value})` : value;
+            return style.getPropertyValue(varName).trim();
         };
 
         const resize = () => {
@@ -45,11 +42,12 @@ export const ImigongoBackground = () => {
         const draw = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // ARCHITECTURAL COLORS
-            const primary = getThemeColor("--primary");
-            const outline = getThemeColor("--outline");
+            // Using MD3 tokens for harmony
+            const primary = getThemeColor("--md-sys-color-primary");
+            const outline = getThemeColor("--md-sys-color-outline-variant");
 
-            const step = 80;
+            // Increased step (120 instead of 80) to reduce pattern density
+            const step = 120;
             const mX = smoothX.get();
             const mY = smoothY.get();
 
@@ -58,47 +56,51 @@ export const ImigongoBackground = () => {
                     const dx = x - mX;
                     const dy = y - mY;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    const force = Math.max(0, (400 - distance) / 400);
+                    // Shorter interaction radius (300 instead of 400)
+                    const force = Math.max(0, (300 - distance) / 300);
 
                     ctx.beginPath();
 
-                    // Parallax shift
-                    const shiftX = (dx / (distance || 1)) * force * 12;
-                    const shiftY = (dy / (distance || 1)) * force * 12;
+                    // Subtle parallax shift
+                    const shiftX = (dx / (distance || 1)) * force * 8;
+                    const shiftY = (dy / (distance || 1)) * force * 8;
 
                     const centerX = x - shiftX;
                     const centerY = y - shiftY;
-                    const size = 28 + force * 8;
+                    const size = 35 + force * 5; // Slightly larger but thinner lines
 
                     // Imigongo Diamond Pattern
                     ctx.moveTo(centerX, centerY - size);
-                    ctx.lineTo(centerX + size / 1.6, centerY);
+                    ctx.lineTo(centerX + size / 1.8, centerY);
                     ctx.lineTo(centerX, centerY + size);
-                    ctx.lineTo(centerX - size / 1.6, centerY);
+                    ctx.lineTo(centerX - size / 1.8, centerY);
                     ctx.closePath();
 
-                    // DYNAMIC STYLING
-                    // Use 'outline' color for the grid, 'primary' for interaction
-                    ctx.lineWidth = 0.4 + force * 1.2;
-
-                    if (force > 0.1) {
+                    // STEALTH STYLING
+                    if (force > 0.05) {
                         ctx.strokeStyle = primary;
-                        ctx.globalAlpha = force * 0.5; // Smooth fade
+                        // Lower max alpha (0.3 instead of 0.5)
+                        ctx.globalAlpha = force * 0.3;
+                        ctx.lineWidth = 0.5 + force * 0.5;
                     } else {
                         ctx.strokeStyle = outline;
-                        ctx.globalAlpha = 0.15; // Faint ghost grid
+                        // Ghost grid: Very faint alpha (0.05 instead of 0.15)
+                        ctx.globalAlpha = 0.05;
+                        ctx.lineWidth = 0.3;
                     }
 
                     ctx.stroke();
-                    ctx.globalAlpha = 1.0; // Reset alpha
 
-                    // Material "Node" Points
-                    if (force > 0.7) {
+                    // Faint Node Points
+                    if (force > 0.8) {
                         ctx.fillStyle = primary;
+                        ctx.globalAlpha = force * 0.4;
                         ctx.beginPath();
-                        ctx.arc(centerX, centerY, 1.5, 0, Math.PI * 2);
+                        ctx.arc(centerX, centerY, 1, 0, Math.PI * 2);
                         ctx.fill();
                     }
+
+                    ctx.globalAlpha = 1.0;
                 }
             }
             raf = requestAnimationFrame(draw);
@@ -114,8 +116,12 @@ export const ImigongoBackground = () => {
     return (
         <div className="fixed inset-0 -z-10 bg-background overflow-hidden pointer-events-none">
             <canvas ref={canvasRef} className="absolute inset-0" />
-            {/* Material Gradient Overlay for Depth */}
-            <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-transparent to-background" />
+
+            {/* VIGNETTE OVERLAY: Drowns out the edges of the pattern to focus on content */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,var(--md-sys-color-background)_90%)]" />
+
+            {/* Bottom Fade */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
         </div>
     );
 };
