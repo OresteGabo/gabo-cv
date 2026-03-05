@@ -6,6 +6,7 @@ import { PROJECTS, ProjectCategory, UI_STRINGS, Locale } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { Github, Activity, Terminal, X, Code2, Layers, Cpu, Database } from "lucide-react";
 import clsx from "clsx";
+import {StaggerContainer, StaggerItem} from "@/component/shared/StaggerContainer";
 
 // --- Custom Hook: System Mounting ---
 function useHasMounted() {
@@ -242,17 +243,20 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
             </div>
 
             <div className="flex flex-col gap-4">
-                <AnimatePresence mode="popLayout">
-                    {filteredProjects.map((project, idx) => (
-                        <ProjectRow
-                            key={project.title}
-                            project={project}
-                            idx={idx}
-                            onOpen={setSelectedProject}
-                            lang={lang}
-                        />
-                    ))}
-                </AnimatePresence>
+                <StaggerContainer> {/* <--- Ajoute ceci */}
+                    <AnimatePresence mode="popLayout">
+                        {filteredProjects.map((project, idx) => (
+                            <StaggerItem key={project.title}> {/* <--- Remplace le motion.div par StaggerItem */}
+                                <ProjectRow
+                                    project={project}
+                                    idx={idx}
+                                    onOpen={setSelectedProject}
+                                    lang={lang}
+                                />
+                            </StaggerItem>
+                        ))}
+                    </AnimatePresence>
+                </StaggerContainer>
             </div>
 
             <ProjectDrawer
