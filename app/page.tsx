@@ -11,28 +11,33 @@ import { Experience } from '@/component/sections/Experience';
 // Import the Locale type to keep TypeScript happy
 import { Locale } from "@/lib/constants";
 
+// app/page.tsx
+import { SectionTransition } from "@/component/shared/SectionTransition";
+
 export default function Home() {
-    // 1. Initialize the shared language state
     const [lang, setLang] = useState<Locale>("en");
 
     return (
-        <main className="min-h-screen bg-background text-on-background selection:bg-primary/30 overflow-x-hidden relative">
-            {/* 2. Pass the state and the setter to the Navbar */}
+        <main className="font-sans min-h-screen bg-background text-on-background selection:bg-primary/30 overflow-x-hidden relative">
             <Navbar lang={lang} setLang={setLang} />
-
             <ImigongoBackground />
 
-            {/* 3. Pass 'lang' to all sections so they can show translated text */}
-            <Hero lang={lang} />
+            {/* Chaque section va "apparaître" en glissant vers le haut au scroll */}
+            <SectionTransition>
+                <Hero lang={lang} />
+            </SectionTransition>
 
-            {/* This is likely where your EngineeringCore/3D Cards live */}
-            <Philosophy lang={lang} />
+            <SectionTransition>
+                <Philosophy lang={lang} />
+            </SectionTransition>
 
-            {/* Your Project Registry */}
-            <Portfolio lang={lang} />
+            <SectionTransition>
+                <Portfolio lang={lang} />
+            </SectionTransition>
 
-            {/* Your Professional History */}
-            <Experience lang={lang} />
+            <SectionTransition>
+                <Experience lang={lang} />
+            </SectionTransition>
 
             <Footer lang={lang} />
         </main>
