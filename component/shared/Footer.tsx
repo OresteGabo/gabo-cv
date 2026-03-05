@@ -43,7 +43,7 @@ export const Footer = () => {
                         &copy; 2026 {SITE_CONFIG.name} • BUILT WITH NEXT.JS & FRAMER MOTION
                     </p>
                     <p className="text-[10px] font-bold text-outline uppercase tracking-widest flex items-center gap-1">
-                        KIGALI <span className="w-1.5 h-1.5 rounded-full bg-primary" /> RWANDA
+                        PARIS <span className="w-1.5 h-1.5 rounded-full bg-primary" /> FRANCE
                     </p>
                 </div>
             </div>
