@@ -47,7 +47,6 @@ export const Footer = () => {
                     </p>
                 </div>
             </div>
-            <a href="ehjbjehc">lkjvlzrf lkfbler</a>
         </footer>
     );
 };
