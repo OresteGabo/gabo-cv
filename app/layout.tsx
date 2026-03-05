@@ -14,23 +14,37 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "Gabo | Systems Architect",
-    description: "Ingénieur Stagiaire Fullstack & DevOps - Architecture V2 & Infrastructure Digitale.",
+    title: "Gabo Oreste | Ingénieur Fullstack & DevOps",
+    description: "Audit de systèmes legacy et déploiement d'architectures modernes V2. Expertise en Fullstack, DevOps et infrastructures numériques.",
     metadataBase: new URL('https://orestegabo.dev'),
+
+    // 1. FACEBOOK & LINKEDIN (OpenGraph Standard)
     openGraph: {
-        title: "Gabo | Systems Architect",
-        description: "De l'audit système legacy au déploiement d'architectures modernes.",
+        title: "Gabo Oreste | Systems Architect Portfolio",
+        description: "Transformation d'infrastructures obsolètes en systèmes performants, sécurisés et automatisés. Découvrez mon parcours d'ingénieur stagiaire.",
         url: 'https://orestegabo.dev',
         siteName: 'Gabo Portfolio',
+        images: [
+            {
+                url: '/opengraph-image', // Next.js dynamic image route
+                width: 1200,
+                height: 630,
+                alt: 'Gabo Oreste - Engineering Experience Architecture Preview',
+            },
+        ],
         locale: 'fr_FR',
         type: 'website',
-        // Next.js looks for a file named 'opengraph-image.png' in your /app folder automatically
     },
+
+    // 2. TWITTER / X (Specific Tags)
     twitter: {
         card: 'summary_large_image',
-        title: "Gabo | Systems Architect",
-        description: "Fullstack & DevOps Engineer Intern.",
+        title: "Gabo Oreste | Ingénieur Fullstack & DevOps",
+        description: "Ingénieur stagiaire spécialisé en Fullstack & DevOps. Audit système et architecture V2 haute performance.",
+        images: ['/opengraph-image'],
     },
+
+    // 3. APP ICONS (iOS/Android/Browsers)
     icons: {
         icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
         apple: "/icon.svg",
