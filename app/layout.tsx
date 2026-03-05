@@ -39,9 +39,16 @@ export const metadata: Metadata = {
     // 2. TWITTER / X (Specific Tags)
     twitter: {
         card: 'summary_large_image',
-        title: "Gabo Oreste | Ingénieur Fullstack & DevOps",
-        description: "Ingénieur stagiaire spécialisé en Fullstack & DevOps. Audit système et architecture V2 haute performance.",
-        images: ['/opengraph-image'],
+        title: "Oreste MUHIRWA GABO | Ingénieur Fullstack & DevOps",
+        description: "Audit système et architecture V2 haute performance. Découvrez mon parcours d'ingénieur.",
+        images: [
+            {
+                url: 'https://orestegabo.dev/opengraph-image', // Full URL is safer for Twitter
+                width: 1200,
+                height: 630,
+                alt: 'Oreste MUHIRWA GABO Portfolio Preview',
+            }
+        ],
     },
 
     // 3. APP ICONS (iOS/Android/Browsers)
@@ -55,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "Person",
-        "name": "Gabo Oreste",
+        "name": "Oreste MUHIRWA GABO",
         "jobTitle": "Fullstack & DevOps Engineer",
         "url": "https://orestegabo.dev",
         "image": "https://orestegabo.dev/opengraph-image",
