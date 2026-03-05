@@ -54,7 +54,7 @@ export default async function Image() {
                         textTransform: 'uppercase',
                         letterSpacing: '0.1em'
                     }}>
-                        Gabo Oreste • Fullstack & DevOps Intern
+                        Oreste MUHIRWA GABO • Fullstack & DevOps
                     </p>
                 </div>
 
