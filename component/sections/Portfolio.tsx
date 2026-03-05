@@ -63,6 +63,7 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: any; isOpe
                                 <span className="text-[10px] font-black uppercase tracking-[0.3em]">System.Detail</span>
                             </div>
                             <button
+                                aria-label="Close project detail"
                                 onClick={onClose}
                                 className="group flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-all border border-primary/20"
                             >
@@ -93,7 +94,7 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: any; isOpe
                                 <section>
                                     <div className="flex items-center gap-3 mb-6">
                                         <Cpu size={22} className="text-primary/50" />
-                                        <h4 className="font-black uppercase tracking-[0.2em] text-[10px] opacity-40">{t.overviewLabel[lang]}</h4>
+                                        <h3 className="font-black uppercase tracking-[0.2em] text-[10px] opacity-40">{t.overviewLabel[lang]}</h3>
                                     </div>
                                     <p className="text-on-surface-variant text-lg leading-relaxed font-medium">
                                         {project.description[lang]}
@@ -129,6 +130,7 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: any; isOpe
                             <div className="mt-20 pb-10">
                                 <a
                                     href={project.link}
+                                    aria-label={`View ${project.title} on GitHub`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center justify-center gap-4 w-full py-6 rounded-3xl bg-on-surface text-surface font-black uppercase tracking-[0.2em] hover:bg-primary hover:text-on-primary transition-all active:scale-[0.98]"
