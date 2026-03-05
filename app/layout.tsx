@@ -52,8 +52,24 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Gabo Oreste",
+        "jobTitle": "Fullstack & DevOps Engineer",
+        "url": "https://orestegabo.dev",
+        "image": "https://orestegabo.dev/opengraph-image",
+        "description": "Ingénieur spécialisé en Architecture V2, Fullstack et DevOps."
+    };
+
     return (
         <html lang="fr" className={`${geistSans.variable} ${geistMono.variable}`}>
+        <head>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+        </head>
         <body className="light antialiased transition-colors duration-300">
         {children}
         </body>
