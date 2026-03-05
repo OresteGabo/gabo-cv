@@ -1,9 +1,15 @@
 "use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
-import { ENGINEERING_CARDS } from "@/lib/constants";
+import { ENGINEERING_CARDS, Locale, UI_STRINGS } from "@/lib/constants";
+import clsx from "clsx";
 
-export const EngineeringCore = () => {
+interface EngineeringCoreProps {
+    lang: Locale;
+}
+
+export const EngineeringCore = ({ lang }: EngineeringCoreProps) => {
     const [index, setIndex] = useState(0);
     const mx = useMotionValue(0);
     const my = useMotionValue(0);
@@ -11,6 +17,7 @@ export const EngineeringCore = () => {
     const isIdle = useRef(true);
     const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
 
+    // --- YOUR PERSPECTIVE LOGIC (Restored) ---
     const springConfig = { damping: 30, stiffness: 100 };
     const rotateX = useSpring(useTransform(my, [-500, 500], [15, -15]), springConfig);
     const rotateY = useSpring(useTransform(mx, [-500, 500], [-15, 15]), springConfig);
@@ -25,6 +32,7 @@ export const EngineeringCore = () => {
 
         window.addEventListener("mousemove", move);
 
+        // Auto-play logic
         autoPlayRef.current = setInterval(() => {
             if (isIdle.current) {
                 next();
@@ -35,7 +43,9 @@ export const EngineeringCore = () => {
             window.removeEventListener("mousemove", move);
             if (autoPlayRef.current) clearInterval(autoPlayRef.current);
         };
-    }, []);
+    }, [mx, my]);
+
+    const t = UI_STRINGS;
 
     return (
         <div className="relative w-full h-[600px] flex items-center justify-center [perspective:2000px] overflow-visible">
@@ -52,9 +62,13 @@ export const EngineeringCore = () => {
                         const relIndex = (i - index + ENGINEERING_CARDS.length) % ENGINEERING_CARDS.length;
                         const Icon = card.Icon;
 
+                        // Only render a subset for performance
+                        if (relIndex > 4 && relIndex < ENGINEERING_CARDS.length - 1) return null;
+
                         return (
                             <motion.div
-                                key={card.title}
+                                // FIXED: Using card.code to avoid [object Object] error
+                                key={card.code}
                                 drag
                                 dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
                                 onDragStart={() => (isIdle.current = false)}
@@ -74,10 +88,12 @@ export const EngineeringCore = () => {
                                     scale: isActive ? 1 : 0.9,
                                 }}
                                 transition={{ type: "spring", stiffness: 180, damping: 22 }}
-                                className={`absolute inset-0 p-8 rounded-[2.5rem] cursor-grab active:cursor-grabbing
-                                    border border-outline/10 backdrop-blur-2xl
-                                    bg-surface-container/90 shadow-2xl
-                                    ${isActive ? "z-50" : "z-0"}`}
+                                className={clsx(
+                                    "absolute inset-0 p-8 rounded-[2.5rem] cursor-grab active:cursor-grabbing border backdrop-blur-2xl shadow-2xl",
+                                    isActive
+                                        ? "bg-surface-container/90 border-primary/20 z-50 shadow-primary/10"
+                                        : "bg-surface-container-low/40 border-outline/5 z-0"
+                                )}
                                 style={{
                                     transformStyle: "preserve-3d",
                                     transformOrigin: "bottom center"
@@ -85,25 +101,38 @@ export const EngineeringCore = () => {
                             >
                                 <div className="relative z-10 h-full flex flex-col">
                                     <div className="flex justify-between items-start mb-6">
-                                        <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                                        <div className={clsx(
+                                            "p-3 rounded-2xl transition-colors",
+                                            isActive ? "bg-primary/10 text-primary" : "bg-outline/5 text-on-surface-variant/40"
+                                        )}>
                                             <Icon size={28} />
                                         </div>
                                         <span className="font-mono text-[9px] text-primary/50 tracking-widest">{card.code}</span>
                                     </div>
 
-                                    <h3 className="text-2xl font-black text-on-surface tracking-tighter mb-4 leading-[1.1]">
-                                        {card.title}
+                                    {/* LOCALIZED TITLE */}
+                                    <h3 className="text-2xl font-black text-on-surface tracking-tighter mb-4 leading-[1.1] uppercase">
+                                        {card.title[lang]}
                                     </h3>
 
+                                    {/* LOCALIZED TEXT */}
                                     <p className="text-xs text-on-surface-variant leading-relaxed font-medium">
-                                        {card.text}
+                                        {card.text[lang]}
                                     </p>
 
                                     <div className="mt-auto pt-4 border-t border-outline/5 flex items-center justify-between">
-                                        <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">Ready to Build</span>
+                                        <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">
+                                            {lang === 'en' ? 'Ready to Build' : 'Prêt à Construire'}
+                                        </span>
                                         <div className="flex gap-1">
-                                            {[...Array(4)].map((_, dotI) => (
-                                                <div key={dotI} className={`w-1 h-1 rounded-full ${dotI === i ? 'bg-primary' : 'bg-outline/20'}`} />
+                                            {ENGINEERING_CARDS.map((_, dotI) => (
+                                                <div
+                                                    key={dotI}
+                                                    className={clsx(
+                                                        "w-1 h-1 rounded-full transition-all",
+                                                        dotI === i ? 'bg-primary scale-125' : 'bg-outline/20'
+                                                    )}
+                                                />
                                             ))}
                                         </div>
                                     </div>
@@ -121,9 +150,10 @@ export const EngineeringCore = () => {
                         <button
                             key={i}
                             onClick={() => { setIndex(i); isIdle.current = false; }}
-                            className={`h-1 rounded-full transition-all duration-500 ${
+                            className={clsx(
+                                "h-1 rounded-full transition-all duration-500",
                                 i === index ? "w-8 bg-primary" : "w-2 bg-outline/30"
-                            }`}
+                            )}
                         />
                     ))}
                 </div>

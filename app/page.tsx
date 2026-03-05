@@ -1,31 +1,40 @@
 "use client";
+import React, { useState } from "react";
 import { Navbar } from '@/component/shared/Navbar';
 import { Footer } from '@/component/shared/Footer';
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { Hero } from '@/component/sections/Hero';
-import { Philosophy } from '@/component/shared/Philosophy'; // Import it here
+import { Philosophy } from '@/component/shared/Philosophy';
 import { Portfolio } from '@/component/sections/Portfolio';
 import { Experience } from '@/component/sections/Experience';
 
+// Import the Locale type to keep TypeScript happy
+import { Locale } from "@/lib/constants";
+
 export default function Home() {
+    // 1. Initialize the shared language state
+    const [lang, setLang] = useState<Locale>("en");
+
     return (
         <main className="min-h-screen bg-background text-on-background selection:bg-primary/30 overflow-x-hidden relative">
-            <Navbar />
+            {/* 2. Pass the state and the setter to the Navbar */}
+            <Navbar lang={lang} setLang={setLang} />
+
             <ImigongoBackground />
 
-            {/* Entry Point */}
-            <Hero />
+            {/* 3. Pass 'lang' to all sections so they can show translated text */}
+            <Hero lang={lang} />
 
-            {/* The "Brain" - Explaining how you think/engineer */}
-            <Philosophy />
+            {/* This is likely where your EngineeringCore/3D Cards live */}
+            <Philosophy lang={lang} />
 
-            {/* The "Proof" - Showing your work */}
-            <Portfolio />
+            {/* Your Project Registry */}
+            <Portfolio lang={lang} />
 
-            {/* The "History" - Showing your professional growth */}
-            <Experience />
+            {/* Your Professional History */}
+            <Experience lang={lang} />
 
-            <Footer />
+            <Footer lang={lang} />
         </main>
     );
 }
