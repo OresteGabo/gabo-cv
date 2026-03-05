@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Navbar } from '@/component/shared/Navbar';
-import { Footer } from '@/component/shared/Footer';
+import { Footer } from '@/component/sections/Footer';
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { Hero } from '@/component/sections/Hero';
 import { Philosophy } from '@/component/shared/Philosophy';
