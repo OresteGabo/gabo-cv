@@ -6,12 +6,17 @@ import React from "react";
 const geistSans = Geist({
     variable: "--font-geist-sans",
     subsets: ["latin"],
+    display: "swap",
+    preload: true,
 });
 
 const geistMono = Geist_Mono({
     variable: "--font-geist-mono",
     subsets: ["latin"],
+    display: "swap",
+    preload: true,
 });
+
 
 export const metadata: Metadata = {
     title: "Gabo Oreste | Ingénieur Fullstack & DevOps",
@@ -70,8 +75,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     };
 
     return (
-        <html lang="fr" className={`${geistSans.variable} ${geistMono.variable}`}>
+        <html lang="fr" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
         <head>
+            {/*Le script JSON-LD est parfait ici.
+            L'ajout de suppressHydrationWarning sur <html> est une bonne pratique
+            quand on utilise des thèmes (light/dark) pour éviter les erreurs de mismatch
+            entre le serveur et le client.
+            */}
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
