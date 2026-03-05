@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useRef } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import {  useMotionValue, useSpring } from "framer-motion";
 
 export const ImigongoBackground = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
