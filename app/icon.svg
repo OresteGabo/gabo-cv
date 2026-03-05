@@ -1,0 +1,10 @@
+
+<svg width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none">
+    <path
+            d="M75 25 H40 L22 50 L40 75 H75 L60 50 H82"
+            stroke="currentColor"
+            stroke-width="7"
+            stroke-linejoin="miter"
+            stroke-linecap="butt"
+    />
+</svg>
