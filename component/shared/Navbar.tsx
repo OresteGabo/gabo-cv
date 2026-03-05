@@ -29,23 +29,34 @@ export const Navbar = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <a href={SITE_CONFIG.linkedin} target="_blank" className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-on-surface-variant hover:text-primary border-r border-outline/20 pr-4">
+                    <a
+                        href={SITE_CONFIG.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-on-surface-variant hover:text-primary border-r border-outline/20 pr-4"
+                    >
                         LinkedIn
                     </a>
 
-                    <Link
-                        href={SITE_CONFIG.careerPageLink}
-                        className="bg-primary text-on-primary px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 inline-block text-center"
+                    {/* Using <a> for file downloads is the architectural standard */}
+                    <a
+                        href="/Gabo_Oreste_Systems_Architect_2026.pdf"
+                        download="Gabo_Oreste_Systems_Architect_2026.pdf"
+                        className="bg-primary text-on-primary px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 inline-block text-center cursor-pointer"
                     >
                         Download CV
-                    </Link>
+                    </a>
 
-                    <button className="md:hidden p-2 text-on-surface-variant" onClick={() => setMenuOpen(!menuOpen)}>
+                    <button
+                        className="md:hidden p-2 text-on-surface-variant"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        aria-label="Toggle menu"
+                    >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             {menuOpen ? (
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             ) : (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
                             )}
                         </svg>
                     </button>
