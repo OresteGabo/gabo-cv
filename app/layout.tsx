@@ -16,11 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
     title: "Gabo | Systems Architect",
     description: "Ingénieur Stagiaire Fullstack & DevOps - Architecture V2 & Infrastructure Digitale.",
-    metadataBase: new URL('https://votre-site.com'), // Replace with your real domain later
+    metadataBase: new URL('https://orestegabo.dev'),
     openGraph: {
         title: "Gabo | Systems Architect",
         description: "De l'audit système legacy au déploiement d'architectures modernes.",
-        url: 'https://votre-site.com',
+        url: 'https://orestegabo.dev',
         siteName: 'Gabo Portfolio',
         locale: 'fr_FR',
         type: 'website',
