@@ -60,6 +60,13 @@ export const metadata: Metadata = {
     icons: {
         icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
         apple: "/icon.svg",
+        other: [
+            {
+                rel: 'mask-icon',
+                url: '/icon.svg',
+                color: '#6d5e0f', // Ta couleur primary
+            },
+        ],
     },
 };
 
