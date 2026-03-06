@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next'
 export default function manifest(): MetadataRoute.Manifest {
     return {
         name: 'Gabo Oreste | Ingénieur Fullstack & DevOps',
-        short_name: 'GABO',
+        short_name: 'GABO.',
         description: 'Portfolio d’architecture système V2',
         start_url: '/',
         display: 'standalone',
