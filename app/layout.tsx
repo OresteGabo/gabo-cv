@@ -66,6 +66,11 @@ export const metadata: Metadata = {
             },
         ],
     },
+    appleWebApp: {
+        capable: true,
+        title: "GABO.",
+        statusBarStyle: "default",
+    },
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     const jsonLd = {
