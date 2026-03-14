@@ -15,7 +15,7 @@ interface NavbarProps {
 export const Navbar = ({ lang, setLang }: NavbarProps) => {
     const [menuOpen, setMenuOpen] = useState(false);
     // Initialize theme state
-    const [theme, setTheme] = useState<"light" | "dark">("dark");
+    const [theme, setTheme] = useState<"light" | "dark">("light");
 
     // EFFECT: Manually toggle body classes to trigger your custom CSS theme files
     useEffect(() => {
