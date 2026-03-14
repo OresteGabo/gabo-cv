@@ -32,11 +32,11 @@ export default function Home() {
             </SectionTransition>
 
             <SectionTransition>
-                <Portfolio lang={lang} />
+                <Experience lang={lang} />
             </SectionTransition>
 
             <SectionTransition>
-                <Experience lang={lang} />
+                <Portfolio lang={lang} />
             </SectionTransition>
 
             <Footer lang={lang} />
