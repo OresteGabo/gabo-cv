@@ -43,8 +43,20 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
     return (
         <nav className="fixed top-0 left-0 right-0 mx-auto max-w-7xl w-full px-6 py-4 md:px-8 z-[1001] bg-background/80 backdrop-blur-xl border-b border-outline/5">
             <div className="flex justify-between items-center">
-                <Link href="/" className="text-2xl font-black tracking-tighter text-primary">
-                    {SITE_CONFIG.name}.
+                <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
+                    {/* Full Logo - Visible on tablet (sm) and up */}
+                    <img
+                        src="/logo-full.svg"
+                        alt={`${SITE_CONFIG.name} Logo`}
+                        className="hidden sm:block h-8 w-auto"
+                    />
+
+                    {/* Small Icon - Visible only on mobile */}
+                    <img
+                        src="/icon.svg"
+                        alt={SITE_CONFIG.name}
+                        className="block sm:hidden h-8 w-auto"
+                    />
                 </Link>
 
                 {/* Desktop Nav */}
