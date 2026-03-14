@@ -150,11 +150,7 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: any; isOpe
 // --- Project Row Component ---
 const ProjectRow = ({ project, idx, onOpen, lang }: { project: any; idx: number; onOpen: (p: any) => void; lang: Locale }) => {
     return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.02 }}
+        <div
             onClick={() => onOpen(project)}
             className="group flex flex-col md:flex-row md:items-center gap-6 p-6 rounded-2xl
                        bg-surface-container-low/20 backdrop-blur-md border border-outline/5
@@ -186,11 +182,10 @@ const ProjectRow = ({ project, idx, onOpen, lang }: { project: any; idx: number;
                     {project.category}
                 </span>
             </div>
-        </motion.div>
+        </div>
     );
 };
 
-// --- Main Portfolio Section ---
 // Update: Accepting 'lang' as a prop from page.tsx
 export const Portfolio = ({ lang }: { lang: Locale }) => {
     const hasMounted = useHasMounted();
@@ -245,10 +240,10 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
             </div>
 
             <div className="flex flex-col gap-4">
-                <StaggerContainer> {/* <--- Ajoute ceci */}
-                    <AnimatePresence mode="popLayout">
+                <AnimatePresence mode="popLayout">
+                    <StaggerContainer key={activeTab}> {/* Key here re-triggers animation on tab change */}
                         {filteredProjects.map((project, idx) => (
-                            <StaggerItem key={project.title}> {/* <--- Remplace le motion.div par StaggerItem */}
+                            <StaggerItem key={project.title}>
                                 <ProjectRow
                                     project={project}
                                     idx={idx}
@@ -257,8 +252,8 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
                                 />
                             </StaggerItem>
                         ))}
-                    </AnimatePresence>
-                </StaggerContainer>
+                    </StaggerContainer>
+                </AnimatePresence>
             </div>
 
             <ProjectDrawer
