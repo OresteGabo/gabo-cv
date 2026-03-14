@@ -167,7 +167,7 @@ export const Experience = ({ lang }: ExperienceProps) => {
 
                             {/* Mobile & Telehealth Domain */}
                             <div className="space-y-6">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Mobile & Telehealth</h4>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Mobile & Real-Time Systems</h4>
                                 {t.mobileTasks[lang].map((task, i) => (
                                     <div key={i} className="flex gap-4 items-start group">
                                         <div className="mt-1 p-1 rounded-md bg-primary-container text-on-primary-container shadow-sm group-hover:scale-110 transition-transform">
