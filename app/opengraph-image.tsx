@@ -5,83 +5,100 @@ export const alt = 'Gabo Oreste | Engineering Portfolio';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
+const colors = {
+    background: '#fff9ee',
+    border: '#6d5e0f22',
+    textPrimary: '#1e1b13',
+    textSecondary: '#6d5e0f',
+    grid: '#6d5e0f08',
+};
+
 export default async function Image() {
-    // Optional: Fetch a font to make it look premium
-    // If you skip this, it uses a basic system font
     const geistBold = await fetch(
         new URL('https://github.com/vercel/geist-font/raw/main/packages/next/dist/fonts/geist-sans/Geist-Black.ttf')
     ).then((res) => res.arrayBuffer());
 
     return new ImageResponse(
         (
-            <div
-                style={{
-                    background: 'rgb(255 249 238)',
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '24px solid rgb(109 94 15)', // Thick frame for impact
-                    padding: '40px',
-                }}
-            >
-                {/* Visual Background Element (Subtle Grid) */}
+            <div style={{
+                background: colors.background,
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'row',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                {/* Background Grid Texture */}
                 <div style={{
                     position: 'absolute',
                     inset: 0,
-                    opacity: 0.05,
-                    backgroundImage: 'radial-gradient(circle, rgb(109 94 15) 2px, transparent 2px)',
-                    backgroundSize: '40px 40px',
+                    display: 'flex',
+                    backgroundImage: `linear-gradient(${colors.grid} 1px, transparent 1px), linear-gradient(90deg, ${colors.grid} 1px, transparent 1px)`,
+                    backgroundSize: '64px 64px'
                 }} />
 
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                    <h1 style={{
-                        fontSize: 90,
-                        fontWeight: 900,
-                        color: 'rgb(30 27 19)',
-                        margin: 0,
-                        letterSpacing: '-0.05em'
-                    }}>
-                        SYSTEMS ARCHITECT
-                    </h1>
-                    <p style={{
-                        fontSize: 34,
-                        color: 'rgb(109 94 15)',
-                        marginTop: 10,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em'
-                    }}>
-                        Oreste MUHIRWA GABO • Fullstack & DevOps
-                    </p>
+                {/* LEFT COLUMN */}
+                <div style={{
+                    width: '30%',
+                    height: '100%',
+                    borderRight: `2px solid ${colors.border}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    padding: '60px 40px',
+                    backgroundColor: colors.grid,
+                    zIndex: 10
+                }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div style={{ fontSize: 12, color: colors.textSecondary, opacity: 0.5, fontWeight: 900 }}>IDENTIFIER</div>
+                        <div style={{ fontSize: 24, fontWeight: 900, color: colors.textSecondary }}>ORESTE.GABO</div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: 12, color: colors.textSecondary, opacity: 0.5, fontWeight: 900 }}>VERSION</div>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>v2026.03.14</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: 12, color: colors.textSecondary, opacity: 0.5, fontWeight: 900 }}>REGION</div>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>EU_WEST_1</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 30, marginTop: 60, position: 'relative' }}>
-                    <div style={{
-                        padding: '12px 24px',
-                        borderRadius: 12,
-                        border: '3px dashed #ba1a1a',
-                        color: '#ba1a1a',
-                        fontSize: 24,
-                        fontWeight: 'bold'
-                    }}>
-                        Legacy Audit
+                {/* RIGHT COLUMN */}
+                <div style={{
+                    width: '70%',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    padding: '0 80px',
+                    position: 'relative'
+                }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: colors.textSecondary, letterSpacing: '0.45em', marginBottom: 14 }}>SENIOR</div>
+                        <h1 style={{
+                            fontSize: 92,
+                            fontWeight: 900,
+                            margin: 0,
+                            lineHeight: 1.05,
+                            letterSpacing: '-0.04em',
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}>
+                            <span style={{ color: colors.textPrimary }}>SYSTEMS</span>
+                            <span style={{ color: colors.textSecondary }}>ARCHITECT</span>
+                        </h1>
                     </div>
-                    {/* The "Arrow" or Link icon would go here in a real UI,
-                        but we can simulate it with a simple character */}
-                    <div style={{ fontSize: 40, color: 'rgb(109 94 15)', display: 'flex', alignItems: 'center' }}>→</div>
-                    <div style={{
-                        padding: '12px 24px',
-                        borderRadius: 12,
-                        background: 'rgb(109 94 15)',
-                        color: 'white',
-                        fontSize: 24,
-                        fontWeight: 'bold',
-                        boxShadow: '0 10px 20px rgba(109, 94, 15, 0.2)'
-                    }}>
-                        V2 Deployment
+
+                    {/* Corner Logo (Standardized sizing) */}
+                    <div style={{ position: 'absolute', right: 40, bottom: 40, display: 'flex', opacity: 0.15 }}>
+                        <svg width="120" height="120" viewBox="0 0 100 100">
+                            <path d="M70 28 H42 L25 50 L42 72 H70 M58 50 H80" stroke={colors.textSecondary} strokeWidth="8" fill="none" />
+                            <circle cx="80" cy="50" r="5" fill={colors.textSecondary} />
+                        </svg>
                     </div>
                 </div>
             </div>
