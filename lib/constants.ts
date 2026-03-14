@@ -1,4 +1,4 @@
-import {Cpu, Database, Binary, Smartphone, Code2, Sparkles, Terminal, Zap} from "lucide-react";
+import {Cpu, Binary, Smartphone, Code2, Terminal, Zap, Activity, ShieldAlert, Layers} from "lucide-react";
 
 // --- Types for Architecture ---
 export type Locale = "en" | "fr";
@@ -158,55 +158,73 @@ export const SITE_CONFIG = {
     email: "orestegabo@icloud.com",
     careerPageLink: "/resume.pdf",
     github: "https://github.com/orestegabo",
-    linkedin: "https://linkedin.com/in/orestemg"
+    linkedin: "https://linkedin.com/in/orestemg",
+    title: {
+        en: "Gabo Oreste | Software Engineer — Mobile Systems",
+        fr: "Gabo Oreste | Ingénieur Logiciel — Systèmes Mobiles"
+    },
+    description: {
+        en: "Software Engineer & Systems Specialist. Architecting inclusive mobile platforms, real-time communication systems, and high-performance simulation engines.",
+        fr: "Ingénieur Logiciel & Spécialiste Systèmes. Architecture de plateformes mobiles inclusives, systèmes de communication temps réel et moteurs de simulation haute performance."
+    },
+    keywords: [
+        "Software Engineer",
+        "Mobile Systems",
+        "Jetpack Compose",
+        "SwiftUI",
+        "WebRTC",
+        "LiveKit",
+        "C++ Qt6",
+        "Irembo Rwanda",
+        "Digital Inclusion"
+    ],
 };
 
 // lib/constants.ts
-
 export const PHILOSOPHIES = [
     {
         title: {
-            en: "Deterministic Engineering",
-            fr: "Ingénierie Déterministe"
+            en: "Performance-Driven Mobile",
+            fr: "Performance Mobile"
         },
         text: {
-            en: "I eliminate guesswork by prioritizing data structures and algorithmic complexity. Every line of code is a calculated decision in a larger system architecture.",
-            fr: "J'élimine toute approximation en privilégiant les structures de données et la complexité algorithmique. Chaque ligne est une décision calculée au sein de l'architecture."
+            en: "Optimizing for low-end devices and variable networks. I prioritize memory management and execution speed to ensure a smooth experience for every citizen.",
+            fr: "Optimisation pour les appareils d'entrée de gamme et réseaux instables. Je privilégie la gestion mémoire pour garantir une expérience fluide à chaque citoyen."
         },
-        icon: Terminal
+        icon: Zap // Focus on speed/performance
     },
     {
         title: {
-            en: "Pattern-First Design",
-            fr: "Design Axé sur les Patterns"
+            en: "Reactive & Real-Time",
+            fr: "Réactif & Temps Réel"
         },
         text: {
-            en: "Whether it's Singleton, Factory, or Observer, I select the architecture that ensures scalability and maintainability.",
-            fr: "Qu'il s'agisse de Singleton, Factory ou Observer, je choisis l'architecture qui garantit la scalabilité et la maintenabilité."
+            en: "Expertise in asynchronous programming and WebRTC protocols. I build resilient systems that handle real-time data streams without compromising stability.",
+            fr: "Expertise en programmation asynchrone et protocoles WebRTC. Je conçois des systèmes résilients gérant des flux de données en temps réel sans compromis."
         },
-        icon: Code2
+        icon: Activity
     },
     {
         title: {
-            en: "Clean & Self-Documenting",
-            fr: "Code Propre et Auto-Documenté"
+            en: "Secure by Architecture",
+            fr: "Sécurité par l'Architecture"
         },
         text: {
-            en: "Code is read more often than written. I follow SOLID principles to produce clean, modular, and testable codebases.",
-            fr: "Le code est plus souvent lu qu'écrit. Je suis les principes SOLID pour produire des bases de code propres, modulaires et testables."
+            en: "Security isn't a feature; it's a foundation. I follow SOLID principles and secure API patterns to protect sensitive citizen data at every layer.",
+            fr: "La sécurité n'est pas une option, c'est un socle. J'applique les principes SOLID et des patterns API sécurisés pour protéger les données à chaque niveau."
         },
-        icon: Zap
+        icon: ShieldAlert
     },
     {
         title: {
-            en: "Problem Analysis",
-            fr: "Analyse de Problèmes"
+            en: "Scalable Logic",
+            fr: "Logique Scalable"
         },
         text: {
-            en: "I specialize in decomposing complex problems into manageable micro-services, focusing on the 'Why' before the 'How'.",
-            fr: "Je me spécialise dans la décomposition de problèmes complexes en micro-services, en me concentrant sur le 'Pourquoi' avant le 'Comment'."
+            en: "Moving beyond basic coding to true systems engineering. I select design patterns that allow platforms to scale from thousands to millions of users seamlessly.",
+            fr: "Passer du simple codage à l'ingénierie système. Je choisis des design patterns permettant aux plateformes de passer de milliers à des millions d'utilisateurs."
         },
-        icon: Cpu
+        icon: Layers
     }
 ];
 export const CDAFAL_EXP = {
