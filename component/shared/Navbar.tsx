@@ -1,10 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { SITE_CONFIG, UI_STRINGS, Locale } from "@/lib/constants";
+import { SITE_CONFIG, Locale } from "@/lib/constants";
+import { Sun, Moon } from "lucide-react";
 import clsx from "clsx";
-import { Languages } from "lucide-react";
 
 // Define the Props to receive language state from the Parent (page.tsx)
 interface NavbarProps {
@@ -14,6 +14,24 @@ interface NavbarProps {
 
 export const Navbar = ({ lang, setLang }: NavbarProps) => {
     const [menuOpen, setMenuOpen] = useState(false);
+    // Initialize theme state
+    const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+    // EFFECT: Manually toggle body classes to trigger your custom CSS theme files
+    useEffect(() => {
+        const body = document.body;
+        if (theme === "dark") {
+            body.classList.add("dark");
+            body.classList.remove("light");
+        } else {
+            body.classList.add("light");
+            body.classList.remove("dark");
+        }
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+    };
 
     // Localized Navigation Items
     const navItems = [
@@ -39,8 +57,17 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {/* THEME TOGGLE BUTTON */}
+                    <button
+                        onClick={toggleTheme}
+                        className="p-2.5 rounded-xl bg-surface-container-low/60 border border-outline/10 text-on-surface-variant hover:text-primary transition-all shadow-sm active:scale-95"
+                        aria-label="Toggle Theme"
+                    >
+                        {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+                    </button>
+
                     {/* Language Switcher Component */}
-                    <div className="flex p-1 bg-surface-container-low/60 rounded-xl border border-outline/10 mr-2">
+                    <div className="flex p-1 bg-surface-container-low/60 rounded-xl border border-outline/10">
                         {(["en", "fr"] as const).map((l) => (
                             <button
                                 key={l}
@@ -61,17 +88,9 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
                         href={SITE_CONFIG.linkedin}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-on-surface-variant hover:text-primary border-r border-outline/20 pr-4"
+                        className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-on-surface-variant hover:text-primary"
                     >
                         LinkedIn
-                    </a>
-
-                    <a
-                        href="/Gabo_Oreste_Systems_Architect_2026.pdf"
-                        download="Gabo_Oreste_Systems_Architect_2026.pdf"
-                        className="bg-primary text-on-primary px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 inline-block text-center cursor-pointer"
-                    >
-                        {lang === "en" ? "Download CV" : "Télécharger CV"}
                     </a>
 
                     <button
@@ -99,7 +118,12 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
                         className="absolute top-full left-0 right-0 bg-surface-container border-b border-outline/10 p-6 flex flex-col gap-4 md:hidden shadow-xl z-10"
                     >
                         {navItems.map((item) => (
-                            <a key={item.href} href={item.href} className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant" onClick={() => setMenuOpen(false)}>
+                            <a
+                                key={item.href}
+                                href={item.href}
+                                className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant"
+                                onClick={() => setMenuOpen(false)}
+                            >
                                 {item.label}
                             </a>
                         ))}
