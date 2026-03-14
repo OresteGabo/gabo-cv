@@ -73,17 +73,16 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
                                 key={l}
                                 onClick={() => setLang(l)}
                                 className={clsx(
-                                    "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all",
+                                    "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all border-2",
                                     lang === l
-                                        ? "bg-primary text-on-primary shadow-sm"
-                                        : "text-on-surface-variant/40 hover:text-primary"
+                                        ? "bg-primary text-on-primary border-primary shadow-lg shadow-primary/20 scale-105"
+                                        : "border-transparent text-on-surface-variant/40 hover:text-primary hover:border-outline/20"
                                 )}
                             >
                                 {l}
                             </button>
                         ))}
                     </div>
-
                     <a
                         href={SITE_CONFIG.linkedin}
                         target="_blank"
