@@ -13,16 +13,16 @@ export const Hero = ({ lang }: HeroProps) => {
     // Translation object for internal UI strings
     const t = {
         badge: {
-            en: "Available for Engineering Internships 2026",
-            fr: "Disponible pour Stages Ingénieur 2026"
+            en: "Available for Engineering Roles — 2026",
+            fr: "Disponible pour Postes Ingénieur — 2026"
         },
         description: {
-            en: "Solving complex problems across the stack. From C++ 3D Engines and AI Models to Full-Stack Mobile & Web ecosystems.",
-            fr: "Résolution de problèmes complexes sur toute la stack. Des moteurs 3D C++ et modèles IA aux écosystèmes Full-Stack Mobile & Web."
+            en: "Software Engineer specializing in inclusive mobile platforms, real-time communication systems (WebRTC), and high-performance C++ simulation engines.",
+            fr: "Ingénieur Logiciel spécialisé dans les plateformes mobiles inclusives, les systèmes de communication temps réel (WebRTC) et les moteurs de simulation C++."
         },
         skills: {
-            en: ["Full-Stack", "Computer Vision", "Systems", "Mobile"],
-            fr: ["Full-Stack", "Vision par Ordi", "Systèmes", "Mobile"]
+            en: ["Mobile Systems", "Real-Time Video", "C++ / Qt6", "Digital Inclusion"],
+            fr: ["Systèmes Mobiles", "Vidéo Temps Réel", "C++ / Qt6", "Inclusion Numérique"]
         }
     };
 
