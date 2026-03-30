@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
-import { ENGINEERING_CARDS, Locale, UI_STRINGS } from "@/lib/constants";
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Activity, ArrowUpRight, RadioTower, ShieldCheck, Smartphone } from "lucide-react";
 import clsx from "clsx";
+import { ENGINEERING_CARDS, Locale } from "@/lib/constants";
 
 interface EngineeringCoreProps {
     lang: Locale;
@@ -11,153 +12,160 @@ interface EngineeringCoreProps {
 
 export const EngineeringCore = ({ lang }: EngineeringCoreProps) => {
     const [index, setIndex] = useState(0);
-    const mx = useMotionValue(0);
-    const my = useMotionValue(0);
-
-    const isIdle = useRef(true);
-    const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
-
-    // --- YOUR PERSPECTIVE LOGIC (Restored) ---
-    const springConfig = { damping: 30, stiffness: 100 };
-    const rotateX = useSpring(useTransform(my, [-500, 500], [15, -15]), springConfig);
-    const rotateY = useSpring(useTransform(mx, [-500, 500], [-15, 15]), springConfig);
-
-    const next = () => setIndex((i) => (i + 1) % ENGINEERING_CARDS.length);
 
     useEffect(() => {
-        const move = (e: MouseEvent) => {
-            mx.set(e.clientX - window.innerWidth / 2);
-            my.set(e.clientY - window.innerHeight / 2);
-        };
-
-        window.addEventListener("mousemove", move);
-
-        // Auto-play logic
-        autoPlayRef.current = setInterval(() => {
-            if (isIdle.current) {
-                next();
-            }
+        const timer = window.setInterval(() => {
+            setIndex((current) => (current + 1) % ENGINEERING_CARDS.length);
         }, 5000);
 
-        return () => {
-            window.removeEventListener("mousemove", move);
-            if (autoPlayRef.current) clearInterval(autoPlayRef.current);
-        };
-    }, [mx, my]);
+        return () => window.clearInterval(timer);
+    }, []);
 
-    const t = UI_STRINGS;
+    const activeCard = ENGINEERING_CARDS[index];
+    const Icon = activeCard.Icon;
+
+    const t = {
+        label: {
+            en: "Current Focus",
+            fr: "Focus Actuel"
+        },
+        summary: {
+            en: "Building mobile-first systems that stay dependable when the network, device, or context is not ideal.",
+            fr: "Conception de systèmes mobile-first qui restent fiables même quand le réseau, l'appareil ou le contexte ne sont pas idéaux."
+        },
+        board: {
+            en: "Field priorities",
+            fr: "Priorités terrain"
+        },
+        metrics: {
+            en: [
+                { icon: Smartphone, value: "Native UI", label: "Android + iOS" },
+                { icon: RadioTower, value: "Realtime", label: "Video + audio" },
+                { icon: ShieldCheck, value: "Secure", label: "APIs + JWT" },
+                { icon: Activity, value: "Low-bandwidth", label: "Performance first" }
+            ],
+            fr: [
+                { icon: Smartphone, value: "UI Natif", label: "Android + iOS" },
+                { icon: RadioTower, value: "Temps Réel", label: "Vidéo + audio" },
+                { icon: ShieldCheck, value: "Sécurisé", label: "API + JWT" },
+                { icon: Activity, value: "Faible Débit", label: "Performance d'abord" }
+            ]
+        },
+        ready: {
+            en: "Ready to build",
+            fr: "Prêt à construire"
+        }
+    };
 
     return (
-        <div className="relative w-full h-[600px] flex items-center justify-center [perspective:2000px] overflow-visible">
-            {/* Focal Point Glow */}
-            <div className="absolute w-[500px] h-[500px] bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
+        <div className="relative w-full max-w-[620px]">
+            <div className="absolute inset-0 bg-primary/8 blur-[90px] rounded-full pointer-events-none" />
 
-            <motion.div
-                style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-                className="relative w-[320px] h-[420px] flex items-center justify-center"
-            >
-                <AnimatePresence mode="popLayout">
-                    {ENGINEERING_CARDS.map((card, i) => {
-                        const isActive = i === index;
-                        const relIndex = (i - index + ENGINEERING_CARDS.length) % ENGINEERING_CARDS.length;
-                        const Icon = card.Icon;
+            <div className="relative rounded-[2.5rem] border border-outline/10 bg-surface-container/90 shadow-[0_30px_80px_rgba(0,0,0,0.22)] overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-                        // Only render a subset for performance
-                        if (relIndex > 4 && relIndex < ENGINEERING_CARDS.length - 1) return null;
+                <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr]">
+                    <aside className="border-b xl:border-b-0 xl:border-r border-outline/10 bg-surface-container-low/80 p-6">
+                        <div className="flex items-center gap-3 text-primary mb-6">
+                            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em]">{t.board[lang]}</span>
+                        </div>
 
-                        return (
+                        <div className="space-y-2">
+                            {ENGINEERING_CARDS.map((card, cardIndex) => {
+                                const RailIcon = card.Icon;
+
+                                return (
+                                    <button
+                                        key={card.code}
+                                        onClick={() => setIndex(cardIndex)}
+                                        className={clsx(
+                                            "w-full text-left rounded-2xl border px-4 py-4 transition-all duration-300",
+                                            cardIndex === index
+                                                ? "border-primary/25 bg-primary/10 text-on-surface shadow-lg shadow-primary/10"
+                                                : "border-outline/5 bg-background/30 text-on-surface-variant hover:bg-primary/5 hover:border-primary/10"
+                                        )}
+                                    >
+                                        <div className="flex items-center justify-between gap-3 mb-2">
+                                            <div className="p-2 rounded-xl bg-background/60">
+                                                <RailIcon size={16} className={cardIndex === index ? "text-primary" : "text-on-surface-variant/60"} />
+                                            </div>
+                                            <span className="text-[9px] font-mono uppercase tracking-[0.2em] opacity-60">{card.code}</span>
+                                        </div>
+                                        <p className="text-xs font-black uppercase tracking-wide leading-snug">
+                                            {card.title[lang]}
+                                        </p>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </aside>
+
+                    <div className="p-6 md:p-8">
+                        <div className="flex items-center justify-between gap-4 mb-6">
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">
+                                    {t.label[lang]}
+                                </div>
+                                <p className="max-w-xl text-sm text-on-surface-variant leading-relaxed">
+                                    {t.summary[lang]}
+                                </p>
+                            </div>
+                            <div className="hidden md:flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-4 py-2 text-primary">
+                                <ArrowUpRight size={16} />
+                                <span className="text-[10px] font-black uppercase tracking-[0.25em]">{t.ready[lang]}</span>
+                            </div>
+                        </div>
+
+                        <AnimatePresence mode="wait">
                             <motion.div
-                                // FIXED: Using card.code to avoid [object Object] error
-                                key={card.code}
-                                drag
-                                dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
-                                onDragStart={() => (isIdle.current = false)}
-                                onDragEnd={(e, info) => {
-                                    isIdle.current = true;
-                                    if (Math.abs(info.offset.x) > 100 || Math.abs(info.offset.y) > 100) next();
-                                }}
-                                onMouseEnter={() => (isIdle.current = false)}
-                                onMouseLeave={() => (isIdle.current = true)}
-                                initial={{ opacity: 0, scale: 0.8, z: -200 }}
-                                animate={{
-                                    opacity: isActive ? 1 : 0.4 - (relIndex * 0.1),
-                                    x: isActive ? 0 : relIndex * 40,
-                                    y: isActive ? 0 : relIndex * -15,
-                                    z: -relIndex * 50,
-                                    rotateZ: isActive ? 0 : relIndex * 5,
-                                    scale: isActive ? 1 : 0.9,
-                                }}
-                                transition={{ type: "spring", stiffness: 180, damping: 22 }}
-                                className={clsx(
-                                    "hero-stack-card absolute inset-0 p-8 rounded-[2.5rem] cursor-grab active:cursor-grabbing border backdrop-blur-2xl shadow-2xl",
-                                    isActive
-                                        ? "hero-stack-card-active bg-surface-container/92 border-primary/20 z-50 shadow-primary/10"
-                                        : "hero-stack-card-inactive bg-surface-container-low/72 border-outline/10 z-0"
-                                )}
-                                style={{
-                                    transformStyle: "preserve-3d",
-                                    transformOrigin: "bottom center",
-                                    backfaceVisibility: "hidden",
-                                    WebkitBackfaceVisibility: "hidden"
-                                }}
+                                key={activeCard.code}
+                                initial={{ opacity: 0, y: 18 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -18 }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                className="rounded-[2rem] border border-primary/15 bg-gradient-to-br from-surface-container-high to-surface-container p-6 md:p-8"
                             >
-                                <div className="relative z-10 h-full flex flex-col">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className={clsx(
-                                            "p-3 rounded-2xl transition-colors",
-                                            isActive ? "bg-primary/10 text-primary" : "bg-outline/5 text-on-surface-variant/40"
-                                        )}>
-                                            <Icon size={28} />
-                                        </div>
-                                        <span className="font-mono text-[9px] text-primary/50 tracking-widest">{card.code}</span>
+                                <div className="flex items-start justify-between gap-4 mb-6">
+                                    <div className="p-4 rounded-[1.5rem] bg-primary/12 text-primary">
+                                        <Icon size={28} />
                                     </div>
+                                    <span className="text-[10px] font-mono uppercase tracking-[0.28em] text-primary/70">
+                                        {activeCard.code}
+                                    </span>
+                                </div>
 
-                                    {/* LOCALIZED TITLE */}
-                                    <h3 className="text-2xl font-black text-on-surface tracking-tighter mb-4 leading-[1.1] uppercase">
-                                        {card.title[lang]}
-                                    </h3>
+                                <h3 className="text-3xl md:text-4xl font-black tracking-tight leading-[1] text-on-surface mb-4 max-w-lg">
+                                    {activeCard.title[lang]}
+                                </h3>
 
-                                    {/* LOCALIZED TEXT */}
-                                    <p className="text-xs text-on-surface-variant leading-relaxed font-medium">
-                                        {card.text[lang]}
-                                    </p>
+                                <p className="text-base text-on-surface-variant leading-relaxed max-w-2xl mb-8">
+                                    {activeCard.text[lang]}
+                                </p>
 
-                                    <div className="mt-auto pt-4 border-t border-outline/5 flex items-center justify-between">
-                                        <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">
-                                            {lang === 'en' ? 'Ready to Build' : 'Prêt à Construire'}
-                                        </span>
-                                        <div className="flex gap-1">
-                                            {ENGINEERING_CARDS.map((_, dotI) => (
-                                                <div
-                                                    key={dotI}
-                                                    className={clsx(
-                                                        "w-1 h-1 rounded-full transition-all",
-                                                        dotI === i ? 'bg-primary scale-125' : 'bg-outline/20'
-                                                    )}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {t.metrics[lang].map((metric) => {
+                                        const MetricIcon = metric.icon;
+
+                                        return (
+                                            <div
+                                                key={`${metric.value}-${metric.label}`}
+                                                className="rounded-2xl border border-outline/8 bg-background/35 px-4 py-4"
+                                            >
+                                                <div className="flex items-center gap-3 mb-2 text-primary">
+                                                    <MetricIcon size={16} />
+                                                    <span className="text-[11px] font-black uppercase tracking-[0.18em]">{metric.value}</span>
+                                                </div>
+                                                <p className="text-xs text-on-surface-variant font-medium leading-snug">
+                                                    {metric.label}
+                                                </p>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </motion.div>
-                        );
-                    })}
-                </AnimatePresence>
-            </motion.div>
-
-            {/* Bottom Selection Dots */}
-            <div className="absolute -bottom-4 flex flex-col items-center gap-3">
-                <div className="flex gap-2">
-                    {ENGINEERING_CARDS.map((_, i) => (
-                        <button
-                            key={i}
-                            onClick={() => { setIndex(i); isIdle.current = false; }}
-                            className={clsx(
-                                "h-1 rounded-full transition-all duration-500",
-                                i === index ? "w-8 bg-primary" : "w-2 bg-outline/30"
-                            )}
-                        />
-                    ))}
+                        </AnimatePresence>
+                    </div>
                 </div>
             </div>
         </div>
