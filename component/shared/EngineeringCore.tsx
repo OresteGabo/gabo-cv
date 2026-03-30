@@ -65,7 +65,7 @@ export const EngineeringCore = ({ lang }: EngineeringCoreProps) => {
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
                 <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr]">
-                    <aside className="border-b xl:border-b-0 xl:border-r border-outline/10 bg-surface-container-low/80 p-6">
+                    <aside className="border-b xl:border-b-0 xl:border-r border-outline/10 bg-surface-container-low/80 p-4 md:p-6">
                         <div className="flex items-center gap-3 text-primary mb-6">
                             <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                             <span className="text-[10px] font-black uppercase tracking-[0.3em]">{t.board[lang]}</span>
@@ -80,7 +80,7 @@ export const EngineeringCore = ({ lang }: EngineeringCoreProps) => {
                                         key={card.code}
                                         onClick={() => setIndex(cardIndex)}
                                         className={clsx(
-                                            "w-full text-left rounded-2xl border px-4 py-4 transition-all duration-300",
+                                            "w-full text-left rounded-2xl border px-3 py-3 md:px-4 md:py-4 transition-all duration-300",
                                             cardIndex === index
                                                 ? "border-primary/25 bg-primary/10 text-on-surface shadow-lg shadow-primary/10"
                                                 : "border-outline/5 bg-background/30 text-on-surface-variant hover:bg-primary/5 hover:border-primary/10"
@@ -101,8 +101,8 @@ export const EngineeringCore = ({ lang }: EngineeringCoreProps) => {
                         </div>
                     </aside>
 
-                    <div className="p-6 md:p-8">
-                        <div className="flex items-center justify-between gap-4 mb-6">
+                    <div className="p-4 md:p-8">
+                        <div className="flex items-center justify-between gap-4 mb-5 md:mb-6">
                             <div>
                                 <div className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">
                                     {t.label[lang]}
@@ -124,26 +124,26 @@ export const EngineeringCore = ({ lang }: EngineeringCoreProps) => {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -18 }}
                                 transition={{ duration: 0.3, ease: "easeOut" }}
-                                className="rounded-[2rem] border border-primary/15 bg-gradient-to-br from-surface-container-high to-surface-container p-6 md:p-8"
+                                className="rounded-[2rem] border border-primary/15 bg-gradient-to-br from-surface-container-high to-surface-container p-5 md:p-8"
                             >
-                                <div className="flex items-start justify-between gap-4 mb-6">
-                                    <div className="p-4 rounded-[1.5rem] bg-primary/12 text-primary">
-                                        <Icon size={28} />
+                                <div className="flex items-start justify-between gap-4 mb-5 md:mb-6">
+                                    <div className="p-3 md:p-4 rounded-[1.25rem] md:rounded-[1.5rem] bg-primary/12 text-primary">
+                                        <Icon size={24} className="md:w-7 md:h-7" />
                                     </div>
                                     <span className="text-[10px] font-mono uppercase tracking-[0.28em] text-primary/70">
                                         {activeCard.code}
                                     </span>
                                 </div>
 
-                                <h3 className="text-3xl md:text-4xl font-black tracking-tight leading-[1] text-on-surface mb-4 max-w-lg">
+                                <h3 className="text-2xl md:text-4xl font-black tracking-tight leading-[1] text-on-surface mb-3 md:mb-4 max-w-lg">
                                     {activeCard.title[lang]}
                                 </h3>
 
-                                <p className="text-base text-on-surface-variant leading-relaxed max-w-2xl mb-8">
+                                <p className="text-sm md:text-base text-on-surface-variant leading-relaxed max-w-2xl mb-6 md:mb-8">
                                     {activeCard.text[lang]}
                                 </p>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {t.metrics[lang].map((metric) => {
                                         const MetricIcon = metric.icon;
 
