@@ -14,12 +14,18 @@ interface NavbarProps {
 
 export const Navbar = ({ lang, setLang }: NavbarProps) => {
     const [menuOpen, setMenuOpen] = useState(false);
-    // Initialize theme state
     const [theme, setTheme] = useState<"light" | "dark">("light");
 
-    // EFFECT: Manually toggle body classes to trigger your custom CSS theme files
+    useEffect(() => {
+        const savedTheme = window.localStorage.getItem("theme");
+        if (savedTheme === "dark" || savedTheme === "light") {
+            setTheme(savedTheme);
+        }
+    }, []);
+
     useEffect(() => {
         const body = document.body;
+
         if (theme === "dark") {
             body.classList.add("dark");
             body.classList.remove("light");
@@ -27,15 +33,35 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
             body.classList.add("light");
             body.classList.remove("dark");
         }
+
+        window.localStorage.setItem("theme", theme);
     }, [theme]);
 
     const toggleTheme = () => {
-        setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+        const style = document.createElement("style");
+        style.appendChild(
+            document.createTextNode(`*,
+*::before,
+*::after {
+  transition: none !important;
+  animation: none !important;
+}`)
+        );
+        document.head.appendChild(style);
+
+        window.requestAnimationFrame(() => {
+            setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+
+            window.requestAnimationFrame(() => {
+                window.setTimeout(() => {
+                    style.remove();
+                }, 0);
+            });
+        });
     };
 
     // Localized Navigation Items
     const navItems = [
-        { label: lang === "en" ? "Projects" : "Projets", href: "#projects" },
         { label: lang === "en" ? "Experience" : "Expérience", href: "#experience" },
         { label: lang === "en" ? "Contact" : "Contact", href: "#contact" },
     ];
