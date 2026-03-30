@@ -5,7 +5,6 @@ import { Footer } from '@/component/sections/Footer';
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { Hero } from '@/component/sections/Hero';
 import { Philosophy } from '@/component/shared/Philosophy';
-import { Portfolio } from '@/component/sections/Portfolio';
 import { Experience } from '@/component/sections/Experience';
 
 // Import the Locale type to keep TypeScript happy
@@ -33,10 +32,6 @@ export default function Home() {
 
             <SectionTransition>
                 <Experience lang={lang} />
-            </SectionTransition>
-
-            <SectionTransition>
-                <Portfolio lang={lang} />
             </SectionTransition>
 
             <Footer lang={lang} />
