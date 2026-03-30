@@ -89,14 +89,16 @@ export const EngineeringCore = ({ lang }: EngineeringCoreProps) => {
                                 }}
                                 transition={{ type: "spring", stiffness: 180, damping: 22 }}
                                 className={clsx(
-                                    "absolute inset-0 p-8 rounded-[2.5rem] cursor-grab active:cursor-grabbing border backdrop-blur-2xl shadow-2xl",
+                                    "hero-stack-card absolute inset-0 p-8 rounded-[2.5rem] cursor-grab active:cursor-grabbing border backdrop-blur-2xl shadow-2xl",
                                     isActive
-                                        ? "bg-surface-container/90 border-primary/20 z-50 shadow-primary/10"
-                                        : "bg-surface-container-low/40 border-outline/5 z-0"
+                                        ? "hero-stack-card-active bg-surface-container/92 border-primary/20 z-50 shadow-primary/10"
+                                        : "hero-stack-card-inactive bg-surface-container-low/72 border-outline/10 z-0"
                                 )}
                                 style={{
                                     transformStyle: "preserve-3d",
-                                    transformOrigin: "bottom center"
+                                    transformOrigin: "bottom center",
+                                    backfaceVisibility: "hidden",
+                                    WebkitBackfaceVisibility: "hidden"
                                 }}
                             >
                                 <div className="relative z-10 h-full flex flex-col">
