@@ -17,12 +17,12 @@ export const Hero = ({ lang }: HeroProps) => {
             fr: "Disponible pour Postes Ingénieur — 2026"
         },
         description: {
-            en: "Software Engineer specializing in inclusive mobile platforms, real-time communication systems (WebRTC), and high-performance C++ simulation engines.",
-            fr: "Ingénieur Logiciel spécialisé dans les plateformes mobiles inclusives, les systèmes de communication temps réel (WebRTC) et les moteurs de simulation C++."
+            en: "Software Engineer building secure mobile products, realtime communication features, and backend systems that stay reliable on real-world networks and low-end devices.",
+            fr: "Ingénieur Logiciel concevant des produits mobiles sécurisés, des fonctionnalités temps réel et des systèmes backend fiables sur réseaux réels et appareils modestes."
         },
         skills: {
-            en: ["Mobile Systems", "Real-Time Video", "C++ / Qt6", "Digital Inclusion"],
-            fr: ["Systèmes Mobiles", "Vidéo Temps Réel", "C++ / Qt6", "Inclusion Numérique"]
+            en: ["Mobile Products", "Realtime Communication", "Backend APIs", "Low-Bandwidth Performance"],
+            fr: ["Produits Mobiles", "Communication Temps Réel", "API Backend", "Performance Réseaux Limités"]
         }
     };
 
@@ -55,9 +55,9 @@ export const Hero = ({ lang }: HeroProps) => {
                         */
                         className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] mb-8 max-w-4xl"
                     >
-                        SYSTEMS <br />
+                        MOBILE <br />
                         <span className="text-primary">
-        ARCHITECT.
+        ENGINEER.
     </span>
                     </motion.h1>
 
