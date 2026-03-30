@@ -27,8 +27,8 @@ export const Hero = ({ lang }: HeroProps) => {
     };
 
     return (
-        <section className="min-h-screen flex flex-col justify-center px-8 pt-24 lg:pt-0 overflow-hidden">
-            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <section className="min-h-screen flex flex-col justify-center px-8 pt-36 pb-16 md:pt-40 lg:pt-32 overflow-hidden">
+            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
                 {/* LEFT COLUMN: Text Content */}
                 <div className="relative z-10">
