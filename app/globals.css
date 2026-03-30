@@ -44,6 +44,38 @@ body {
   min-height: 100vh;
 }
 
+.hero-stack-card {
+  background-color: color-mix(in oklab, var(--md-sys-color-surface-container) 88%, transparent);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+
+.hero-stack-card-active {
+  background-color: color-mix(in oklab, var(--md-sys-color-surface-container) 92%, transparent);
+}
+
+.hero-stack-card-inactive {
+  background-color: color-mix(in oklab, var(--md-sys-color-surface-container-low) 80%, transparent);
+}
+
+@supports (-moz-appearance: none) {
+  .hero-stack-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 18px 48px rgb(0 0 0 / 0.28);
+  }
+
+  .hero-stack-card-active {
+    background-color: color-mix(in oklab, var(--md-sys-color-surface-container) 96%, black 4%);
+    border-color: color-mix(in oklab, var(--md-sys-color-primary) 24%, transparent);
+  }
+
+  .hero-stack-card-inactive {
+    background-color: color-mix(in oklab, var(--md-sys-color-surface-container-low) 92%, black 8%);
+    border-color: color-mix(in oklab, var(--md-sys-color-outline) 16%, transparent);
+  }
+}
+
 /* Helper for the Hero Text */
 .text-outline {
   -webkit-text-stroke: 1px var(--on-background);
