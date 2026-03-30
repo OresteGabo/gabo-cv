@@ -26,87 +26,86 @@ export const Experience = ({ lang }: ExperienceProps) => {
         title: { en: "Engineering", fr: "Parcours" },
         subtitle: { en: "Experience.", fr: "Ingénieur." },
 
-        // --- SECTION 1: SOFTWARE ENGINEER (CDAFAL 2023-2025) ---
         mainRole: {
             en: "Software Engineer — Mobile & Systems",
             fr: "Ingénieur Logiciel — Systèmes & Mobile"
         },
         mainModernLabel: {
-            en: "Production & Research: Digital Inclusion",
-            fr: "Production & Recherche : Inclusion Numérique"
+            en: "Production: Citizen Services & Realtime Mobile",
+            fr: "Production : Services Citoyens & Mobile Temps Réel"
         },
         mobileTasks: {
             en: [
-                "Developed an inclusive mobile platform for remote education and citizen support services.",
-                "Integrated LiveKit (WebRTC) for secure, real-time language learning and virtual consultations.",
-                "Optimized accessibility for diverse users, ensuring stability on low-end devices and slow networks.",
-                "Implemented JWT-based security to protect sensitive personal data and academic records."
+                "Developed and deployed a citizen-facing mobile platform for secure access to city services and documents.",
+                "Built native user experiences with Jetpack Compose and SwiftUI for real mobile workflows.",
+                "Integrated LiveKit (WebRTC) for secure real-time video consultations between citizens and public-service staff.",
+                "Worked across mobile clients and backend APIs to support reliable service journeys end to end."
             ],
             fr: [
-                "Développement d'une plateforme mobile inclusive pour l'éducation et le soutien citoyen.",
-                "Intégration de LiveKit (WebRTC) pour l'apprentissage des langues et consultations virtuelles.",
-                "Optimisation de l'accessibilité pour garantir la stabilité sur smartphones d'entrée de gamme.",
-                "Mise en place de la sécurité via JWT pour protéger les données personnelles et dossiers académiques."
+                "Développement et déploiement d'une plateforme mobile orientée citoyens pour l'accès sécurisé aux services et documents.",
+                "Conception d'expériences natives avec Jetpack Compose et SwiftUI pour des parcours mobiles concrets.",
+                "Intégration de LiveKit (WebRTC) pour des consultations vidéo temps réel sécurisées entre citoyens et agents.",
+                "Travail sur les clients mobiles et les API backend pour assurer des parcours fiables de bout en bout."
             ]
         },
-        researchModernLabel: {
-            en: "Research: V2V Urban Mobility",
-            fr: "Recherche : Mobilité Urbaine V2V"
+        systemsLabel: {
+            en: "Security & Performance",
+            fr: "Sécurité & Performance"
         },
-        mainCompany: "CDAFAL / Mulhouse City",
+        mainCompany: "CDAFAL / Mulhouse City / France",
         mainPeriod: "2023 — 2025",
         mainBadge: { en: "Professional Career", fr: "Parcours Professionnel" },
-        //mainModernLabel: { en: "Production: Scalable Mobile Ecosystem", fr: "Production : Écosystème Mobile Scalable" },
-        mainStack: ["Jetpack Compose", "SwiftUI", "LiveKit", "WebRTC", "Spring Boot", "JWT"],
+        mainStack: ["Jetpack Compose", "SwiftUI", "LiveKit / WebRTC", "Spring Boot", "REST APIs", "JWT", "Performance"],
 
 
-        // --- SECTION 2: THE INTERNSHIP (LEGACY VS MODERN) ---
         internRole: {
-            en: "Web Developer & Data Intern",
-            fr: "Stagiaire Développeur Web & Data"
+            en: "Web Developer Intern",
+            fr: "Stagiaire Développeur Web"
         },
-        internCompany: "Member Management Systems",
-        internPeriod: "2022",
+        internCompany: "CDAFAL / Mulhouse City / France",
+        internPeriod: "Jan 2023 — Jun 2023",
         internBadge: { en: "Academic Internship", fr: "Stage de Licence" },
-        legacyLabel: { en: "Initial Audit: Legacy State", fr: "Audit Initial : État Legacy" },
-        modernLabel: { en: "Digitalization: V2 System", fr: "Numérisation : Système V2" },
+        legacyLabel: { en: "Mission Scope", fr: "Périmètre de Mission" },
+        modernLabel: { en: "Delivery: Digitalization System", fr: "Livraison : Système de Numérisation" },
         legacyPoints: {
             en: [
-                "Data Silos: Fragmented Excel workflows with no central source of truth.",
-                "Manual Tracking: Paper-based exam management for foreign residents.",
-                "Process Corruption: Frequent data loss during manual payment entries."
+                "Member registration and fee tracking were still heavily manual.",
+                "Student records for foreign residents depended on fragmented processes.",
+                "National exam and language-course data needed a reliable migration path."
             ],
             fr: [
-                "Silos de Données : Workflows Excel fragmentés sans source de vérité.",
-                "Suivi Manuel : Gestion papier des examens pour les résidents étrangers.",
-                "Corruption d'État : Pertes de données fréquentes lors des saisies manuelles."
+                "Les inscriptions et le suivi des frais restaient largement manuels.",
+                "Les dossiers des résidents étrangers dépendaient de processus fragmentés.",
+                "Les données d'examens nationaux et de cours de langue demandaient une migration fiable."
             ]
         },
         internTasks: {
             en: [
-                "Digitalized member registration and payment tracking via Vue.js.",
-                "Built a high-performance C++ ETL tool for historical data migration.",
-                "Automated French language exam scheduling and results tracking."
+                "Engineered internal automation tools for member registration and fee tracking.",
+                "Built a responsive Vue.js interface backed by Spring Boot services.",
+                "Developed a custom C++ ETL tool to migrate and process exam and language-course data.",
+                "Digitalized student-record management for foreign residents, replacing manual workflows."
             ],
             fr: [
-                "Numérisation des adhésions et paiements via Vue.js.",
-                "Outil ETL en C++ pour la migration performante des données historiques.",
-                "Automatisation du suivi des cours et examens de langue française."
+                "Conception d'outils internes d'automatisation pour les inscriptions et le suivi des frais.",
+                "Développement d'une interface Vue.js connectée à un backend Spring Boot.",
+                "Création d'un outil ETL sur mesure en C++ pour migrer et traiter les données d'examens et de cours.",
+                "Numérisation de la gestion des dossiers étudiants pour remplacer les processus manuels."
             ]
         },
 
-        researchTasks: {
+        systemsTasks: {
             en: [
-                "Developed a C++/Qt6 framework to simulate Connected Vehicles (V2V).",
-                "Refactored rendering with QGraphicsScene for real-time visualization.",
-                "Used Qt Concurrency for multithreaded signal and frequency logic.",
-                "Designed HIL-style testing to validate urban network protocols."
+                "Implemented JWT-secured API flows to protect sensitive personal data.",
+                "Optimized app stability and responsiveness for low-bandwidth environments.",
+                "Improved the experience for users on entry-level smartphones and constrained devices.",
+                "Focused on production-ready reliability for public-service and citizen-support use cases."
             ],
             fr: [
-                "Framework C++/Qt6 pour simuler des véhicules connectés (V2V).",
-                "Rendu temps réel optimisé via QGraphicsScene.",
-                "Simulation multi-threadée des signaux et fréquences via Qt Concurrency.",
-                "Conception de tests type HIL pour les protocoles réseau urbains."
+                "Mise en place de flux API sécurisés par JWT pour protéger les données sensibles.",
+                "Optimisation de la stabilité et de la réactivité en environnement à faible bande passante.",
+                "Amélioration de l'expérience sur smartphones d'entrée de gamme et appareils contraints.",
+                "Priorité donnée à une fiabilité de niveau production pour des usages de service public."
             ]
         }
     };
@@ -148,14 +147,14 @@ export const Experience = ({ lang }: ExperienceProps) => {
                         </h3>
 
                         <div className="flex flex-wrap items-center gap-4 mb-8">
-                            <p className="text-primary font-bold text-lg uppercase tracking-wider">CDAFAL 68 / Mulhouse City</p>
+                            <p className="text-primary font-bold text-lg uppercase tracking-wider">{t.mainCompany}</p>
                             <span className="hidden md:block w-2 h-2 rounded-full bg-tertiary/40" />
-                            <p className="text-on-surface-variant font-mono text-sm uppercase">June 2023 — Dec 2025</p>
+                            <p className="text-on-surface-variant font-mono text-sm uppercase">{t.mainPeriod}</p>
                         </div>
 
                         {/* Combined Tech Stack */}
                         <div className="flex flex-wrap gap-2 mb-12">
-                            {["Jetpack Compose", "SwiftUI", "LiveKit", "WebRTC", "C++ / Qt6", "Spring Boot", "JWT"].map((tech) => (
+                            {t.mainStack.map((tech) => (
                                 <span key={tech} className="px-3 py-1 rounded-full border border-tertiary/30 bg-tertiary-container/40 text-[10px] font-black text-on-tertiary-container uppercase tracking-tight">
                         {tech}
                     </span>
@@ -165,7 +164,7 @@ export const Experience = ({ lang }: ExperienceProps) => {
                         {/* Combined Tasks - Grouped by Domain */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 pt-10 border-t border-outline-variant">
 
-                            {/* Mobile & Telehealth Domain */}
+                            {/* Mobile & Realtime Domain */}
                             <div className="space-y-6">
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Mobile & Real-Time Systems</h4>
                                 {t.mobileTasks[lang].map((task, i) => (
@@ -178,10 +177,10 @@ export const Experience = ({ lang }: ExperienceProps) => {
                                 ))}
                             </div>
 
-                            {/* Research & Simulation Domain */}
+                            {/* Security & Performance Domain */}
                             <div className="space-y-6">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-tertiary mb-2 italic">V2V Research & Simulation</h4>
-                                {t.researchTasks[lang].map((task, i) => (
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-tertiary mb-2 italic">{t.systemsLabel[lang]}</h4>
+                                {t.systemsTasks[lang].map((task, i) => (
                                     <div key={i} className="flex gap-4 items-start group">
                                         <div className="mt-1 p-1 rounded-md bg-tertiary-container text-on-tertiary-container shadow-sm group-hover:scale-110 transition-transform">
                                             <CheckCircle2 size={14} />
