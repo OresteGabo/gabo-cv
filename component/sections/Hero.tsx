@@ -16,6 +16,10 @@ export const Hero = ({ lang }: HeroProps) => {
             en: "Available for Engineering Roles — 2026",
             fr: "Disponible pour Postes Ingénieur — 2026"
         },
+        nameLabel: {
+            en: "Muhirwa Gabo Oreste",
+            fr: "Muhirwa Gabo Oreste"
+        },
         description: {
             en: "Software Engineer building secure mobile products, realtime communication features, and backend systems that stay reliable on real-world networks and low-end devices.",
             fr: "Ingénieur Logiciel concevant des produits mobiles sécurisés, des fonctionnalités temps réel et des systèmes backend fiables sur réseaux réels et appareils modestes."
@@ -45,6 +49,15 @@ export const Hero = ({ lang }: HeroProps) => {
                             {t.badge[lang]}
                         </span>
                     </motion.div>
+
+                    <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05 }}
+                        className="mb-4 text-sm md:text-base font-bold uppercase tracking-[0.28em] text-on-surface-variant"
+                    >
+                        {t.nameLabel[lang]}
+                    </motion.p>
 
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
