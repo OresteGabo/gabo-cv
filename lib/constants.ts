@@ -33,49 +33,49 @@ export const UI_STRINGS = {
 // --- Engineering Services ---
 export const ENGINEERING_CARDS: ServiceCard[] = [
     {
-        title: { en: "Architectural Integrity", fr: "Intégrité Architecturale" },
+        title: { en: "Mobile Product Engineering", fr: "Ingénierie Produit Mobile" },
         text: {
-            en: "Applying OOP principles and design patterns (SOLID, GoF) to solve real-world problems. My goal is clean, performant, and maintainable systems.",
-            fr: "Application des principes POO et des design patterns (SOLID, GoF) pour résoudre des problèmes complexes. Objectif : systèmes propres et maintenables."
+            en: "Building native mobile experiences that stay clear, reliable, and fast for users on everyday devices and imperfect networks.",
+            fr: "Conception d'expériences mobiles natives claires, fiables et rapides pour des utilisateurs sur appareils courants et réseaux imparfaits."
         },
         Icon: Binary,
-        code: "DESIGN-01"
+        code: "MOBILE-01"
     },
     {
-        title: { en: "AI & Computer Vision", fr: "IA & Vision par Ordinateur" },
+        title: { en: "Realtime Communication", fr: "Communication Temps Réel" },
         text: {
-            en: "Developing high-accuracy ML models. From parking occupancy classification to CNN-LSTM hybrids for seismic prediction achieving 76.98% accuracy.",
-            fr: "Développement de modèles ML de haute précision. De la classification de parking aux hybrides CNN-LSTM pour la prédiction sismique (76.98% de précision)."
+            en: "Designing low-latency audio and video experiences with WebRTC and LiveKit for consultation, support, and collaboration use cases.",
+            fr: "Conception d'expériences audio et vidéo à faible latence avec WebRTC et LiveKit pour des usages de consultation, support et collaboration."
         },
         Icon: Cpu,
-        code: "MODEL-AI-01"
+        code: "RTC-02"
     },
     {
-        title: { en: "Systems Engineering", fr: "Ingénierie Systèmes" },
+        title: { en: "Secure Backend Systems", fr: "Systèmes Backend Sécurisés" },
         text: {
-            en: "Low-level performance optimization. Implementing Marching Cubes and real-time OpenGL shaders in C++ for architectural visualization.",
-            fr: "Optimisation de performance bas-niveau. Implémentation de Marching Cubes et de shaders OpenGL en temps réel en C++."
+            en: "Building Spring Boot services and API flows that protect sensitive data while supporting dependable mobile journeys end to end.",
+            fr: "Développement de services Spring Boot et de flux API protégeant les données sensibles tout en soutenant des parcours mobiles fiables de bout en bout."
         },
         Icon: Binary,
-        code: "SYS-CPP-17"
+        code: "API-03"
     },
     {
-        title: { en: "Full-Stack Ecosystems", fr: "Écosystèmes Full-Stack" },
+        title: { en: "Data & System Delivery", fr: "Livraison Données & Systèmes" },
         text: {
-            en: "Architecting mission-critical platforms with Next.js 15, React Server Components, and secure Spring Boot REST APIs.",
-            fr: "Architecture de plateformes critiques avec Next.js 15, React Server Components et APIs REST sécurisées sous Spring Boot."
+            en: "From ETL tooling to production features, I like turning fragmented workflows into maintainable digital systems with measurable impact.",
+            fr: "Des outils ETL aux fonctionnalités de production, j'aime transformer des workflows fragmentés en systèmes numériques maintenables et utiles."
         },
         Icon: Code2,
-        code: "STACK-PRO"
+        code: "DELIVERY-04"
     },
     {
-        title: { en: "Native Mobile Solutions", fr: "Solutions Mobiles Natives" },
+        title: { en: "Performance for Real Networks", fr: "Performance sur Réseaux Réels" },
         text: {
-            en: "Engineering fluid mobile experiences with Kotlin (MVVM) and Flutter, integrating OpenStreetMap and real-time data tracking.",
-            fr: "Ingénierie d'expériences mobiles fluides avec Kotlin (MVVM) et Flutter, intégrant OpenStreetMap et tracking temps réel."
+            en: "Optimizing battery use, stability, and responsiveness for lower-end devices, constrained data plans, and bandwidth-sensitive markets.",
+            fr: "Optimisation de la batterie, de la stabilité et de la réactivité pour appareils modestes, forfaits limités et marchés sensibles à la bande passante."
         },
         Icon: Smartphone,
-        code: "MOBILE-OS"
+        code: "PERF-05"
     }
 ];
 
@@ -85,8 +85,8 @@ export const PROJECTS = [
         title: "Gabo Ecosystem",
         category: "Web & Cloud" as ProjectCategory,
         description: {
-            en: "High-performance software infrastructure platform with immersive UX and atomic design principles.",
-            fr: "Plateforme d'infrastructure logicielle haute performance avec UX immersive et principes de design atomique."
+            en: "Personal software platform that presents my work, positioning, and engineering story through a custom high-performance web experience.",
+            fr: "Plateforme personnelle qui présente mon travail, mon positionnement et mon parcours d'ingénierie via une expérience web sur mesure."
         },
         patterns: ["Atomic Design", "Observer", "Facade"],
         impact: { en: "Sub-100ms Page Transitions", fr: "Transitions de page < 100ms" },
@@ -109,8 +109,8 @@ export const PROJECTS = [
         title: "SchoolBridge Full-Stack",
         category: "Mobile" as ProjectCategory,
         description: {
-            en: "Enterprise educational ecosystem with a decoupled native mobile client and secure micro-API.",
-            fr: "Écosystème éducatif d'entreprise avec client mobile natif découplé et micro-API sécurisée."
+            en: "Mobile-first education platform pairing native clients with secure backend services, role-based access, and realtime-friendly architecture.",
+            fr: "Plateforme éducative orientée mobile associant clients natifs, services backend sécurisés, accès par rôles et architecture prête pour le temps réel."
         },
         patterns: ["MVVM", "Repository", "Dependency Injection"],
         impact: { en: "Full Role-Based Data Isolation", fr: "Isolation totale des données par rôle" },
@@ -134,22 +134,22 @@ export const PROJECTS = [
 // --- Work Experience ---
 export const EXPERIENCE = [
     {
-        company: "Tech Internships Africa",
-        role: { en: "Full Stack Developer Intern", fr: "Stagiaire Développeur Full-Stack" },
-        period: "JAN 2025 - PRESENT",
+        company: "CDAFAL / Mulhouse City / France",
+        role: { en: "Software Engineer", fr: "Ingénieur Logiciel" },
+        period: "JUN 2023 - DEC 2025",
         tasks: {
             en: [
-                "Architected scalable API endpoints using Spring Boot for educational platforms",
-                "Implemented real-time data sync for mobile clients using WebSocket & Firebase",
-                "Optimized SQL queries reducing dashboard load times by 40%"
+                "Built citizen-facing mobile products with Jetpack Compose and SwiftUI",
+                "Integrated LiveKit / WebRTC for secure realtime consultations",
+                "Optimized performance for low-bandwidth environments and entry-level phones"
             ],
             fr: [
-                "Architecture d'endpoints API scalables avec Spring Boot pour plateformes éducatives",
-                "Implémentation de synchro temps réel via WebSocket & Firebase",
-                "Optimisation de requêtes SQL réduisant le temps de chargement de 40%"
+                "Développement de produits mobiles orientés citoyens avec Jetpack Compose et SwiftUI",
+                "Intégration de LiveKit / WebRTC pour des consultations temps réel sécurisées",
+                "Optimisation des performances pour réseaux limités et smartphones d'entrée de gamme"
             ]
         },
-        tech: ["Spring Boot", "Kotlin", "PostgreSQL", "React", "Docker", "CI/CD"]
+        tech: ["Jetpack Compose", "SwiftUI", "LiveKit", "Spring Boot", "JWT", "REST APIs"]
     }
 ];
 
@@ -160,23 +160,24 @@ export const SITE_CONFIG = {
     github: "https://github.com/orestegabo",
     linkedin: "https://linkedin.com/in/orestemg",
     title: {
-        en: "Gabo Oreste | Software Engineer — Mobile Systems",
-        fr: "Gabo Oreste | Ingénieur Logiciel — Systèmes Mobiles"
+        en: "Gabo Oreste | Software Engineer — Mobile & Realtime Systems",
+        fr: "Gabo Oreste | Ingénieur Logiciel — Mobile & Temps Réel"
     },
     description: {
-        en: "Software Engineer & Systems Specialist. Architecting inclusive mobile platforms, real-time communication systems, and high-performance simulation engines.",
-        fr: "Ingénieur Logiciel & Spécialiste Systèmes. Architecture de plateformes mobiles inclusives, systèmes de communication temps réel et moteurs de simulation haute performance."
+        en: "Software Engineer building secure mobile products, realtime communication systems, and backend services optimized for low-bandwidth conditions and real-world devices.",
+        fr: "Ingénieur Logiciel concevant des produits mobiles sécurisés, des systèmes de communication temps réel et des services backend optimisés pour des réseaux limités."
     },
     keywords: [
         "Software Engineer",
-        "Mobile Systems",
+        "Mobile Development",
         "Jetpack Compose",
         "SwiftUI",
         "WebRTC",
         "LiveKit",
-        "C++ Qt6",
-        "Irembo Rwanda",
-        "Digital Inclusion"
+        "Spring Boot",
+        "Realtime Communication",
+        "Low Bandwidth Mobile",
+        "Rwanda Tech"
     ],
 };
 
@@ -188,8 +189,8 @@ export const PHILOSOPHIES = [
             fr: "Performance Mobile"
         },
         text: {
-            en: "Optimizing for low-end devices and variable networks. I prioritize memory management and execution speed to ensure a smooth experience for every citizen.",
-            fr: "Optimisation pour les appareils d'entrée de gamme et réseaux instables. Je privilégie la gestion mémoire pour garantir une expérience fluide à chaque citoyen."
+            en: "Optimizing for low-end devices and variable networks so mobile products stay usable, smooth, and efficient in real conditions.",
+            fr: "Optimisation pour les appareils d'entrée de gamme et les réseaux variables afin que les produits mobiles restent fluides et utiles en conditions réelles."
         },
         icon: Zap // Focus on speed/performance
     },
@@ -199,8 +200,8 @@ export const PHILOSOPHIES = [
             fr: "Réactif & Temps Réel"
         },
         text: {
-            en: "Expertise in asynchronous programming and WebRTC protocols. I build resilient systems that handle real-time data streams without compromising stability.",
-            fr: "Expertise en programmation asynchrone et protocoles WebRTC. Je conçois des systèmes résilients gérant des flux de données en temps réel sans compromis."
+            en: "Using asynchronous patterns and WebRTC-based flows to build resilient realtime experiences without sacrificing clarity or stability.",
+            fr: "Usage de patterns asynchrones et de flux basés sur WebRTC pour construire des expériences temps réel résilientes sans sacrifier la stabilité."
         },
         icon: Activity
     },
@@ -210,8 +211,8 @@ export const PHILOSOPHIES = [
             fr: "Sécurité par l'Architecture"
         },
         text: {
-            en: "Security isn't a feature; it's a foundation. I follow SOLID principles and secure API patterns to protect sensitive citizen data at every layer.",
-            fr: "La sécurité n'est pas une option, c'est un socle. J'applique les principes SOLID et des patterns API sécurisés pour protéger les données à chaque niveau."
+            en: "Security is part of the product itself. I favor protected API flows, careful data handling, and dependable system boundaries from the start.",
+            fr: "La sécurité fait partie du produit lui-même. Je privilégie des flux API protégés, une gestion soignée des données et des frontières système fiables dès le départ."
         },
         icon: ShieldAlert
     },
@@ -221,36 +222,34 @@ export const PHILOSOPHIES = [
             fr: "Logique Scalable"
         },
         text: {
-            en: "Moving beyond basic coding to true systems engineering. I select design patterns that allow platforms to scale from thousands to millions of users seamlessly.",
-            fr: "Passer du simple codage à l'ingénierie système. Je choisis des design patterns permettant aux plateformes de passer de milliers à des millions d'utilisateurs."
+            en: "I like structuring systems so product teams can move faster, features stay maintainable, and platforms scale without becoming fragile.",
+            fr: "J'aime structurer les systèmes pour que les équipes produit avancent plus vite, que les fonctionnalités restent maintenables et que les plateformes évoluent sans fragilité."
         },
         icon: Layers
     }
 ];
 export const CDAFAL_EXP = {
-    company: "CDAFAL68",
-    role: { en: "Fullstack & DevOps Engineer", fr: "Ingénieur Fullstack & DevOps" },
+    company: "CDAFAL / Mulhouse City / France",
+    role: { en: "Web Developer Intern", fr: "Stagiaire Développeur Web" },
     period: "JAN 2023 — JUN 2023",
     location: { en: "Internship", fr: "Stage" },
     description: {
-        en: "Led the digital transformation of legacy data systems, replacing fragmented Excel/Access workflows with a centralized, secure enterprise architecture.",
-        fr: "Direction de la transformation digitale des systèmes de données, remplaçant les flux Excel/Access fragmentés par une architecture d'entreprise centralisée et sécurisée."
+        en: "Helped digitalize internal member and student-management workflows, replacing fragmented manual processes with maintainable web and data tools.",
+        fr: "Participation à la numérisation des workflows internes de gestion des adhérents et étudiants, en remplaçant des processus manuels fragmentés par des outils web et data maintenables."
     },
     tasks: {
         en: [
-            "Architected a centralized PostgreSQL database to eliminate data silos and version conflicts caused by legacy Excel/Access workflows.",
-            "Engineered a Spring Boot REST API with Role-Based Access Control (RBAC) to fix critical security vulnerabilities.",
-            "Developed a high-performance C++ data-parsing engine to sanitize and migrate corrupted legacy records.",
-            "Deployed a modern CI/CD pipeline using Docker and GitHub Actions for zero-downtime deployments.",
-            "Increased organizational productivity by 60% by enabling concurrent data access."
+            "Built internal automation tools for registration and fee tracking.",
+            "Developed a Vue.js interface connected to Spring Boot services.",
+            "Created a custom C++ ETL tool to migrate and process exam data.",
+            "Improved record management for foreign residents by replacing manual steps."
         ],
         fr: [
-            "Architecture d'une base de données PostgreSQL centralisée pour éliminer les silos de données et les conflits de version Excel/Access.",
-            "Ingénierie d'une API REST Spring Boot avec RBAC pour corriger les vulnérabilités de sécurité critiques.",
-            "Développement d'un moteur de parsing C++ haute performance pour assainir et migrer les données corrompues.",
-            "Déploiement d'un pipeline CI/CD moderne via Docker et GitHub Actions pour des déploiements sans interruption.",
-            "Augmentation de la productivité organisationnelle de 60% via l'accès concurrent aux données."
+            "Développement d'outils internes pour les inscriptions et le suivi des frais.",
+            "Création d'une interface Vue.js connectée à des services Spring Boot.",
+            "Conception d'un outil ETL en C++ pour migrer et traiter les données d'examens.",
+            "Amélioration de la gestion des dossiers des résidents étrangers en remplaçant des étapes manuelles."
         ]
     },
-    tech: ["SpringBoot", "Vue.js", "PostgreSQL", "C++", "Docker", "CI/CD"]
+    tech: ["Vue.js", "Spring Boot", "C++", "ETL", "Digitalization"]
 };
