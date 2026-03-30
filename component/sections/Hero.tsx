@@ -31,8 +31,8 @@ export const Hero = ({ lang }: HeroProps) => {
     };
 
     return (
-        <section className="min-h-screen flex flex-col justify-center px-8 pt-36 pb-16 md:pt-40 lg:pt-32 overflow-hidden">
-            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <section className="min-h-screen flex flex-col justify-center px-6 md:px-8 pt-36 pb-20 md:pt-40 lg:pt-32 overflow-hidden">
+            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-16 items-start lg:items-center">
 
                 {/* LEFT COLUMN: Text Content */}
                 <div className="relative z-10">
@@ -102,7 +102,7 @@ export const Hero = ({ lang }: HeroProps) => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.4, duration: 0.8 }}
-                    className="relative order-first lg:order-last h-[500px] lg:h-auto flex items-center justify-center"
+                    className="relative mt-2 lg:mt-0 lg:order-last flex items-center justify-center"
                 >
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
