@@ -4,7 +4,6 @@ import {
   ArrowDownToLine,
   BarChart3,
   CalendarDays,
-  Check,
   ChevronDown,
   ChevronRight,
   Database,
@@ -149,7 +148,12 @@ function NumberControl({
 function GrowthChart({
   values,
 }: {
-  values: { year: number; portfolio: number; contributions: number }[];
+  values: {
+    year: number;
+    completionYear: number;
+    portfolio: number;
+    contributions: number;
+  }[];
 }) {
   const width = 760;
   const height = 300;
@@ -228,8 +232,10 @@ function GrowthChart({
         />
       </svg>
       <div className="mt-2 flex justify-between text-[10px] font-bold text-[#81988a]">
-        <span>Year 1</span>
-        <span>Year {values.at(-1)?.year ?? 1}</span>
+        <span>Year 1 ({values[0]?.completionYear ?? ""})</span>
+        <span>
+          Year {values.at(-1)?.year ?? 1} ({values.at(-1)?.completionYear ?? ""})
+        </span>
       </div>
     </div>
   );
@@ -366,6 +372,7 @@ export function BondPlanner() {
         .filter((row) => row.month % 12 === 0)
         .map((row, index) => ({
           year: row.year,
+          completionYear: row.calendarYear,
           portfolio: row.closingPortfolio,
           contributions: row.totalContributions,
           annualContributions:
@@ -394,6 +401,7 @@ export function BondPlanner() {
   );
   const injectionFinalImpact =
     summary.finalPortfolio - baselineSummary.finalPortfolio;
+  const simulationEnd = projection.at(-1);
   const actualAnnualIncome = purchases.reduce(
     (total, item) =>
       total +
@@ -483,6 +491,14 @@ export function BondPlanner() {
     }));
   }
 
+  function injectionCalendarDate(year: number, monthInYear: number) {
+    return new Date(
+      assumptions.startYear,
+      assumptions.startMonth - 1 + (year - 1) * 12 + monthInYear - 1,
+      1,
+    );
+  }
+
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPortfolioError("");
@@ -541,6 +557,8 @@ export function BondPlanner() {
   function exportProjection() {
     const header = [
       "Month",
+      "Calendar Month",
+      "Calendar Year",
       "Year",
       "Opening Portfolio",
       "Personal Contribution",
@@ -555,6 +573,8 @@ export function BondPlanner() {
     ];
     const rows = projection.map((row) => [
       row.month,
+      row.calendarMonth,
+      row.calendarYear,
       row.year,
       row.openingPortfolio,
       row.personalContribution,
@@ -637,23 +657,108 @@ export function BondPlanner() {
       </header>
 
       <section className="relative mx-auto max-w-7xl px-4 pb-14 pt-16 md:px-8 md:pb-24 md:pt-24">
-        <div className="max-w-4xl">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#8ce6aa]/25 bg-[#8ce6aa]/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#8ce6aa]">
-            <Check size={13} /> Transparent monthly compounding model
+        <div className="grid items-end gap-12 lg:grid-cols-[1.08fr_0.92fr]">
+          <div>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#8ce6aa]/25 bg-[#8ce6aa]/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#8ce6aa]">
+              <Landmark size={13} /> Rwanda Treasury Bond Planner
+            </div>
+            <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-[-0.06em] sm:text-6xl md:text-7xl">
+              See what steady investing
+              <span className="block text-[#8ce6aa]">could build for you.</span>
+            </h1>
+            <p className="mt-7 max-w-2xl text-base leading-7 text-[#a8bdb0] md:text-lg">
+              Model monthly Treasury bond investing, after-tax coupons, reinvestment,
+              and extra cash injections. Change any assumption and see the effect
+              through every month of the journey.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => goTo("simulator")}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#8ce6aa] px-5 py-3 text-sm font-black text-[#071812] transition hover:bg-[#a4efbc]"
+              >
+                Adjust my plan <ChevronRight size={17} />
+              </button>
+              <button
+                type="button"
+                onClick={() => goTo("projection")}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-sm font-black text-[#d7e6dc] transition hover:border-[#8ce6aa]/40 hover:text-white"
+              >
+                View yearly projection <BarChart3 size={16} />
+              </button>
+            </div>
           </div>
-          <h1 className="text-5xl font-black leading-[0.95] tracking-[-0.06em] sm:text-6xl md:text-8xl">
-            Build a long-term
-            <span className="block text-[#8ce6aa]">RWF income engine.</span>
-          </h1>
-          <p className="mt-7 max-w-2xl text-base leading-7 text-[#a8bdb0] md:text-lg">
-            Explore contributions, net coupon income, reinvestment, and portfolio
-            milestones with a model you can inspect month by month.
-          </p>
+
+          <article className="overflow-hidden rounded-[2rem] border border-[#8ce6aa]/25 bg-[#0d241c]/90 shadow-2xl shadow-black/20">
+            <div className="border-b border-white/10 p-6 md:p-7">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8ce6aa]">
+                Your current scenario
+              </p>
+              <p className="mt-3 text-xl font-black leading-snug md:text-2xl">
+                Invest {formatRwf(assumptions.monthlyContribution)} each month for{" "}
+                {assumptions.horizonYears} years
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[#a8bdb0]">
+                Starting {MONTH_NAMES[assumptions.startMonth - 1]}{" "}
+                {assumptions.startYear}, at a {formatPercent(modeledCouponRate)} annual
+                coupon rate with {formatPercent(assumptions.reinvestmentRate)} of net
+                coupons reinvested.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 p-6 md:p-7">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a8bdb0]">
+                  You contribute
+                </p>
+                <p className="mt-2 text-xl font-black md:text-2xl">
+                  {formatRwf(summary.totalContributions, true)}
+                </p>
+                <p className="mt-1 text-xs text-[#789085]">
+                  Including extra cash
+                </p>
+              </div>
+              <ChevronRight className="text-[#8ce6aa]" size={24} />
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8ce6aa]">
+                  Projected value
+                </p>
+                <p className="mt-2 text-2xl font-black text-[#8ce6aa] md:text-3xl">
+                  {formatRwf(summary.finalPortfolio, true)}
+                </p>
+                <p className="mt-1 text-xs text-[#789085]">
+                  {simulationEnd
+                    ? `By ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
+                    : "At the end of the plan"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 border-t border-white/10 bg-black/10">
+              <div className="border-r border-white/10 p-5 md:px-7">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a8bdb0]">
+                  Potential annual income
+                </p>
+                <p className="mt-2 text-lg font-black text-[#e8c66a] md:text-xl">
+                  {formatRwf(summary.annualPassiveIncome, true)}
+                </p>
+              </div>
+              <div className="p-5 md:px-7">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a8bdb0]">
+                  Potential monthly income
+                </p>
+                <p className="mt-2 text-lg font-black text-[#e8c66a] md:text-xl">
+                  {formatRwf(summary.monthlyPassiveIncome, true)}
+                </p>
+              </div>
+            </div>
+          </article>
         </div>
-        <div className="mt-10 grid gap-3 sm:grid-cols-3">
-          <Metric label="Final portfolio" value={formatRwf(summary.finalPortfolio)} accent />
-          <Metric label="Annual passive income" value={formatRwf(summary.annualPassiveIncome)} />
-          <Metric label="Monthly passive income" value={formatRwf(summary.monthlyPassiveIncome)} />
+
+        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[#789085]">
+          <span>Net coupon rate: {formatPercent(netAnnualRate, 2)}</span>
+          <span>Government withholding tax: {formatPercent(WITHHOLDING_TAX_RATE, 0)}</span>
+          <span>Projection, not a guaranteed return</span>
         </div>
       </section>
 
@@ -678,6 +783,36 @@ export function BondPlanner() {
             <div className="mt-7 space-y-3">
               <NumberControl label="Monthly contribution" value={assumptions.monthlyContribution} onChange={(value) => update("monthlyContribution", value)} min={0} max={2_000_000} step={50_000} prefix="RWF " />
               <NumberControl label="Investment horizon" value={assumptions.horizonYears} onChange={(value) => update("horizonYears", value)} min={1} max={40} step={1} suffix=" years" />
+              <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                <span className="text-xs font-bold text-[#d7e6dc]">Investment start</span>
+                <div className="mt-3 grid grid-cols-[1fr_110px] gap-3">
+                  <select
+                    aria-label="Investment start month"
+                    value={assumptions.startMonth}
+                    onChange={(event) => update("startMonth", Number(event.target.value))}
+                    className="w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-3 text-sm font-bold text-white outline-none focus:border-[#8ce6aa]/60"
+                  >
+                    {MONTH_NAMES.map((month, index) => (
+                      <option key={month} value={index + 1}>{month}</option>
+                    ))}
+                  </select>
+                  <input
+                    aria-label="Investment start year"
+                    type="number"
+                    min={2020}
+                    max={2100}
+                    value={assumptions.startYear}
+                    onChange={(event) => update("startYear", Number(event.target.value))}
+                    className="w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-3 text-sm font-bold text-white outline-none focus:border-[#8ce6aa]/60"
+                  />
+                </div>
+                <p className="mt-2 text-[11px] text-[#81988a]">
+                  The {assumptions.horizonYears}-year projection ends in{" "}
+                  {simulationEnd
+                    ? `${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
+                    : "the selected horizon"}.
+                </p>
+              </div>
               <label className="block rounded-2xl border border-white/10 bg-black/10 p-4">
                 <span className="flex items-center justify-between gap-3">
                   <span className="text-xs font-bold text-[#d7e6dc]">Bond tenor</span>
@@ -751,7 +886,7 @@ export function BondPlanner() {
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#81988a]">
-                    Year
+                    Simulation year
                     <input
                       type="number"
                       min={1}
@@ -763,15 +898,23 @@ export function BondPlanner() {
                     />
                   </label>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#81988a]">
-                    Month
+                    Month in that year
                     <select
                       value={injectionDraft.monthInYear}
                       onChange={(event) => setInjectionDraft((current) => ({ ...current, monthInYear: Number(event.target.value) }))}
                       className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-2.5 text-sm text-white outline-none focus:border-[#e8c66a]/50"
                     >
-                      {MONTH_NAMES.map((month, index) => (
-                        <option key={month} value={index + 1}>{month}</option>
-                      ))}
+                      {MONTH_NAMES.map((_month, index) => {
+                        const date = injectionCalendarDate(
+                          injectionDraft.year,
+                          index + 1,
+                        );
+                        return (
+                          <option key={index} value={index + 1}>
+                            {MONTH_NAMES[date.getMonth()]} {date.getFullYear()}
+                          </option>
+                        );
+                      })}
                     </select>
                   </label>
                 </div>
@@ -790,7 +933,19 @@ export function BondPlanner() {
                         <div className="min-w-0">
                           <p className="truncate text-xs font-bold">{injection.label}</p>
                           <p className="mt-1 text-[10px] text-[#81988a]">
-                            {formatRwf(injection.amount)} · Year {Math.ceil(injection.month / 12)}, {MONTH_NAMES[(injection.month - 1) % 12]}
+                            {formatRwf(injection.amount)} ·{" "}
+                            {MONTH_NAMES[
+                              new Date(
+                                assumptions.startYear,
+                                assumptions.startMonth - 1 + injection.month - 1,
+                                1,
+                              ).getMonth()
+                            ]}{" "}
+                            {new Date(
+                              assumptions.startYear,
+                              assumptions.startMonth - 1 + injection.month - 1,
+                              1,
+                            ).getFullYear()}
                           </p>
                         </div>
                         <button
@@ -846,7 +1001,9 @@ export function BondPlanner() {
                   <span>
                     <strong className="block text-sm">{label}</strong>
                     <span className="text-xs text-[#a8bdb0]">
-                      {month ? `Month ${month} · Year ${Math.ceil(Number(month) / 12)}` : "Not reached"}
+                      {month
+                        ? `${MONTH_NAMES[projection[Number(month) - 1].calendarMonth - 1]} ${projection[Number(month) - 1].calendarYear} · Month ${month}`
+                        : "Not reached"}
                     </span>
                   </span>
                 </div>
@@ -865,7 +1022,9 @@ export function BondPlanner() {
           <div className="rounded-2xl border border-[#e8c66a]/20 bg-[#e8c66a]/[0.07] px-4 py-3 text-xs text-[#d9ca9b]">
             Passive income exceeds annual contributions in{" "}
             <strong className="text-[#f2dfa6]">
-              {summary.passiveIncomeCrossoverYear ? `year ${summary.passiveIncomeCrossoverYear}` : "no modeled year"}
+              {summary.passiveIncomeCrossoverYear
+                ? `Year ${summary.passiveIncomeCrossoverYear} (${annualProjection[summary.passiveIncomeCrossoverYear - 1]?.completionYear})`
+                : "no modeled year"}
             </strong>
           </div>
         </div>
@@ -901,7 +1060,9 @@ export function BondPlanner() {
                   <Fragment key={row.year}>
                     <tr className={`border-t border-white/[0.07] text-sm transition hover:bg-white/[0.025] ${isExpanded ? "bg-white/[0.025]" : ""}`}>
                       <td className="px-5 py-4">
-                        <span className="font-black text-[#8ce6aa]">Year {row.year}</span>
+                        <span className="font-black text-[#8ce6aa]">
+                          Year {row.year} ({row.completionYear})
+                        </span>
                         {yearInjections.length > 0 && (
                           <span className="ml-2 rounded-full bg-[#e8c66a]/10 px-2 py-1 text-[9px] font-black uppercase text-[#e8c66a]">
                             {yearInjections.length} extra {yearInjections.length === 1 ? "deposit" : "deposits"}
@@ -951,10 +1112,19 @@ export function BondPlanner() {
                                     className={`border-t border-white/[0.05] text-xs ${month.couponPayment > 0 ? "bg-[#8ce6aa]/[0.05]" : ""}`}
                                   >
                                     <td className="px-3 py-3 font-bold">
-                                      {new Intl.DateTimeFormat("en", { month: "short" }).format(new Date(2026, month.monthInYear - 1, 1))}
+                                      {new Intl.DateTimeFormat("en", {
+                                        month: "short",
+                                        year: "numeric",
+                                      }).format(
+                                        new Date(
+                                          month.calendarYear,
+                                          month.calendarMonth - 1,
+                                          1,
+                                        ),
+                                      )}
                                     </td>
                                     <td className="px-3 py-3 text-[#a8bdb0]">
-                                      5th
+                                      5 {MONTH_NAMES[month.calendarMonth - 1].slice(0, 3)} {month.calendarYear}
                                       {month.couponPayment > 0 && (
                                         <span className="ml-2 rounded-full bg-[#8ce6aa]/10 px-2 py-1 text-[9px] font-black uppercase text-[#8ce6aa]">
                                           Coupon month
