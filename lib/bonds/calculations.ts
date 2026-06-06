@@ -8,6 +8,8 @@ import type {
 export const DEFAULT_ASSUMPTIONS: BondAssumptions = {
   monthlyContribution: 300_000,
   horizonYears: 20,
+  startMonth: 6,
+  startYear: 2026,
   tenorYears: 10,
   annualCouponRate: 0.12,
   couponPaymentsPerYear: 2,
@@ -43,6 +45,11 @@ export function calculateProjection(
 
   return Array.from({ length: totalMonths }, (_, index) => {
     const month = index + 1;
+    const calendarDate = new Date(
+      assumptions.startYear,
+      assumptions.startMonth - 1 + index,
+      1,
+    );
     const openingPortfolio = portfolio;
     const personalContribution = assumptions.monthlyContribution;
     const monthlyInjections = cashInjections.filter(
@@ -73,6 +80,8 @@ export function calculateProjection(
       month,
       year: Math.ceil(month / 12),
       monthInYear: ((month - 1) % 12) + 1,
+      calendarMonth: calendarDate.getMonth() + 1,
+      calendarYear: calendarDate.getFullYear(),
       openingPortfolio,
       personalContribution,
       cashInjection,
