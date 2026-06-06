@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./bonds/bonds.css";
 
 /* 1. Import Material Theme files */
 @import "../styles/theme/light.css";
