@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (explicitly keep the safe bond template)
 .env*
+!.env.bonds.example
 
 # vercel
 .vercel
