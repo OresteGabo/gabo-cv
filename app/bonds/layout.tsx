@@ -19,8 +19,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#071812",
-  colorScheme: "dark",
+  themeColor: "#f7f5ef",
+  colorScheme: "light",
 };
 
 export default function BondsLayout({
