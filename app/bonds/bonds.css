@@ -1,0 +1,41 @@
+.bond-app {
+  --bond-bg: #071812;
+  --bond-surface: #0d241c;
+  --bond-surface-soft: #123127;
+  --bond-line: rgba(176, 218, 194, 0.16);
+  --bond-copy: #f1f8f3;
+  --bond-muted: #a8bdb0;
+  --bond-accent: #8ce6aa;
+  --bond-accent-strong: #42c97a;
+  --bond-gold: #e8c66a;
+  background:
+    radial-gradient(circle at 80% -10%, rgba(66, 201, 122, 0.16), transparent 34rem),
+    radial-gradient(circle at -5% 28%, rgba(232, 198, 106, 0.08), transparent 28rem),
+    var(--bond-bg);
+  color: var(--bond-copy);
+  min-height: 100vh;
+}
+
+.bond-app input,
+.bond-app select,
+.bond-app textarea,
+.bond-app button {
+  font: inherit;
+}
+
+.bond-app input[type="range"] {
+  accent-color: var(--bond-accent-strong);
+}
+
+.bond-grid {
+  background-image:
+    linear-gradient(var(--bond-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bond-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+.bond-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 230, 170, 0.35) transparent;
+}
