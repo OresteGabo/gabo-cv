@@ -1,6 +1,8 @@
 export type BondAssumptions = {
   monthlyContribution: number;
   horizonYears: number;
+  startMonth: number;
+  startYear: number;
   tenorYears: number;
   annualCouponRate: number;
   couponPaymentsPerYear: number;
@@ -20,6 +22,8 @@ export type MonthlyProjection = {
   month: number;
   year: number;
   monthInYear: number;
+  calendarMonth: number;
+  calendarYear: number;
   openingPortfolio: number;
   personalContribution: number;
   cashInjection: number;
