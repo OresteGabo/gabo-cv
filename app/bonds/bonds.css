@@ -1,16 +1,16 @@
 .bond-app {
-  --bond-bg: #071812;
-  --bond-surface: #0d241c;
-  --bond-surface-soft: #123127;
-  --bond-line: rgba(176, 218, 194, 0.16);
-  --bond-copy: #f1f8f3;
-  --bond-muted: #a8bdb0;
-  --bond-accent: #8ce6aa;
-  --bond-accent-strong: #42c97a;
-  --bond-gold: #e8c66a;
+  --bond-bg: #f7f5ef;
+  --bond-surface: #ffffff;
+  --bond-surface-soft: #eef2f7;
+  --bond-line: rgba(100, 116, 139, 0.11);
+  --bond-copy: #1f2937;
+  --bond-muted: #64748b;
+  --bond-accent: #3568a8;
+  --bond-accent-strong: #264f82;
+  --bond-gold: #b7791f;
   background:
-    radial-gradient(circle at 80% -10%, rgba(66, 201, 122, 0.16), transparent 34rem),
-    radial-gradient(circle at -5% 28%, rgba(232, 198, 106, 0.08), transparent 28rem),
+    radial-gradient(circle at 80% -10%, rgba(53, 104, 168, 0.08), transparent 34rem),
+    radial-gradient(circle at -5% 28%, rgba(183, 121, 31, 0.05), transparent 28rem),
     var(--bond-bg);
   color: var(--bond-copy);
   min-height: 100vh;
@@ -37,5 +37,5 @@
 
 .bond-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(140, 230, 170, 0.35) transparent;
+  scrollbar-color: rgba(53, 104, 168, 0.3) transparent;
 }
