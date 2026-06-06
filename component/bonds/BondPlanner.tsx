@@ -85,17 +85,17 @@ function Metric({
     <article
       className={`rounded-3xl border p-5 md:p-6 ${
         accent
-          ? "border-[#8ce6aa]/35 bg-[#8ce6aa]/10"
-          : "border-white/10 bg-white/[0.035]"
+          ? "border-[#3568a8]/35 bg-[#3568a8]/10"
+          : "border-slate-200 bg-white"
       }`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.19em] text-[#a8bdb0]">
+      <p className="text-[10px] font-black uppercase tracking-[0.19em] text-[#64748b]">
         {label}
       </p>
       <p className="mt-3 break-words text-2xl font-black tracking-tight md:text-3xl">
         {value}
       </p>
-      {detail && <p className="mt-2 text-xs text-[#a8bdb0]">{detail}</p>}
+      {detail && <p className="mt-2 text-xs text-[#64748b]">{detail}</p>}
     </article>
   );
 }
@@ -122,10 +122,10 @@ function NumberControl({
   hint?: string;
 }) {
   return (
-    <label className="block rounded-2xl border border-white/10 bg-black/10 p-4">
+    <label className="block rounded-2xl border border-slate-200 bg-white/70 p-4">
       <span className="flex items-center justify-between gap-3">
-        <span className="text-xs font-bold text-[#d7e6dc]">{label}</span>
-        <span className="rounded-lg bg-white/[0.06] px-2.5 py-1 font-mono text-xs font-bold text-[#8ce6aa]">
+        <span className="text-xs font-bold text-[#334155]">{label}</span>
+        <span className="rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-[#3568a8]">
           {prefix}
           {value.toLocaleString("en-RW")}
           {suffix}
@@ -140,7 +140,7 @@ function NumberControl({
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
       />
-      {hint && <span className="mt-2 block text-[11px] text-[#81988a]">{hint}</span>}
+      {hint && <span className="mt-2 block text-[11px] text-[#718096]">{hint}</span>}
     </label>
   );
 }
@@ -171,20 +171,20 @@ function GrowthChart({
   const areaPoints = `${pad},${height - pad} ${portfolioPoints} ${width - pad},${height - pad}`;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#091e17] p-4 md:p-6">
+    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-[#ffffff] p-4 md:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8ce6aa]">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#3568a8]">
             Growth curve
           </p>
           <h3 className="mt-1 text-xl font-black">Portfolio vs contributions</h3>
         </div>
-        <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider text-[#a8bdb0]">
+        <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider text-[#64748b]">
           <span className="flex items-center gap-2">
-            <i className="h-2 w-2 rounded-full bg-[#8ce6aa]" /> Portfolio
+            <i className="h-2 w-2 rounded-full bg-[#3568a8]" /> Portfolio
           </span>
           <span className="flex items-center gap-2">
-            <i className="h-2 w-2 rounded-full bg-[#e8c66a]" /> Contributions
+            <i className="h-2 w-2 rounded-full bg-[#b7791f]" /> Contributions
           </span>
         </div>
       </div>
@@ -201,37 +201,37 @@ function GrowthChart({
               x2={width - pad}
               y1={height - pad - tick * (height - pad * 2)}
               y2={height - pad - tick * (height - pad * 2)}
-              stroke="rgba(176,218,194,.13)"
+              stroke="rgba(145,168,210,.13)"
               strokeDasharray="4 7"
             />
             <text
               x={pad}
               y={height - pad - tick * (height - pad * 2) - 7}
-              fill="#81988a"
+              fill="#718096"
               fontSize="10"
             >
               {formatRwf(max * tick, true)}
             </text>
           </g>
         ))}
-        <polygon points={areaPoints} fill="rgba(140,230,170,.08)" />
+        <polygon points={areaPoints} fill="rgba(122,162,247,.09)" />
         <polyline
           points={contributionPoints}
           fill="none"
-          stroke="#e8c66a"
+          stroke="#b7791f"
           strokeWidth="2"
           strokeDasharray="6 6"
         />
         <polyline
           points={portfolioPoints}
           fill="none"
-          stroke="#8ce6aa"
+          stroke="#3568a8"
           strokeWidth="4"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
-      <div className="mt-2 flex justify-between text-[10px] font-bold text-[#81988a]">
+      <div className="mt-2 flex justify-between text-[10px] font-bold text-[#718096]">
         <span>Year 1 ({values[0]?.completionYear ?? ""})</span>
         <span>
           Year {values.at(-1)?.year ?? 1} ({values.at(-1)?.completionYear ?? ""})
@@ -257,8 +257,8 @@ function NavButton({
       onClick={onClick}
       className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black transition ${
         active
-          ? "bg-[#8ce6aa] text-[#071812]"
-          : "text-[#a8bdb0] hover:bg-white/[0.06] hover:text-white"
+          ? "bg-[#3568a8] text-white"
+          : "text-[#64748b] hover:bg-slate-100 hover:text-slate-900"
       }`}
     >
       {icon}
@@ -601,15 +601,15 @@ export function BondPlanner() {
   return (
     <main className="bond-app font-sans">
       <div className="bond-grid pointer-events-none absolute inset-0 h-[920px] opacity-20" />
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#071812]/88 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-[#f7f5ef]/88 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
           <Link href="/" className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#8ce6aa] text-[#071812]">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#3568a8] text-white">
               <Landmark size={20} strokeWidth={2.6} />
             </span>
             <span>
               <strong className="block text-sm font-black tracking-tight">Rwanda Bond Planner</strong>
-              <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-[#81988a]">
+              <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-[#718096]">
                 by Gabo
               </span>
             </span>
@@ -633,21 +633,21 @@ export function BondPlanner() {
           <div className="flex items-center gap-2">
             <button
               onClick={exportProjection}
-              className="hidden items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-[#d7e6dc] transition hover:border-[#8ce6aa]/40 hover:text-[#8ce6aa] sm:flex"
+              className="hidden items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-[#334155] transition hover:border-[#3568a8]/40 hover:text-[#3568a8] sm:flex"
             >
               <ArrowDownToLine size={15} /> Export CSV
             </button>
             <button
               onClick={() => setMenuOpen((open) => !open)}
               aria-label="Open navigation"
-              className="rounded-xl border border-white/10 p-2.5 lg:hidden"
+              className="rounded-xl border border-slate-200 p-2.5 lg:hidden"
             >
               {menuOpen ? <X size={19} /> : <Menu size={19} />}
             </button>
           </div>
         </div>
         {menuOpen && (
-          <nav className="grid grid-cols-2 gap-2 border-t border-white/10 p-3 lg:hidden">
+          <nav className="grid grid-cols-2 gap-2 border-t border-slate-200 p-3 lg:hidden">
             <NavButton active={activeSection === "simulator"} onClick={() => goTo("simulator")} icon={<Sparkles size={15} />}>Simulator</NavButton>
             <NavButton active={activeSection === "projection"} onClick={() => goTo("projection")} icon={<BarChart3 size={15} />}>Projection</NavButton>
             <NavButton active={activeSection === "portfolio"} onClick={() => goTo("portfolio")} icon={<WalletCards size={15} />}>Portfolio</NavButton>
@@ -659,14 +659,14 @@ export function BondPlanner() {
       <section className="relative mx-auto max-w-7xl px-4 pb-14 pt-16 md:px-8 md:pb-24 md:pt-24">
         <div className="grid items-end gap-12 lg:grid-cols-[1.08fr_0.92fr]">
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#8ce6aa]/25 bg-[#8ce6aa]/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#8ce6aa]">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#3568a8]/25 bg-[#3568a8]/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#3568a8]">
               <Landmark size={13} /> Rwanda Treasury Bond Planner
             </div>
             <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-[-0.06em] sm:text-6xl md:text-7xl">
               See what steady investing
-              <span className="block text-[#8ce6aa]">could build for you.</span>
+              <span className="block text-[#3568a8]">could build for you.</span>
             </h1>
-            <p className="mt-7 max-w-2xl text-base leading-7 text-[#a8bdb0] md:text-lg">
+            <p className="mt-7 max-w-2xl text-base leading-7 text-[#64748b] md:text-lg">
               Model monthly Treasury bond investing, after-tax coupons, reinvestment,
               and extra cash injections. Change any assumption and see the effect
               through every month of the journey.
@@ -675,30 +675,30 @@ export function BondPlanner() {
               <button
                 type="button"
                 onClick={() => goTo("simulator")}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#8ce6aa] px-5 py-3 text-sm font-black text-[#071812] transition hover:bg-[#a4efbc]"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#3568a8] px-5 py-3 text-sm font-black text-white transition hover:bg-[#4d7db8]"
               >
                 Adjust my plan <ChevronRight size={17} />
               </button>
               <button
                 type="button"
                 onClick={() => goTo("projection")}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-sm font-black text-[#d7e6dc] transition hover:border-[#8ce6aa]/40 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-black text-[#334155] transition hover:border-[#3568a8]/40 hover:text-slate-900"
               >
                 View yearly projection <BarChart3 size={16} />
               </button>
             </div>
           </div>
 
-          <article className="overflow-hidden rounded-[2rem] border border-[#8ce6aa]/25 bg-[#0d241c]/90 shadow-2xl shadow-black/20">
-            <div className="border-b border-white/10 p-6 md:p-7">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8ce6aa]">
+          <article className="overflow-hidden rounded-[2rem] border border-[#3568a8]/25 bg-[#ffffff]/90 shadow-2xl shadow-slate-300/40">
+            <div className="border-b border-slate-200 p-6 md:p-7">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#3568a8]">
                 Your current scenario
               </p>
               <p className="mt-3 text-xl font-black leading-snug md:text-2xl">
                 Invest {formatRwf(assumptions.monthlyContribution)} each month for{" "}
                 {assumptions.horizonYears} years
               </p>
-              <p className="mt-2 text-sm leading-6 text-[#a8bdb0]">
+              <p className="mt-2 text-sm leading-6 text-[#64748b]">
                 Starting {MONTH_NAMES[assumptions.startMonth - 1]}{" "}
                 {assumptions.startYear}, at a {formatPercent(modeledCouponRate)} annual
                 coupon rate with {formatPercent(assumptions.reinvestmentRate)} of net
@@ -708,25 +708,25 @@ export function BondPlanner() {
 
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 p-6 md:p-7">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a8bdb0]">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
                   You contribute
                 </p>
                 <p className="mt-2 text-xl font-black md:text-2xl">
                   {formatRwf(summary.totalContributions, true)}
                 </p>
-                <p className="mt-1 text-xs text-[#789085]">
+                <p className="mt-1 text-xs text-[#718096]">
                   Including extra cash
                 </p>
               </div>
-              <ChevronRight className="text-[#8ce6aa]" size={24} />
+              <ChevronRight className="text-[#3568a8]" size={24} />
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8ce6aa]">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#3568a8]">
                   Projected value
                 </p>
-                <p className="mt-2 text-2xl font-black text-[#8ce6aa] md:text-3xl">
+                <p className="mt-2 text-2xl font-black text-[#3568a8] md:text-3xl">
                   {formatRwf(summary.finalPortfolio, true)}
                 </p>
-                <p className="mt-1 text-xs text-[#789085]">
+                <p className="mt-1 text-xs text-[#718096]">
                   {simulationEnd
                     ? `By ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
                     : "At the end of the plan"}
@@ -734,20 +734,20 @@ export function BondPlanner() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 border-t border-white/10 bg-black/10">
-              <div className="border-r border-white/10 p-5 md:px-7">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a8bdb0]">
+            <div className="grid grid-cols-2 border-t border-slate-200 bg-white/70">
+              <div className="border-r border-slate-200 p-5 md:px-7">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
                   Potential annual income
                 </p>
-                <p className="mt-2 text-lg font-black text-[#e8c66a] md:text-xl">
+                <p className="mt-2 text-lg font-black text-[#b7791f] md:text-xl">
                   {formatRwf(summary.annualPassiveIncome, true)}
                 </p>
               </div>
               <div className="p-5 md:px-7">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a8bdb0]">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
                   Potential monthly income
                 </p>
-                <p className="mt-2 text-lg font-black text-[#e8c66a] md:text-xl">
+                <p className="mt-2 text-lg font-black text-[#b7791f] md:text-xl">
                   {formatRwf(summary.monthlyPassiveIncome, true)}
                 </p>
               </div>
@@ -755,25 +755,25 @@ export function BondPlanner() {
           </article>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[#789085]">
+        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[#718096]">
           <span>Net coupon rate: {formatPercent(netAnnualRate, 2)}</span>
           <span>Government withholding tax: {formatPercent(WITHHOLDING_TAX_RATE, 0)}</span>
           <span>Projection, not a guaranteed return</span>
         </div>
       </section>
 
-      <section id="simulator" className="scroll-mt-24 border-y border-white/10 bg-[#0a1d16]/72">
+      <section id="simulator" className="scroll-mt-24 border-y border-slate-200 bg-[#f1f4f8]/72">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 md:px-8 md:py-20 lg:grid-cols-[390px_1fr]">
           <aside>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#8ce6aa]">Assumptions</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#3568a8]">Assumptions</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight">Tune the model</h2>
               </div>
               <button
                 type="button"
                 onClick={resetScenario}
-                className="flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2.5 text-xs font-black text-[#a8bdb0] hover:border-[#8ce6aa]/30 hover:text-white"
+                className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-black text-[#64748b] hover:border-[#3568a8]/30 hover:text-slate-900"
                 aria-label="Reset entire simulation"
               >
                 <RefreshCcw size={16} />
@@ -783,14 +783,14 @@ export function BondPlanner() {
             <div className="mt-7 space-y-3">
               <NumberControl label="Monthly contribution" value={assumptions.monthlyContribution} onChange={(value) => update("monthlyContribution", value)} min={0} max={2_000_000} step={50_000} prefix="RWF " />
               <NumberControl label="Investment horizon" value={assumptions.horizonYears} onChange={(value) => update("horizonYears", value)} min={1} max={40} step={1} suffix=" years" />
-              <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                <span className="text-xs font-bold text-[#d7e6dc]">Investment start</span>
+              <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+                <span className="text-xs font-bold text-[#334155]">Investment start</span>
                 <div className="mt-3 grid grid-cols-[1fr_110px] gap-3">
                   <select
                     aria-label="Investment start month"
                     value={assumptions.startMonth}
                     onChange={(event) => update("startMonth", Number(event.target.value))}
-                    className="w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-3 text-sm font-bold text-white outline-none focus:border-[#8ce6aa]/60"
+                    className="w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-3 text-sm font-bold text-slate-900 outline-none focus:border-[#3568a8]/60"
                   >
                     {MONTH_NAMES.map((month, index) => (
                       <option key={month} value={index + 1}>{month}</option>
@@ -803,25 +803,25 @@ export function BondPlanner() {
                     max={2100}
                     value={assumptions.startYear}
                     onChange={(event) => update("startYear", Number(event.target.value))}
-                    className="w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-3 text-sm font-bold text-white outline-none focus:border-[#8ce6aa]/60"
+                    className="w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-3 text-sm font-bold text-slate-900 outline-none focus:border-[#3568a8]/60"
                   />
                 </div>
-                <p className="mt-2 text-[11px] text-[#81988a]">
+                <p className="mt-2 text-[11px] text-[#718096]">
                   The {assumptions.horizonYears}-year projection ends in{" "}
                   {simulationEnd
                     ? `${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
                     : "the selected horizon"}.
                 </p>
               </div>
-              <label className="block rounded-2xl border border-white/10 bg-black/10 p-4">
+              <label className="block rounded-2xl border border-slate-200 bg-white/70 p-4">
                 <span className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-bold text-[#d7e6dc]">Bond tenor</span>
-                  <span className="text-[11px] text-[#81988a]">Official options</span>
+                  <span className="text-xs font-bold text-[#334155]">Bond tenor</span>
+                  <span className="text-[11px] text-[#718096]">Official options</span>
                 </span>
                 <select
                   value={assumptions.tenorYears}
                   onChange={(event) => update("tenorYears", Number(event.target.value))}
-                  className="mt-3 w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-3 text-sm font-bold text-white outline-none focus:border-[#8ce6aa]/60"
+                  className="mt-3 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-3 text-sm font-bold text-slate-900 outline-none focus:border-[#3568a8]/60"
                 >
                   {TREASURY_BOND_TENORS.map((tenor) => (
                     <option key={tenor} value={tenor}>{tenor} years</option>
@@ -838,12 +838,12 @@ export function BondPlanner() {
                 suffix="% p.a."
                 hint={`BK Capital range: ${formatPercent(MIN_ANNUAL_COUPON_RATE, 2)}–${formatPercent(MAX_ANNUAL_COUPON_RATE, 2)}. Use the rate published for the specific NBR issuance.`}
               />
-              <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/10 p-4">
+              <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
                 <div>
-                  <p className="text-xs font-bold text-[#d7e6dc]">Withholding tax</p>
-                  <p className="mt-1 text-[11px] text-[#81988a]">Fixed government rate</p>
+                  <p className="text-xs font-bold text-[#334155]">Withholding tax</p>
+                  <p className="mt-1 text-[11px] text-[#718096]">Fixed government rate</p>
                 </div>
-                <span className="rounded-lg bg-white/[0.06] px-2.5 py-1 font-mono text-xs font-bold text-[#8ce6aa]">
+                <span className="rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-[#3568a8]">
                   {formatPercent(WITHHOLDING_TAX_RATE)}
                 </span>
               </div>
@@ -851,17 +851,17 @@ export function BondPlanner() {
               <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={5_000_000} step={50_000} prefix="RWF " />
             </div>
 
-            <div className="mt-6 rounded-3xl border border-[#e8c66a]/20 bg-[#e8c66a]/[0.05] p-4">
+            <div className="mt-6 rounded-3xl border border-[#b7791f]/20 bg-[#b7791f]/[0.05] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#e8c66a]">Extra cash</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#b7791f]">Extra cash</p>
                   <h3 className="mt-1 font-black">One-time injections</h3>
                 </div>
-                <span className="rounded-lg bg-[#e8c66a]/10 px-2 py-1 text-[10px] font-bold text-[#e8c66a]">
+                <span className="rounded-lg bg-[#b7791f]/10 px-2 py-1 text-[10px] font-bold text-[#b7791f]">
                   {cashInjections.length} added
                 </span>
               </div>
-              <p className="mt-2 text-[11px] leading-5 text-[#a8bdb0]">
+              <p className="mt-2 text-[11px] leading-5 text-[#64748b]">
                 Model gifts, bonuses, or other occasional money separately from your monthly plan.
               </p>
               <form onSubmit={addCashInjection} className="mt-4 grid gap-3">
@@ -870,9 +870,9 @@ export function BondPlanner() {
                   placeholder="Source, e.g. Gift from a friend"
                   value={injectionDraft.label}
                   onChange={(event) => setInjectionDraft((current) => ({ ...current, label: event.target.value }))}
-                  className="w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#62766a] focus:border-[#e8c66a]/50"
+                  className="w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-[#94a3b8] focus:border-[#b7791f]/50"
                 />
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#81988a]">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#718096]">
                   Amount
                   <input
                     type="number"
@@ -881,11 +881,11 @@ export function BondPlanner() {
                     required
                     value={injectionDraft.amount}
                     onChange={(event) => setInjectionDraft((current) => ({ ...current, amount: Number(event.target.value) }))}
-                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-2.5 text-sm text-white outline-none focus:border-[#e8c66a]/50"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#b7791f]/50"
                   />
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#81988a]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#718096]">
                     Simulation year
                     <input
                       type="number"
@@ -894,15 +894,15 @@ export function BondPlanner() {
                       required
                       value={injectionDraft.year}
                       onChange={(event) => setInjectionDraft((current) => ({ ...current, year: Number(event.target.value) }))}
-                      className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-2.5 text-sm text-white outline-none focus:border-[#e8c66a]/50"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#b7791f]/50"
                     />
                   </label>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#81988a]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#718096]">
                     Month in that year
                     <select
                       value={injectionDraft.monthInYear}
                       onChange={(event) => setInjectionDraft((current) => ({ ...current, monthInYear: Number(event.target.value) }))}
-                      className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-2.5 text-sm text-white outline-none focus:border-[#e8c66a]/50"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#b7791f]/50"
                     >
                       {MONTH_NAMES.map((_month, index) => {
                         const date = injectionCalendarDate(
@@ -918,21 +918,21 @@ export function BondPlanner() {
                     </select>
                   </label>
                 </div>
-                <button className="flex items-center justify-center gap-2 rounded-xl bg-[#e8c66a] px-4 py-3 text-xs font-black text-[#30260a] hover:bg-[#f1d987]">
+                <button className="flex items-center justify-center gap-2 rounded-xl bg-[#b7791f] px-4 py-3 text-xs font-black text-[#30260a] hover:bg-[#d69e2e]">
                   <Plus size={15} /> Add to scenario
                 </button>
               </form>
 
               {cashInjections.length > 0 && (
-                <div className="mt-4 space-y-2 border-t border-white/10 pt-4">
+                <div className="mt-4 space-y-2 border-t border-slate-200 pt-4">
                   {cashInjections
                     .slice()
                     .sort((a, b) => a.month - b.month)
                     .map((injection) => (
-                      <div key={injection.id} className="flex items-center justify-between gap-3 rounded-xl bg-black/15 p-3">
+                      <div key={injection.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-100 p-3">
                         <div className="min-w-0">
                           <p className="truncate text-xs font-bold">{injection.label}</p>
-                          <p className="mt-1 text-[10px] text-[#81988a]">
+                          <p className="mt-1 text-[10px] text-[#718096]">
                             {formatRwf(injection.amount)} ·{" "}
                             {MONTH_NAMES[
                               new Date(
@@ -994,13 +994,13 @@ export function BondPlanner() {
                 ["RWF 100M", summary.milestone100m],
                 ["RWF 200M", summary.milestone200m],
               ].map(([label, month]) => (
-                <div key={String(label)} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/10 p-4">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e8c66a]/10 text-[#e8c66a]">
+                <div key={String(label)} className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#b7791f]/10 text-[#b7791f]">
                     <Target size={18} />
                   </span>
                   <span>
                     <strong className="block text-sm">{label}</strong>
-                    <span className="text-xs text-[#a8bdb0]">
+                    <span className="text-xs text-[#64748b]">
                       {month
                         ? `${MONTH_NAMES[projection[Number(month) - 1].calendarMonth - 1]} ${projection[Number(month) - 1].calendarYear} · Month ${month}`
                         : "Not reached"}
@@ -1016,12 +1016,12 @@ export function BondPlanner() {
       <section id="projection" className="scroll-mt-24 mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#8ce6aa]">Projection</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#3568a8]">Projection</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">See where every franc goes</h2>
           </div>
-          <div className="rounded-2xl border border-[#e8c66a]/20 bg-[#e8c66a]/[0.07] px-4 py-3 text-xs text-[#d9ca9b]">
+          <div className="rounded-2xl border border-[#b7791f]/20 bg-[#b7791f]/[0.07] px-4 py-3 text-xs text-[#7c5a24]">
             Passive income exceeds annual contributions in{" "}
-            <strong className="text-[#f2dfa6]">
+            <strong className="text-[#8a5a16]">
               {summary.passiveIncomeCrossoverYear
                 ? `Year ${summary.passiveIncomeCrossoverYear} (${annualProjection[summary.passiveIncomeCrossoverYear - 1]?.completionYear})`
                 : "no modeled year"}
@@ -1029,17 +1029,17 @@ export function BondPlanner() {
           </div>
         </div>
 
-        <div className="mt-6 flex items-center gap-3 rounded-2xl border border-[#8ce6aa]/15 bg-[#8ce6aa]/[0.05] px-4 py-3 text-xs text-[#a8bdb0]">
-          <CalendarDays size={16} className="shrink-0 text-[#8ce6aa]" />
+        <div className="mt-6 flex items-center gap-3 rounded-2xl border border-[#3568a8]/15 bg-[#3568a8]/[0.05] px-4 py-3 text-xs text-[#64748b]">
+          <CalendarDays size={16} className="shrink-0 text-[#3568a8]" />
           <p>
-            Suggested routine: invest on the <strong className="text-white">5th of every month</strong>,
+            Suggested routine: invest on the <strong className="text-slate-900">5th of every month</strong>,
             or the next business day. This gives salary transfers time to settle while keeping the habit consistent.
           </p>
         </div>
 
-        <div className="bond-scrollbar mt-5 max-h-[72vh] overflow-auto rounded-3xl border border-white/10 lg:max-h-none lg:overflow-visible">
+        <div className="bond-scrollbar mt-5 max-h-[72vh] overflow-auto rounded-3xl border border-slate-200 lg:max-h-none lg:overflow-visible">
           <table className="w-full min-w-[940px] border-collapse text-left">
-            <thead className="sticky top-0 z-30 bg-[#123127] text-[10px] uppercase tracking-[0.15em] text-[#a8bdb0] shadow-[0_1px_0_rgba(255,255,255,0.12)] lg:top-[73px]">
+            <thead className="sticky top-0 z-30 bg-[#eef2f7] text-[10px] uppercase tracking-[0.15em] text-[#64748b] shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">
               <tr>
                 <th className="px-5 py-4">Year</th>
                 <th className="px-5 py-4">Invested this year</th>
@@ -1058,28 +1058,28 @@ export function BondPlanner() {
                 );
                 return (
                   <Fragment key={row.year}>
-                    <tr className={`border-t border-white/[0.07] text-sm transition hover:bg-white/[0.025] ${isExpanded ? "bg-white/[0.025]" : ""}`}>
+                    <tr className={`border-t border-slate-200 text-sm transition hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""}`}>
                       <td className="px-5 py-4">
-                        <span className="font-black text-[#8ce6aa]">
+                        <span className="font-black text-[#3568a8]">
                           Year {row.year} ({row.completionYear})
                         </span>
                         {yearInjections.length > 0 && (
-                          <span className="ml-2 rounded-full bg-[#e8c66a]/10 px-2 py-1 text-[9px] font-black uppercase text-[#e8c66a]">
+                          <span className="ml-2 rounded-full bg-[#b7791f]/10 px-2 py-1 text-[9px] font-black uppercase text-[#b7791f]">
                             {yearInjections.length} extra {yearInjections.length === 1 ? "deposit" : "deposits"}
                           </span>
                         )}
                       </td>
                       <td className="px-5 py-4">{formatRwf(row.annualContributions)}</td>
-                      <td className="px-5 py-4 text-[#a8bdb0]">{formatRwf(row.annualCoupons)}</td>
+                      <td className="px-5 py-4 text-[#64748b]">{formatRwf(row.annualCoupons)}</td>
                       <td className="px-5 py-4 font-bold">{formatRwf(row.portfolio)}</td>
-                      <td className="px-5 py-4 text-[#e8c66a]">{formatRwf(row.passiveIncome)}</td>
+                      <td className="px-5 py-4 text-[#b7791f]">{formatRwf(row.passiveIncome)}</td>
                       <td className="px-5 py-4 text-right">
                         <button
                           type="button"
                           onClick={() => toggleYear(row.year)}
                           aria-expanded={isExpanded}
                           aria-label={`${isExpanded ? "Collapse" : "Expand"} year ${row.year}`}
-                          className="inline-grid h-9 w-9 place-items-center rounded-xl border border-white/10 text-[#a8bdb0] transition hover:border-[#8ce6aa]/40 hover:text-[#8ce6aa]"
+                          className="inline-grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-[#64748b] transition hover:border-[#3568a8]/40 hover:text-[#3568a8]"
                         >
                           <ChevronDown
                             size={17}
@@ -1089,11 +1089,11 @@ export function BondPlanner() {
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr className="border-t border-[#8ce6aa]/10 bg-[#061510]">
+                      <tr className="border-t border-[#3568a8]/10 bg-[#f8fafc]">
                         <td colSpan={6} className="p-0">
                           <div className="overflow-x-auto px-4 py-4 md:px-6 lg:overflow-visible">
                             <table className="w-full min-w-[960px] border-collapse text-left">
-                              <thead className="sticky top-[49px] z-20 bg-[#061510] text-[9px] uppercase tracking-[0.14em] text-[#81988a] shadow-[0_1px_0_rgba(255,255,255,0.08)] lg:top-[122px]">
+                              <thead className="sticky top-[49px] z-20 bg-[#f8fafc] text-[9px] uppercase tracking-[0.14em] text-[#718096] shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">
                                 <tr>
                                   <th className="px-3 py-2">Month</th>
                                   <th className="px-3 py-2">Suggested date</th>
@@ -1109,7 +1109,7 @@ export function BondPlanner() {
                                 {months.map((month) => (
                                   <tr
                                     key={month.month}
-                                    className={`border-t border-white/[0.05] text-xs ${month.couponPayment > 0 ? "bg-[#8ce6aa]/[0.05]" : ""}`}
+                                    className={`border-t border-slate-200 text-xs ${month.couponPayment > 0 ? "bg-[#3568a8]/[0.05]" : ""}`}
                                   >
                                     <td className="px-3 py-3 font-bold">
                                       {new Intl.DateTimeFormat("en", {
@@ -1123,30 +1123,30 @@ export function BondPlanner() {
                                         ),
                                       )}
                                     </td>
-                                    <td className="px-3 py-3 text-[#a8bdb0]">
+                                    <td className="px-3 py-3 text-[#64748b]">
                                       5 {MONTH_NAMES[month.calendarMonth - 1].slice(0, 3)} {month.calendarYear}
                                       {month.couponPayment > 0 && (
-                                        <span className="ml-2 rounded-full bg-[#8ce6aa]/10 px-2 py-1 text-[9px] font-black uppercase text-[#8ce6aa]">
+                                        <span className="ml-2 rounded-full bg-[#3568a8]/10 px-2 py-1 text-[9px] font-black uppercase text-[#3568a8]">
                                           Coupon month
                                         </span>
                                       )}
                                     </td>
-                                    <td className="px-3 py-3 text-[#81988a]">{formatRwf(month.openingPortfolio)}</td>
+                                    <td className="px-3 py-3 text-[#718096]">{formatRwf(month.openingPortfolio)}</td>
                                     <td className="px-3 py-3 font-bold">{formatRwf(month.personalContribution)}</td>
                                     <td className="px-3 py-3">
                                       {month.cashInjection > 0 ? (
                                         <>
-                                          <span className="font-bold text-[#e8c66a]">{formatRwf(month.cashInjection)}</span>
-                                          <span className="mt-1 block max-w-36 truncate text-[9px] text-[#a89459]">
+                                          <span className="font-bold text-[#b7791f]">{formatRwf(month.cashInjection)}</span>
+                                          <span className="mt-1 block max-w-36 truncate text-[9px] text-[#8a682e]">
                                             {month.cashInjectionLabels.join(", ")}
                                           </span>
                                         </>
                                       ) : (
-                                        <span className="text-[#566b5e]">—</span>
+                                        <span className="text-[#94a3b8]">—</span>
                                       )}
                                     </td>
-                                    <td className="px-3 py-3 text-[#8ce6aa]">{formatRwf(month.couponPayment)}</td>
-                                    <td className="px-3 py-3 text-[#a8bdb0]">{formatRwf(month.reinvestedCoupon)}</td>
+                                    <td className="px-3 py-3 text-[#3568a8]">{formatRwf(month.couponPayment)}</td>
+                                    <td className="px-3 py-3 text-[#64748b]">{formatRwf(month.reinvestedCoupon)}</td>
                                     <td className="px-3 py-3 font-bold">{formatRwf(month.closingPortfolio)}</td>
                                   </tr>
                                 ))}
@@ -1164,21 +1164,21 @@ export function BondPlanner() {
         </div>
       </section>
 
-      <section id="portfolio" className="scroll-mt-24 border-y border-white/10 bg-[#0a1d16]/72">
+      <section id="portfolio" className="scroll-mt-24 border-y border-slate-200 bg-[#f1f4f8]/72">
         <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
-              <div className="flex items-center gap-2 text-[#8ce6aa]">
+              <div className="flex items-center gap-2 text-[#3568a8]">
                 <LockKeyhole size={16} />
                 <p className="text-[10px] font-black uppercase tracking-[0.22em]">Private portfolio</p>
               </div>
               <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Track real bond purchases</h2>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-[#a8bdb0]">
+              <p className="mt-3 max-w-xl text-sm leading-6 text-[#64748b]">
                 Simulation is public. Actual purchases are stored in Neon and only returned after your signed admin session is verified.
               </p>
             </div>
             {authenticated && (
-              <button onClick={logout} className="flex w-fit items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-[#a8bdb0] hover:text-white">
+              <button onClick={logout} className="flex w-fit items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-[#64748b] hover:text-slate-900">
                 <LogOut size={15} /> Sign out
               </button>
             )}
@@ -1191,25 +1191,25 @@ export function BondPlanner() {
           )}
 
           {sessionLoading ? (
-            <div className="mt-8 rounded-3xl border border-white/10 p-8 text-sm text-[#a8bdb0]">Checking private session…</div>
+            <div className="mt-8 rounded-3xl border border-slate-200 p-8 text-sm text-[#64748b]">Checking private session…</div>
           ) : !authenticated ? (
-            <form onSubmit={login} className="mt-8 max-w-lg rounded-3xl border border-white/10 bg-black/10 p-5 md:p-7">
+            <form onSubmit={login} className="mt-8 max-w-lg rounded-3xl border border-slate-200 bg-white/70 p-5 md:p-7">
               <div className="mb-6 flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#8ce6aa]/10 text-[#8ce6aa]"><ShieldCheck size={21} /></span>
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#3568a8]/10 text-[#3568a8]"><ShieldCheck size={21} /></span>
                 <div>
                   <h3 className="font-black">Owner access</h3>
-                  <p className="text-xs text-[#81988a]">Use the email and password configured in Vercel.</p>
+                  <p className="text-xs text-[#718096]">Use the email and password configured in Vercel.</p>
                 </div>
               </div>
-              <label className="block text-xs font-bold text-[#a8bdb0]">
+              <label className="block text-xs font-bold text-[#64748b]">
                 Email
-                <input name="email" type="email" required autoComplete="username" className="mt-2 w-full rounded-xl border border-white/10 bg-[#071812] px-4 py-3 text-white outline-none focus:border-[#8ce6aa]/60" />
+                <input name="email" type="email" required autoComplete="username" className="mt-2 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-4 py-3 text-slate-900 outline-none focus:border-[#3568a8]/60" />
               </label>
-              <label className="mt-4 block text-xs font-bold text-[#a8bdb0]">
+              <label className="mt-4 block text-xs font-bold text-[#64748b]">
                 Password
-                <input name="password" type="password" required minLength={12} autoComplete="current-password" className="mt-2 w-full rounded-xl border border-white/10 bg-[#071812] px-4 py-3 text-white outline-none focus:border-[#8ce6aa]/60" />
+                <input name="password" type="password" required minLength={12} autoComplete="current-password" className="mt-2 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-4 py-3 text-slate-900 outline-none focus:border-[#3568a8]/60" />
               </label>
-              <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#8ce6aa] px-4 py-3 text-sm font-black text-[#071812] hover:bg-[#a3efbb]">
+              <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#3568a8] px-4 py-3 text-sm font-black text-white hover:bg-[#4d7db8]">
                 Open private portfolio <ChevronRight size={16} />
               </button>
             </form>
@@ -1221,18 +1221,18 @@ export function BondPlanner() {
                 <Metric label="Recorded bonds" value={String(purchases.length)} />
               </div>
               <div className="mt-6 grid gap-6 xl:grid-cols-[420px_1fr]">
-                <form onSubmit={savePurchase} className="rounded-3xl border border-white/10 bg-black/10 p-5">
+                <form onSubmit={savePurchase} className="rounded-3xl border border-slate-200 bg-white/70 p-5">
                   <div className="flex items-center gap-3">
-                    <Plus size={18} className="text-[#8ce6aa]" />
+                    <Plus size={18} className="text-[#3568a8]" />
                     <h3 className="font-black">Add a purchase</h3>
                   </div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <label className="text-[11px] font-bold text-[#a8bdb0]">
+                    <label className="text-[11px] font-bold text-[#64748b]">
                       Tenor years
                       <select
                         value={purchase.tenorYears}
                         onChange={(event) => setPurchase((current) => ({ ...current, tenorYears: Number(event.target.value) }))}
-                        className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-2.5 text-sm text-white outline-none focus:border-[#8ce6aa]/60"
+                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#3568a8]/60"
                       >
                         {TREASURY_BOND_TENORS.map((tenor) => (
                           <option key={tenor} value={tenor}>{tenor} years</option>
@@ -1251,7 +1251,7 @@ export function BondPlanner() {
                       const current = purchase[key as keyof BondPurchaseInput];
                       const displayValue = key === "couponRate" ? Number(current) * 100 : current;
                       return (
-                        <label key={key} className={`text-[11px] font-bold text-[#a8bdb0] ${key === "bondName" || key === "isin" ? "sm:col-span-2" : ""}`}>
+                        <label key={key} className={`text-[11px] font-bold text-[#64748b] ${key === "bondName" || key === "isin" ? "sm:col-span-2" : ""}`}>
                           {label}
                           <input
                             type={type}
@@ -1281,33 +1281,33 @@ export function BondPlanner() {
                                 [key]: key === "couponRate" ? Number(value) / 100 : value,
                               }));
                             }}
-                            className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#071812] px-3 py-2.5 text-sm text-white outline-none focus:border-[#8ce6aa]/60"
+                            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#3568a8]/60"
                           />
                         </label>
                       );
                     })}
-                    <label className="sm:col-span-2 text-[11px] font-bold text-[#a8bdb0]">
+                    <label className="sm:col-span-2 text-[11px] font-bold text-[#64748b]">
                       Notes
-                      <textarea value={purchase.notes} maxLength={1000} onChange={(event) => setPurchase((current) => ({ ...current, notes: event.target.value }))} className="mt-1.5 min-h-20 w-full resize-y rounded-xl border border-white/10 bg-[#071812] px-3 py-2.5 text-sm text-white outline-none focus:border-[#8ce6aa]/60" />
+                      <textarea value={purchase.notes} maxLength={1000} onChange={(event) => setPurchase((current) => ({ ...current, notes: event.target.value }))} className="mt-1.5 min-h-20 w-full resize-y rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#3568a8]/60" />
                     </label>
                   </div>
-                  <button disabled={savingPurchase} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#8ce6aa] px-4 py-3 text-sm font-black text-[#071812] disabled:opacity-50">
+                  <button disabled={savingPurchase} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#3568a8] px-4 py-3 text-sm font-black text-white disabled:opacity-50">
                     <Database size={16} /> {savingPurchase ? "Saving…" : "Save to Neon"}
                   </button>
                 </form>
 
-                <div className="bond-scrollbar overflow-x-auto rounded-3xl border border-white/10">
+                <div className="bond-scrollbar overflow-x-auto rounded-3xl border border-slate-200">
                   {purchases.length === 0 ? (
                     <div className="grid min-h-64 place-items-center p-8 text-center">
                       <div>
-                        <WalletCards className="mx-auto text-[#81988a]" />
+                        <WalletCards className="mx-auto text-[#718096]" />
                         <p className="mt-3 font-bold">No purchases recorded yet</p>
-                        <p className="mt-1 text-xs text-[#81988a]">Add your first treasury bond using the form.</p>
+                        <p className="mt-1 text-xs text-[#718096]">Add your first treasury bond using the form.</p>
                       </div>
                     </div>
                   ) : (
                     <table className="w-full min-w-[760px] border-collapse text-left">
-                      <thead className="bg-[#123127] text-[10px] uppercase tracking-[0.14em] text-[#a8bdb0]">
+                      <thead className="bg-[#eef2f7] text-[10px] uppercase tracking-[0.14em] text-[#64748b]">
                         <tr>
                           <th className="px-4 py-3">Bond</th>
                           <th className="px-4 py-3">Invested</th>
@@ -1321,17 +1321,17 @@ export function BondPlanner() {
                         {purchases.map((item) => {
                           const netRate = item.couponRate * (1 - WITHHOLDING_TAX_RATE);
                           return (
-                            <tr key={item.id} className="border-t border-white/[0.07] text-xs">
+                            <tr key={item.id} className="border-t border-slate-200 text-xs">
                               <td className="px-4 py-4">
                                 <strong className="block text-sm">{item.bondName}</strong>
-                                <span className="text-[#81988a]">{item.isin || item.purchaseDate}</span>
+                                <span className="text-[#718096]">{item.isin || item.purchaseDate}</span>
                               </td>
                               <td className="px-4 py-4 font-bold">{formatRwf(item.amountInvested)}</td>
-                              <td className="px-4 py-4 text-[#8ce6aa]">{formatPercent(netRate)}</td>
+                              <td className="px-4 py-4 text-[#3568a8]">{formatPercent(netRate)}</td>
                               <td className="px-4 py-4">{formatRwf(item.amountInvested * netRate / item.couponFrequency)}</td>
-                              <td className="px-4 py-4 text-[#a8bdb0]">{item.maturityDate}</td>
+                              <td className="px-4 py-4 text-[#64748b]">{item.maturityDate}</td>
                               <td className="px-4 py-4">
-                                <button onClick={() => removePurchase(item.id)} aria-label={`Delete ${item.bondName}`} className="rounded-lg p-2 text-[#81988a] hover:bg-red-300/10 hover:text-red-200">
+                                <button onClick={() => removePurchase(item.id)} aria-label={`Delete ${item.bondName}`} className="rounded-lg p-2 text-[#718096] hover:bg-red-300/10 hover:text-red-200">
                                   <Trash2 size={15} />
                                 </button>
                               </td>
@@ -1351,9 +1351,9 @@ export function BondPlanner() {
       <section id="guide" className="scroll-mt-24 mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
         <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#8ce6aa]">Model guide</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#3568a8]">Model guide</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Useful, transparent, intentionally conservative.</h2>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-[#a8bdb0]">
+            <p className="mt-5 max-w-xl text-sm leading-7 text-[#64748b]">
               This planner follows the spreadsheet logic: contributions enter monthly,
               coupons are based on the opening portfolio in payment months, tax is
               deducted before reinvestment, and passive income is estimated from the
@@ -1369,31 +1369,31 @@ export function BondPlanner() {
               ["Projection only", "This model is educational and does not guarantee future returns."],
               ["Privacy boundary", "Simulation inputs remain on your device; only authenticated purchases are stored in Neon."],
             ].map(([title, copy], index) => (
-              <article key={title} className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
-                <span className="text-[10px] font-mono text-[#8ce6aa]">0{index + 1}</span>
+              <article key={title} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <span className="text-[10px] font-mono text-[#3568a8]">0{index + 1}</span>
                 <h3 className="mt-3 font-black">{title}</h3>
-                <p className="mt-2 text-xs leading-5 text-[#a8bdb0]">{copy}</p>
+                <p className="mt-2 text-xs leading-5 text-[#64748b]">{copy}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-4 py-8 text-xs text-[#81988a] md:flex-row md:px-8">
+      <footer className="border-t border-slate-200">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-4 py-8 text-xs text-[#718096] md:flex-row md:px-8">
           <span>Rwanda Treasury Bond Planner · RWF projections</span>
-          <span>Built by <Link href="https://orestegabo.dev" className="font-bold text-[#a8bdb0] hover:text-[#8ce6aa]">Oreste Gabo</Link> · Not financial advice</span>
+          <span>Built by <Link href="https://orestegabo.dev" className="font-bold text-[#64748b] hover:text-[#3568a8]">Oreste Gabo</Link> · Not financial advice</span>
         </div>
       </footer>
 
-      <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-white/10 bg-[#071812]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
+      <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-slate-200 bg-[#f7f5ef]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
         {[
           ["simulator", Sparkles],
           ["projection", TrendingUp],
           ["portfolio", WalletCards],
           ["guide", CalendarDays],
         ].map(([section, Icon]) => (
-          <button key={String(section)} onClick={() => goTo(section as Section)} aria-label={String(section)} className={`rounded-xl p-3 ${activeSection === section ? "bg-[#8ce6aa] text-[#071812]" : "text-[#81988a]"}`}>
+          <button key={String(section)} onClick={() => goTo(section as Section)} aria-label={String(section)} className={`rounded-xl p-3 ${activeSection === section ? "bg-[#3568a8] text-white" : "text-[#718096]"}`}>
             <Icon size={18} />
           </button>
         ))}
