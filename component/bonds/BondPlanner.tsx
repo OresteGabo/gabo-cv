@@ -1037,9 +1037,9 @@ export function BondPlanner() {
           </p>
         </div>
 
-        <div className="bond-scrollbar mt-5 overflow-x-auto rounded-3xl border border-white/10">
+        <div className="bond-scrollbar mt-5 max-h-[72vh] overflow-auto rounded-3xl border border-white/10 lg:max-h-none lg:overflow-visible">
           <table className="w-full min-w-[940px] border-collapse text-left">
-            <thead className="bg-[#123127] text-[10px] uppercase tracking-[0.15em] text-[#a8bdb0]">
+            <thead className="sticky top-0 z-30 bg-[#123127] text-[10px] uppercase tracking-[0.15em] text-[#a8bdb0] shadow-[0_1px_0_rgba(255,255,255,0.12)] lg:top-[73px]">
               <tr>
                 <th className="px-5 py-4">Year</th>
                 <th className="px-5 py-4">Invested this year</th>
@@ -1091,9 +1091,9 @@ export function BondPlanner() {
                     {isExpanded && (
                       <tr className="border-t border-[#8ce6aa]/10 bg-[#061510]">
                         <td colSpan={6} className="p-0">
-                          <div className="overflow-x-auto px-4 py-4 md:px-6">
+                          <div className="overflow-x-auto px-4 py-4 md:px-6 lg:overflow-visible">
                             <table className="w-full min-w-[960px] border-collapse text-left">
-                              <thead className="text-[9px] uppercase tracking-[0.14em] text-[#81988a]">
+                              <thead className="sticky top-[49px] z-20 bg-[#061510] text-[9px] uppercase tracking-[0.14em] text-[#81988a] shadow-[0_1px_0_rgba(255,255,255,0.08)] lg:top-[122px]">
                                 <tr>
                                   <th className="px-3 py-2">Month</th>
                                   <th className="px-3 py-2">Suggested date</th>
