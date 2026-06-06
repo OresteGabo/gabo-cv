@@ -10,8 +10,8 @@ export function GET() {
       start_url: "/",
       scope: "/",
       display: "standalone",
-      background_color: "#071812",
-      theme_color: "#071812",
+      background_color: "#f7f5ef",
+      theme_color: "#f7f5ef",
       icons: [
         {
           src: "/apple-icon.png",
