@@ -3,6 +3,7 @@
 import {
   ArrowDownToLine,
   BarChart3,
+  BookOpenText,
   CalendarDays,
   ChevronDown,
   ChevronRight,
@@ -66,28 +67,29 @@ const EMPTY_PURCHASE: BondPurchaseInput = {
   issuer: "Government of Rwanda",
   currency: "RWF",
   market: "primary",
-  purchaseDate: "",
-  settlementDate: "",
-  bondName: "",
-  isin: "",
-  tenorYears: 5,
-  faceValue: 100_000,
+  purchaseDate: "2026-06-08",
+  settlementDate: "2026-06-10",
+  bondName: "FXD1/2026/10Yrs",
+  isin: "RW000A4EN3L3",
+  tenorYears: 10,
+  faceValue: 1_000_000,
   pricePercent: 100,
   accruedInterestPaid: 0,
   feesPaid: 0,
-  amountInvested: 100_000,
+  amountInvested: 1_000_000,
   couponRate: 0.12,
   withholdingTaxRate: WITHHOLDING_TAX_RATE,
-  maturityDate: "",
-  firstCouponDate: "",
-  couponDates: [],
+  maturityDate: "2036-01-04",
+  firstCouponDate: "2026-07-04",
+  couponDates: generateSemiannualCouponDates("2026-07-04", "2036-01-04"),
   couponFrequency: 2,
   scheduleConfidence: "confirmed",
   broker: "BK Capital",
-  accountReference: "",
-  sourceUrl: "",
+  accountReference: "BK-EXAMPLE-2026-001",
+  sourceUrl: "https://rse.rw/fixed-income-board",
   status: "active",
-  notes: "",
+  notes:
+    "Example transaction for form guidance. Bond identity, ISIN, maturity and 12% coupon come from RSE. Trade dates, RWF 1,000,000 face value, price, account reference and coupon dates are illustrative and must be replaced with the BK Capital confirmation or prospectus before saving.",
 };
 
 function generateSemiannualCouponDates(
@@ -1043,7 +1045,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
 
           <nav className="hidden items-center gap-1 lg:flex">
             <NavLink active={false} href="/bonds" icon={<ShieldCheck size={15} />}>
-              Learn
+              Market
+            </NavLink>
+            <NavLink active={false} href="/bonds/education" icon={<BookOpenText size={15} />}>
+              Education
             </NavLink>
             <NavLink active={view === "simulator"} href="/bonds/simulator" icon={<Sparkles size={15} />}>
               Simulator
@@ -1074,7 +1079,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
         </div>
         {menuOpen && (
           <nav className="grid grid-cols-2 gap-2 border-t border-outline/10 p-3 lg:hidden">
-            <NavLink active={false} href="/bonds" icon={<ShieldCheck size={15} />}>Learn</NavLink>
+            <NavLink active={false} href="/bonds" icon={<ShieldCheck size={15} />}>Market</NavLink>
+            <NavLink active={false} href="/bonds/education" icon={<BookOpenText size={15} />}>Education</NavLink>
             <NavLink active={view === "simulator"} href="/bonds/simulator" icon={<Sparkles size={15} />}>Simulator</NavLink>
             <NavLink active={view === "portfolio"} href="/bonds/portfolio" icon={<WalletCards size={15} />}>Portfolio</NavLink>
           </nav>
@@ -2088,6 +2094,20 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                     </div>
                   </div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {!editingPurchaseId && (
+                      <div className="sm:col-span-2 rounded-2xl border border-tertiary/20 bg-tertiary/5 p-4">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-tertiary">
+                          Prefilled example · Do not save unchanged
+                        </p>
+                        <p className="mt-2 text-[10px] leading-4 text-on-surface-variant">
+                          The bond name, ISIN, maturity, tenor and 12% coupon are from
+                          the RSE Fixed Income Board. Purchase dates, settlement,
+                          principal, price, reference and generated coupon dates are
+                          examples. Replace them with your BK Capital confirmation and
+                          the official prospectus.
+                        </p>
+                      </div>
+                    )}
                     <div className="sm:col-span-2 rounded-2xl border border-primary/15 bg-primary/5 p-4">
                       <div className="flex flex-wrap items-center gap-2">
                         {[
@@ -2513,6 +2533,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-outline/10 bg-[var(--md-sys-color-background)]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
         <Link href="/bonds" aria-label="Learn about bonds" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
           <ShieldCheck size={18} />
+        </Link>
+        <Link href="/bonds/education" aria-label="Open bond education" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
+          <BookOpenText size={18} />
         </Link>
         <Link href="/bonds/simulator" aria-label="Open simulator" className={`rounded-xl p-3 ${view === "simulator" ? "bg-primary text-on-primary" : "text-[var(--md-sys-color-outline)]"}`}>
           <TrendingUp size={18} />
