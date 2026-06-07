@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-  title: "Rwanda Treasury Bond Planner | Gabo",
+  title: "Rwanda Treasury Bonds | Gabo",
   description:
-    "Model Rwanda Treasury Bond contributions, net coupons, reinvestment, milestones, and long-term passive income.",
+    "Learn how Rwanda Treasury Bonds work, model long-term strategies, and privately track real purchases.",
   metadataBase: new URL("https://bonds.orestegabo.dev"),
   manifest: "/bonds/manifest.webmanifest",
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   openGraph: {
-    title: "Rwanda Treasury Bond Planner",
+    title: "Rwanda Treasury Bonds",
     description:
-      "A transparent, mobile-first simulator for long-term Rwanda Treasury Bond portfolios.",
+      "Clear information, transparent simulations, and private tracking for Rwanda Treasury Bonds.",
     url: "https://bonds.orestegabo.dev",
     siteName: "Rwanda Treasury Bond Planner",
     type: "website",
@@ -19,8 +19,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7f5ef",
-  colorScheme: "light",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fff9ee" },
+    { media: "(prefers-color-scheme: dark)", color: "#15130b" },
+  ],
+  colorScheme: "light dark",
 };
 
 export default function BondsLayout({
