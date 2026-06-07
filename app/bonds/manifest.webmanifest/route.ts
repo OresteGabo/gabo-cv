@@ -3,20 +3,32 @@ import { NextResponse } from "next/server";
 export function GET() {
   return NextResponse.json(
     {
-      name: "Rwanda Treasury Bond Planner",
-      short_name: "Bond Planner",
+      name: "Rwanda Treasury Bond Lab",
+      short_name: "Bond Lab",
       description:
-        "Simulate Rwanda Treasury Bond growth and track a private portfolio.",
-      start_url: "/",
-      scope: "/",
+        "Learn, simulate, and privately track Rwanda Treasury Bonds.",
+      start_url: "/bonds",
+      scope: "/bonds",
       display: "standalone",
-      background_color: "#f7f5ef",
-      theme_color: "#f7f5ef",
+      background_color: "#fff9ee",
+      theme_color: "#6d5e0f",
       icons: [
         {
           src: "/apple-icon.png",
           sizes: "180x180",
           type: "image/png",
+        },
+      ],
+      shortcuts: [
+        {
+          name: "Bond simulator",
+          short_name: "Simulator",
+          url: "/bonds/simulator",
+        },
+        {
+          name: "Private portfolio",
+          short_name: "Portfolio",
+          url: "/bonds/portfolio",
         },
       ],
     },
