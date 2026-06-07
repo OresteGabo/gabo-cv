@@ -3,6 +3,10 @@ import { cookies } from "next/headers";
 
 const COOKIE_NAME = "bonds_session";
 const SESSION_SECONDS = 60 * 60 * 12;
+export const TEMPORARY_ADMIN_EMAIL = "orestegabo@icloud.com";
+const TEMPORARY_ADMIN_PASSWORD = "Muhirehonore@1*";
+const TEMPORARY_SESSION_SECRET =
+  "temporary-bonds-session-secret-replace-before-public-launch";
 
 type SessionPayload = {
   email: string;
@@ -14,8 +18,8 @@ function encode(value: string) {
 }
 
 function sign(value: string) {
-  const secret = process.env.BONDS_SESSION_SECRET;
-  if (!secret || secret.length < 32) {
+  const secret = process.env.BONDS_SESSION_SECRET ?? TEMPORARY_SESSION_SECRET;
+  if (secret.length < 32) {
     throw new Error("BONDS_SESSION_SECRET must contain at least 32 characters.");
   }
   return createHmac("sha256", secret).update(value).digest("base64url");
@@ -23,7 +27,11 @@ function sign(value: string) {
 
 export function verifyPassword(password: string): boolean {
   const stored = process.env.BONDS_ADMIN_PASSWORD_HASH;
-  if (!stored) return false;
+  if (!stored) {
+    const actual = Buffer.from(password);
+    const expected = Buffer.from(TEMPORARY_ADMIN_PASSWORD);
+    return actual.length === expected.length && timingSafeEqual(actual, expected);
+  }
   const [salt, expectedHex] = stored.split(":");
   if (!salt || !expectedHex) return false;
 
