@@ -21,6 +21,11 @@ export function GET() {
       ],
       shortcuts: [
         {
+          name: "Bond education",
+          short_name: "Education",
+          url: "/bonds/education",
+        },
+        {
           name: "Bond simulator",
           short_name: "Simulator",
           url: "/bonds/simulator",
