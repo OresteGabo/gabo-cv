@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   createSessionToken,
   sessionCookie,
+  TEMPORARY_ADMIN_EMAIL,
   verifyPassword,
 } from "@/lib/bonds/auth";
 import { isSameOriginRequest } from "@/lib/bonds/request";
@@ -45,7 +46,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const configuredEmail = process.env.BONDS_ADMIN_EMAIL?.trim().toLowerCase();
+  const configuredEmail = (
+    process.env.BONDS_ADMIN_EMAIL ?? TEMPORARY_ADMIN_EMAIL
+  )
+    .trim()
+    .toLowerCase();
   const email = body.email?.trim().toLowerCase();
   if (
     !configuredEmail ||
