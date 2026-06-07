@@ -1,0 +1,1010 @@
+import {
+  ArrowRight,
+  BadgePercent,
+  BookOpenText,
+  Calculator,
+  CalendarClock,
+  CircleDollarSign,
+  ExternalLink,
+  Landmark,
+  ReceiptText,
+  Scale,
+  Search,
+  ShieldAlert,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
+import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
+
+const anchors = [
+  {
+    id: "physics",
+    number: "01",
+    label: "Core mechanics",
+    detail: "Price, yield, accrued interest, and tax",
+  },
+  {
+    id: "bad-deals",
+    number: "02",
+    label: "Bad deals",
+    detail: "Premium and reinvestment traps",
+  },
+  {
+    id: "alpha-deals",
+    number: "03",
+    label: "Relative value",
+    detail: "Discounts, reopenings, and screening",
+  },
+];
+
+function LessonHeader({
+  eyebrow,
+  title,
+  introduction,
+}: {
+  eyebrow: string;
+  title: string;
+  introduction: string;
+}) {
+  return (
+    <header className="max-w-4xl">
+      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--md-sys-color-primary)]">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-3xl font-black tracking-tight text-on-surface md:text-5xl">
+        {title}
+      </h2>
+      <p className="mt-5 text-base leading-8 text-on-surface-variant">
+        {introduction}
+      </p>
+    </header>
+  );
+}
+
+function LessonCard({
+  icon,
+  kicker,
+  title,
+  children,
+}: {
+  icon: ReactNode;
+  kicker: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <article className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-6 shadow-sm backdrop-blur-xl md:p-8">
+      <div className="flex items-start gap-4">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-[var(--md-sys-color-primary)]">
+          {icon}
+        </span>
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--md-sys-color-primary)]">
+            {kicker}
+          </p>
+          <h3 className="mt-1 text-xl font-black tracking-tight text-on-surface md:text-2xl">
+            {title}
+          </h3>
+        </div>
+      </div>
+      <div className="mt-6 space-y-5 text-sm leading-7 text-on-surface-variant md:text-[15px] md:leading-8">
+        {children}
+      </div>
+    </article>
+  );
+}
+
+function Equation({
+  tone = "primary",
+  title,
+  children,
+}: {
+  tone?: "primary" | "error";
+  title: string;
+  children: ReactNode;
+}) {
+  const classes =
+    tone === "error"
+      ? "border-error/20 bg-error-container/10"
+      : "border-primary/20 bg-primary-container/10";
+
+  return (
+    <aside className={`rounded-3xl border p-5 md:p-6 ${classes}`}>
+      <p
+        className={`text-[10px] font-black uppercase tracking-[0.18em] ${
+          tone === "error"
+            ? "text-error"
+            : "text-[var(--md-sys-color-primary)]"
+        }`}
+      >
+        {title}
+      </p>
+      <div className="mt-3 text-sm leading-7 text-on-surface md:text-[15px]">
+        {children}
+      </div>
+    </aside>
+  );
+}
+
+export function BondEducation() {
+  return (
+    <main className="bond-app relative min-h-screen overflow-x-clip bg-background font-sans text-on-background">
+      <ImigongoBackground />
+
+      <header className="sticky top-0 z-50 border-b border-outline/5 bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
+          <div className="flex items-center gap-4">
+            <span className="hidden sm:block">
+              <GaboBrand />
+            </span>
+            <span className="sm:hidden">
+              <GaboBrand compact />
+            </span>
+            <span className="hidden h-5 w-px bg-outline/20 sm:block" />
+            <span className="hidden text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant sm:block">
+              Bond Education
+            </span>
+          </div>
+          <nav className="flex items-center gap-1 sm:gap-2">
+            <Link
+              href="/bonds"
+              className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container md:block"
+            >
+              Market
+            </Link>
+            <Link
+              href="/bonds/simulator"
+              className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block"
+            >
+              Simulator
+            </Link>
+            <Link
+              href="/bonds/portfolio"
+              className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block"
+            >
+              Portfolio
+            </Link>
+            <BondThemeToggle />
+          </nav>
+        </div>
+      </header>
+
+      <section className="relative mx-auto max-w-7xl px-6 pb-16 pt-16 md:px-8 md:pb-24 md:pt-24">
+        <div className="grid items-end gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-outline/10 bg-surface-container-lowest/70 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--md-sys-color-primary)]">
+              <BookOpenText size={14} />
+              Fixed-income field guide
+            </div>
+            <h1 className="mt-7 max-w-5xl text-5xl font-black uppercase leading-[0.9] tracking-tighter sm:text-6xl md:text-7xl">
+              Learn to read
+              <span className="block text-[var(--md-sys-color-primary)]">
+                the deal, not the coupon.
+              </span>
+            </h1>
+            <p className="mt-7 max-w-3xl text-lg leading-8 text-on-surface-variant">
+              A bond is a dated sequence of cash flows. Its coupon is only one
+              ingredient. The price you pay, accrued interest, tax, remaining
+              payment dates, maturity value, transaction costs, and the rate at
+              which future cash can be reinvested determine whether the
+              investment is genuinely attractive. This guide develops those
+              mechanics from first principles and applies them to Rwanda
+              Treasury bonds traded or displayed through the Rwanda Stock
+              Exchange.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            {[
+              {
+                label: "Price",
+                value: "What leaves today",
+                copy: "Clean price, accrued interest, fees, and settlement cash.",
+              },
+              {
+                label: "Cash flows",
+                value: "What returns later",
+                copy: "After-tax coupons, sale proceeds, and principal redemption.",
+              },
+              {
+                label: "Time",
+                value: "What makes them comparable",
+                copy: "YTM converts differently timed cash flows into one annualized rate.",
+              },
+            ].map((item) => (
+              <article
+                key={item.label}
+                className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5 backdrop-blur-xl"
+              >
+                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-on-surface-variant">
+                  {item.label}
+                </p>
+                <p className="mt-2 font-black text-[var(--md-sys-color-primary)]">
+                  {item.value}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-on-surface-variant">
+                  {item.copy}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="sticky top-[57px] z-40 border-y border-outline/10 bg-background/92 backdrop-blur-xl lg:hidden">
+        <nav
+          aria-label="Education sections"
+          className="bond-scrollbar mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3"
+        >
+          {anchors.map((anchor) => (
+            <a
+              key={anchor.id}
+              href={`#${anchor.id}`}
+              className="shrink-0 rounded-full border border-outline/10 bg-surface-container-lowest/70 px-4 py-2 text-[10px] font-black text-on-surface-variant"
+            >
+              {anchor.number} · {anchor.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 pb-24 md:px-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-14">
+        <aside className="hidden lg:block">
+          <nav
+            aria-label="Education sections"
+            className="sticky top-28 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-3 shadow-sm backdrop-blur-xl"
+          >
+            <p className="px-3 pb-3 pt-2 text-[9px] font-black uppercase tracking-[0.18em] text-[var(--md-sys-color-primary)]">
+              On this page
+            </p>
+            {anchors.map((anchor) => (
+              <a
+                key={anchor.id}
+                href={`#${anchor.id}`}
+                className="group flex gap-3 rounded-2xl px-3 py-3 transition hover:bg-primary/10"
+              >
+                <span className="font-mono text-[10px] font-black text-[var(--md-sys-color-primary)]">
+                  {anchor.number}
+                </span>
+                <span>
+                  <span className="block text-xs font-black text-on-surface">
+                    {anchor.label}
+                  </span>
+                  <span className="mt-1 block text-[10px] leading-4 text-on-surface-variant">
+                    {anchor.detail}
+                  </span>
+                </span>
+              </a>
+            ))}
+            <div className="mt-3 border-t border-outline/10 p-3">
+              <p className="text-[10px] leading-5 text-on-surface-variant">
+                Educational analysis only. Confirm live prices, settlement
+                amounts, tax treatment, and security terms with the official
+                prospectus and your broker.
+              </p>
+            </div>
+          </nav>
+        </aside>
+
+        <div className="min-w-0 space-y-24">
+          <section id="physics" className="scroll-mt-36">
+            <LessonHeader
+              eyebrow="01 · Deep-dive glossary and core physics"
+              title="Every bond return begins with price, cash flow, and time."
+              introduction="The most common analytical error is to compare bonds by coupon rate as though the coupon were a savings-account interest rate applied to the money paid. It is not. The coupon is applied to face value, while the investor may pay more or less than face value and may acquire the bond halfway through its payment cycle. A correct comparison reconstructs the complete cash-flow schedule and measures the return on the actual settlement amount."
+            />
+
+            <div className="mt-9 space-y-5">
+              <LessonCard
+                icon={<Scale size={20} />}
+                kicker="Pricing foundation"
+                title="Face Value (Par) vs. Market Price"
+              >
+                <p>
+                  <strong className="text-on-surface">Face value</strong>, also
+                  called par value or principal, is the contractual amount on
+                  which the coupon is calculated and the amount the issuer is
+                  expected to repay at maturity. If you own RWF 1,000,000 face
+                  value of a 12% fixed-rate Treasury bond, the contractual gross
+                  coupon is RWF 120,000 per year regardless of whether you paid
+                  RWF 970,000, RWF 1,000,000, or RWF 1,070,000 to acquire that
+                  face value in the secondary market.
+                </p>
+                <p>
+                  Bond prices are commonly expressed as a percentage of par.
+                  When an RSE or broker quote is identified as a clean price,
+                  100 means RWF 100 of principal costs RWF 100 before accrued
+                  interest and transaction charges. A clean price of 97 is a
+                  discount: RWF 1,000,000 face value has a clean market cost of
+                  RWF 970,000. A clean price of 107 is a premium: the same face
+                  value has a clean market cost of RWF 1,070,000. The coupon
+                  amount remains tied to RWF 1,000,000 face value, not to the
+                  market cash paid.
+                </p>
+                <p>
+                  The maturity payment pulls every surviving bond toward par.
+                  A discount buyer receives more principal than the clean price
+                  paid, creating a capital accretion if the bond is held to
+                  maturity and the issuer pays as promised. A premium buyer
+                  receives less principal than the clean price paid, creating a
+                  capital loss at redemption. That loss is not necessarily a
+                  bad outcome because the bond may pay above-market coupons, but
+                  it must be included when measuring return. The direction of
+                  the pull-to-par effect is why market price and yield move in
+                  opposite directions for otherwise unchanged cash flows.
+                </p>
+                <Equation title="Translate a quoted price into clean cash">
+                  <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                    Clean consideration = Face value x Quoted price / 100
+                  </p>
+                  <p className="mt-2">
+                    For RWF 1,000,000 face at 107, the clean consideration is
+                    RWF 1,070,000. That is not yet the final settlement amount:
+                    accrued interest and broker or market charges may still be
+                    added.
+                  </p>
+                </Equation>
+              </LessonCard>
+
+              <LessonCard
+                icon={<BadgePercent size={20} />}
+                kicker="Return measurement"
+                title="Coupon Rate vs. Yield to Maturity (YTM)"
+              >
+                <p>
+                  The <strong className="text-on-surface">coupon rate</strong> is
+                  a contractual property of the bond. It determines coupon cash
+                  by multiplying the annual coupon percentage by face value.
+                  With semiannual payments, a 13.5% bond with RWF 1,000,000 face
+                  value pays RWF 67,500 gross every six months. The rate does
+                  not adjust merely because the bond later trades above or
+                  below 100.
+                </p>
+                <p>
+                  <strong className="text-on-surface">Yield to maturity</strong>{" "}
+                  is a market-dependent internal rate of return. It is the
+                  discount rate that makes the present value of all remaining
+                  coupons plus the maturity principal equal to the price paid.
+                  YTM therefore incorporates the coupon size, purchase price,
+                  remaining payment dates, and pull to par. A high coupon bond
+                  bought at a sufficiently high premium can have a lower YTM
+                  than a lower coupon bond bought at par or at a discount.
+                </p>
+                <p>
+                  Quoted YTM is not a promise that the investor will realize
+                  exactly that annual compound return. It normally assumes the
+                  bond is held to maturity, every contractual payment occurs on
+                  time, and interim coupons can be reinvested at a rate
+                  consistent with the calculated yield. Selling early replaces
+                  the known maturity payment with an unknown sale price.
+                  Reinvesting coupons at lower rates reduces realized compound
+                  return even when the issuer pays every coupon exactly as
+                  scheduled.
+                </p>
+                <Equation title="The comparison equation">
+                  <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                    Dirty price = Sum of [Coupon_t / (1 + y/2)^t] + [Par / (1 + y/2)^N]
+                  </p>
+                  <p className="mt-2">
+                    For a semiannual bond, the model solves for annualized yield{" "}
+                    <span className="font-mono">y</span>. A net-of-tax version
+                    reduces coupon cash flows by applicable withholding tax
+                    before solving. Principal repayment should not be casually
+                    reduced by coupon withholding tax because it is a return of
+                    principal rather than coupon interest.
+                  </p>
+                </Equation>
+              </LessonCard>
+
+              <LessonCard
+                icon={<ReceiptText size={20} />}
+                kicker="Settlement mechanics"
+                title="Accrued Interest and Clean vs. Dirty Price"
+              >
+                <p>
+                  Coupon interest is earned economically day by day even though
+                  cash is distributed only on scheduled dates. When a seller
+                  transfers a bond between coupon dates, the seller has held the
+                  security for part of the current coupon period. The buyer will
+                  normally receive the entire next coupon from the payment
+                  system, so settlement compensates the seller for the portion
+                  accumulated before the buyer owned the bond. That compensation
+                  is accrued interest.
+                </p>
+                <p>
+                  The <strong className="text-on-surface">clean price</strong>{" "}
+                  excludes accrued interest and makes market quotations easier
+                  to compare across days. The{" "}
+                  <strong className="text-on-surface">dirty price</strong>, also
+                  called the full price, includes accrued interest. The cash
+                  required at settlement is based on the dirty amount and may
+                  also include commission, exchange charges, custody charges,
+                  or other items shown on the broker confirmation. A listing at
+                  101.50 therefore does not necessarily mean the bank account
+                  will be debited by exactly 101.50% of face value.
+                </p>
+                <p>
+                  The exact accrued-interest calculation depends on the
+                  prospectus day-count convention, coupon-period dates, and
+                  settlement date. A simplified actual-days illustration helps
+                  explain the economics: assume RWF 1,000,000 face, a 12% annual
+                  coupon, a RWF 60,000 gross semiannual coupon, and 90 elapsed
+                  days in a 182-day coupon period. Approximate accrued interest
+                  is RWF 60,000 x 90 / 182, or RWF 29,670. If the clean price is
+                  101.50, clean consideration is RWF 1,015,000 and approximate
+                  dirty consideration is RWF 1,044,670 before fees.
+                </p>
+                <Equation title="Why the next coupon is not free money">
+                  <p>
+                    If the buyer soon receives the full RWF 60,000 gross coupon,
+                    approximately RWF 29,670 of that economic value was already
+                    paid to the seller through accrued interest. Only the
+                    post-settlement portion belongs economically to the buyer&apos;s
+                    holding period. Treating the full next coupon as immediate
+                    profit would double count the pre-purchase accrual.
+                  </p>
+                </Equation>
+              </LessonCard>
+
+              <LessonCard
+                icon={<Landmark size={20} />}
+                kicker="Rwanda-specific tax"
+                title="Rwandan Sovereign Withholding Tax Treatment"
+              >
+                <p>
+                  Rwanda&apos;s Law No. 027/2022 of October 20, 2022 establishes a
+                  general 15% withholding framework for specified payments and
+                  then provides a reduced 5% rate for qualifying interest. The
+                  text includes interest derived from Treasury bonds with a
+                  maturity of at least three years. The law also contains a
+                  separate 5% rule for dividends and interest on securities
+                  listed on the capital market when the beneficiary is a
+                  resident taxpayer of Rwanda or another East African Community
+                  country. The 2023 and May 2025 amendments listed by RRA did
+                  not amend Article 60, where this Treasury-bond treatment
+                  appears.
+                </p>
+                <p>
+                  For a qualifying Rwanda Treasury bond modeled at a 5%
+                  withholding rate, a 12% gross coupon becomes an 11.4% annual
+                  coupon cash rate after withholding: 12% x 95%. On RWF
+                  1,000,000 face value, RWF 120,000 gross annual coupon becomes
+                  RWF 114,000 net, normally split according to the security&apos;s
+                  payment schedule. Tax reduces coupon cash; it does not change
+                  the bond&apos;s contractual coupon printed in the prospectus.
+                </p>
+                <p>
+                  The three-year wording should not be reinterpreted casually as
+                  a rolling test of remaining life. A bond originally issued as
+                  a qualifying longer-term Treasury bond may have fewer than
+                  three years left when it trades later. The tax result should
+                  be confirmed from the security classification, current law,
+                  broker treatment, and the investor&apos;s residence or taxpayer
+                  status rather than inferred only from today&apos;s maturity
+                  countdown. Short-term Treasury bills, which BNR describes as
+                  instruments with maturity of one year or less, do not satisfy
+                  the specific three-year Treasury-bond condition; other
+                  exemptions or taxpayer rules may nevertheless affect a
+                  particular investor.
+                </p>
+                <Equation tone="error" title="Tax is an input, not a permanent law of nature">
+                  <p>
+                    This page reflects official materials checked on June 7,
+                    2026. Tax legislation and administrative interpretation can
+                    change. Before committing capital, verify the current RRA
+                    law, the prospectus, and the withholding shown by BK Capital
+                    or the paying agent. The application uses 5% for its Rwanda
+                    Treasury-bond projections, but a projection is not a tax
+                    ruling.
+                  </p>
+                </Equation>
+              </LessonCard>
+            </div>
+          </section>
+
+          <section id="bad-deals" className="scroll-mt-36">
+            <LessonHeader
+              eyebrow="02 · Anatomy of a bad deal"
+              title="A large coupon can hide an ordinary or inferior return."
+              introduction="The coupon is visually prominent because it is printed in the bond name, prospectus, or market table. The economic return is less visible because it must be calculated from price and time. The following scenarios deliberately isolate the mechanisms that can make a high-coupon security underperform."
+            />
+
+            <div className="mt-9 space-y-5">
+              <LessonCard
+                icon={<TrendingDown size={20} />}
+                kicker="Worked scenario"
+                title="The Premium Price Trap: 13.5% Coupon at 107"
+              >
+                <p>
+                  Consider RWF 1,000,000 face value of a Treasury bond paying a
+                  13.5% annual coupon in two semiannual installments. The annual
+                  gross coupon is RWF 135,000, and each gross payment is RWF
+                  67,500. At 5% withholding, annual coupon cash falls to RWF
+                  128,250 and each net semiannual payment is RWF 64,125. Those
+                  figures look attractive when viewed without the purchase
+                  price.
+                </p>
+                <p>
+                  Now assume the bond has approximately 3.2 years remaining and
+                  trades at a clean price of 107. The investor pays RWF
+                  1,070,000 clean for RWF 1,000,000 face value, before accrued
+                  interest and fees. At maturity, the issuer repays RWF
+                  1,000,000, not RWF 1,070,000. The RWF 70,000 premium is
+                  gradually consumed through pull to par and becomes an
+                  explicit capital loss at redemption. The high coupons must
+                  first compensate for that loss before they produce excess
+                  return.
+                </p>
+
+                <div className="bond-scrollbar overflow-x-auto rounded-3xl border border-outline/10">
+                  <table className="w-full min-w-[680px] border-collapse text-left text-xs">
+                    <thead className="bg-surface-container text-[9px] uppercase tracking-[0.14em] text-on-surface-variant">
+                      <tr>
+                        <th className="px-4 py-3">Simplified comparison</th>
+                        <th className="px-4 py-3">13.5% bond</th>
+                        <th className="px-4 py-3">11.5% bond</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline/10">
+                      <tr>
+                        <td className="px-4 py-3 font-black">Clean price</td>
+                        <td className="px-4 py-3">107.00</td>
+                        <td className="px-4 py-3">100.00</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-3 font-black">Remaining life</td>
+                        <td className="px-4 py-3">Approx. 3.2 years</td>
+                        <td className="px-4 py-3">Approx. 3.2 years</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-3 font-black">Approx. gross YTM</td>
+                        <td className="px-4 py-3 font-black text-error">11.03%</td>
+                        <td className="px-4 py-3 font-black text-[var(--md-sys-color-primary)]">11.50%</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-3 font-black">Approx. after-tax YTM</td>
+                        <td className="px-4 py-3 font-black text-error">10.39%</td>
+                        <td className="px-4 py-3 font-black text-[var(--md-sys-color-primary)]">10.93%</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-3 font-black">Principal at maturity</td>
+                        <td className="px-4 py-3">RWF 1,000,000</td>
+                        <td className="px-4 py-3">RWF 1,000,000</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <p>
+                  Under a simplified seven-period semiannual model, excluding
+                  accrued interest and fees, the premium bond&apos;s approximate
+                  gross YTM is 11.03% and its approximate after-tax yield is
+                  10.39%. A par-priced 11.5% bond with the same simplified
+                  remaining term produces an 11.5% gross yield and approximately
+                  10.93% after coupon withholding. The supposedly more generous
+                  13.5% coupon therefore delivers the lower modeled return
+                  because the buyer overpays for the cash-flow stream and loses
+                  the premium at maturity.
+                </p>
+                <Equation tone="error" title="Critical analytical rule">
+                  <p className="font-black">
+                    Never rank a secondary-market bond by coupon rate before
+                    converting the quoted price and remaining cash-flow schedule
+                    into YTM.
+                  </p>
+                  <p className="mt-2">
+                    The exact result changes with settlement date, coupon dates,
+                    accrued interest, fees, tax status, and day-count method.
+                    The example demonstrates the mechanism; it is not a quote
+                    for a particular security.
+                  </p>
+                </Equation>
+              </LessonCard>
+
+              <LessonCard
+                icon={<CalendarClock size={20} />}
+                kicker="Horizon mismatch"
+                title="Reinvestment Risk and Short Remaining Duration"
+              >
+                <p>
+                  A bond can offer an excellent current YTM and still be a poor
+                  fit for a long compounding objective. A security with only 3.2
+                  years remaining returns principal relatively soon. The
+                  investor then has to find a new home for that principal. If
+                  market yields have fallen, the attractive rate cannot be
+                  extended merely because the original bond once paid 13%.
+                  This uncertainty is reinvestment risk.
+                </p>
+                <p>
+                  Assume RWF 10,000,000 face value of a par-priced 13% bond with
+                  3.2 years remaining. At 5% coupon withholding, its annual net
+                  coupon rate is 12.35%, producing RWF 1,235,000 of net coupon
+                  cash per full year while it remains outstanding. Compare it
+                  with a par-priced 11.8% bond that can maintain a 15-year
+                  exposure. The longer bond&apos;s annual net coupon rate is 11.21%,
+                  producing RWF 1,121,000. The short bond initially pays RWF
+                  114,000 more per year, but its rate disappears when principal
+                  returns.
+                </p>
+                <p>
+                  Suppose, purely as a stress scenario, that reinvestment
+                  opportunities after year 3.2 offer only 8% gross, or 7.6%
+                  after the same assumed withholding. A rough time-weighted rate
+                  over a 15-year objective becomes approximately 8.61% for the
+                  strategy that earns 12.35% for 3.2 years and 7.6% for the
+                  remaining 11.8 years. The 15-year 11.8% bond preserves an
+                  11.21% net coupon rate over the assumed horizon. This simple
+                  comparison omits changing prices and detailed coupon
+                  reinvestment, but it shows why a temporarily higher rate can
+                  lose to a durable rate lock.
+                </p>
+                <Equation tone="error" title="Duration is not automatically good or bad">
+                  <p>
+                    Long maturity protects the investor from having to replace
+                    principal quickly when rates fall, but it also creates
+                    greater price sensitivity when rates rise. The appropriate
+                    choice depends on the date the money will be needed,
+                    tolerance for market-value fluctuations, and whether the
+                    investor can genuinely hold to maturity. Long-term
+                    compounding favors runway; near-term spending favors
+                    matching maturity to the liability.
+                  </p>
+                </Equation>
+              </LessonCard>
+
+              <LessonCard
+                icon={<ShieldAlert size={20} />}
+                kicker="Additional failure modes"
+                title="A Yield Can Be Correct and the Purchase Can Still Be Wrong"
+              >
+                <p>
+                  YTM is a return calculation, not a complete suitability test.
+                  A high YTM may be compensation for poor liquidity, a stale
+                  quote, unusual settlement terms, credit uncertainty outside
+                  sovereign debt, or a maturity date that conflicts with the
+                  investor&apos;s cash needs. A screen that ranks yield correctly can
+                  still encourage a bad decision if the investor ignores the
+                  conditions under which that yield is realizable.
+                </p>
+                <p>
+                  A displayed closing price may represent a small historical
+                  trade rather than a currently executable offer. An investor
+                  should distinguish the last traded price, the broker&apos;s current
+                  ask, and the final all-in settlement amount. A model using
+                  97.00 can overstate return if the available seller requires
+                  100.50, or if accrued interest and fees are omitted. Likewise,
+                  a published RSE YTM can become stale when no new trade resets
+                  the market price.
+                </p>
+                <p>
+                  The final discipline is liability matching. Money reserved for
+                  school fees in four years should not be placed reflexively
+                  into a 20-year bond merely because its strategy score is
+                  higher. Selling before maturity exposes the investor to the
+                  market price then available. Government payment reliability
+                  reduces credit risk, but it does not eliminate interest-rate
+                  risk, inflation risk, liquidity risk, execution risk, or the
+                  personal risk of needing cash at an inconvenient time.
+                </p>
+              </LessonCard>
+            </div>
+          </section>
+
+          <section id="alpha-deals" className="scroll-mt-36">
+            <LessonHeader
+              eyebrow="03 · Spotting relative value"
+              title="Look for cash flows the market is temporarily pricing cheaply."
+              introduction="In sovereign fixed income, an under-the-radar opportunity is better described as relative value than guaranteed alpha. The analytical goal is to find a price or yield that is unusually attractive after tax and costs, while confirming that the difference is not caused by stale data, an untradeable quote, a short runway, or terms that make the security unsuitable."
+            />
+
+            <div className="mt-9 space-y-5">
+              <LessonCard
+                icon={<Search size={20} />}
+                kicker="Secondary-market screen"
+                title="Spotting Discount Sovereigns Below Par"
+              >
+                <p>
+                  Start with the RSE Fixed Income Board to identify the bond
+                  code, issue date, maturity date, coupon rate, and published
+                  YTM. Then cross-check the RSE Bond Market page for a recent
+                  closing price, trade volume, and value. A Treasury bond below
+                  100 deserves investigation because the investor receives the
+                  contractual coupons and, if held to maturity and paid as
+                  agreed, receives 100 of principal for less than 100 of clean
+                  purchase price.
+                </p>
+                <p>
+                  Consider a 15-year remaining bond with an 11.5% coupon trading
+                  at 97. For RWF 1,000,000 face value, clean consideration is RWF
+                  970,000. The annual gross coupon remains RWF 115,000, or RWF
+                  109,250 after an assumed 5% withholding rate. At maturity, the
+                  investor receives RWF 1,000,000, adding RWF 30,000 of
+                  pull-to-par value relative to the clean purchase price. In a
+                  simplified semiannual model, gross YTM rises to approximately
+                  11.93% and after-tax YTM to approximately 11.35%, both above
+                  the nominal coupon comparison implied by price 100.
+                </p>
+                <p>
+                  The discount is not automatically a bargain. It may reflect
+                  higher market yields, a seller&apos;s liquidity need, weak trading
+                  depth, or a quote that is no longer executable. Before treating
+                  the discount as opportunity, request a live bid or offer from
+                  BK Capital, confirm face value available, settlement date,
+                  accrued interest, commission, and any custody charges. Re-run
+                  YTM using the all-in dirty cash amount rather than the website
+                  closing price alone.
+                </p>
+                <Equation title="Discount return has two engines">
+                  <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                    Hold-to-maturity economics = Net coupons + Pull to par - Costs
+                  </p>
+                  <p className="mt-2">
+                    A discount increases yield because coupon cash is earned on
+                    face value while less clean capital is paid, and because par
+                    redemption exceeds the clean purchase price. Both effects
+                    must still be placed on the correct dates to calculate YTM.
+                  </p>
+                </Equation>
+              </LessonCard>
+
+              <LessonCard
+                icon={<Landmark size={20} />}
+                kicker="Primary-market structure"
+                title="How Re-opened BNR Issues Work"
+              >
+                <p>
+                  A reopening allows the Government of Rwanda, through the
+                  National Bank of Rwanda, to issue an additional amount of an
+                  existing Treasury-bond series instead of creating an entirely
+                  new bond. The reopened tranche normally keeps the existing
+                  series&apos; coupon rate and final maturity date. Because time has
+                  passed since the original issue and market yields may have
+                  changed, investors compete through the auction price or yield
+                  rather than receiving a newly reset coupon.
+                </p>
+                <p>
+                  Imagine a 20-year FXD series originally issued with a 13.15%
+                  coupon. If BNR reopens it later, the additional bonds may have
+                  roughly 19 years remaining but still pay the original 13.15%
+                  coupon and mature on the original date. If prevailing required
+                  yield is below 13.15%, successful pricing may be above par. If
+                  required yield is above the coupon, pricing may be below par.
+                  The coupon headline therefore does not reveal the auction
+                  return; the accepted dirty price and resulting yield do.
+                </p>
+                <p>
+                  Reopenings can improve the outstanding size and potential
+                  liquidity of a series. They also let an investor acquire
+                  institutional-style long-duration cash flows without waiting
+                  for a brand-new maturity. Through a broker such as BK Capital,
+                  the investor should obtain the official reopening prospectus,
+                  auction timetable, bond code and ISIN, coupon dates, remaining
+                  tenor, minimum denomination, bidding instructions, settlement
+                  amount, and published auction result. The investor should
+                  verify that the new allocation is fungible with the existing
+                  series rather than assuming it solely from a similar name.
+                </p>
+                <Equation title="Reopening decision">
+                  <p>
+                    Focus on the auction yield and total settlement cash. A
+                    reopening with a 13.15% coupon can be less attractive than a
+                    new 12% bond if competitive demand pushes its price high
+                    enough. Conversely, a reopened high-coupon series offered at
+                    a reasonable price can provide a strong long-duration yield
+                    and a larger, potentially more actively traded issue.
+                  </p>
+                </Equation>
+              </LessonCard>
+
+              <LessonCard
+                icon={<Calculator size={20} />}
+                kicker="Repeatable workflow"
+                title="A Full RSE-to-Broker Evaluation Process"
+              >
+                <ol className="space-y-6">
+                  {[
+                    {
+                      title: "Establish the exact security identity.",
+                      copy: "Record the full bond name, ISIN or security code, original issue date, final maturity date, coupon rate, coupon frequency, and whether the row is an original issue or reopening. Similar FXD labels are not interchangeable, and two rows with similar coupons can have materially different remaining lives.",
+                    },
+                    {
+                      title: "Separate live execution data from reference data.",
+                      copy: "Treat the Fixed Income Board coupon and published YTM as reference fields. Look for a recent closing price and trading activity on the Bond Market page, then ask the broker for an executable quote. Record the observation time because a price without a timestamp can mislead.",
+                    },
+                    {
+                      title: "Build the remaining cash-flow calendar.",
+                      copy: "List every future coupon date and the maturity principal. Do not assume all Rwanda Treasury bonds pay in January and July; each issuance follows its own schedule. Determine whether settlement occurs before or after the record-date conventions used by the paying system.",
+                    },
+                    {
+                      title: "Calculate clean, accrued, dirty, and all-in cost.",
+                      copy: "Convert quoted price into clean consideration, add accrued interest, then add broker commission and other confirmed charges. The all-in debit is the correct initial cash outflow for investor return calculations.",
+                    },
+                    {
+                      title: "Solve gross and after-tax YTM.",
+                      copy: "Use the actual settlement date and remaining payments. Solve once with contractual gross coupons and once with coupons reduced by the applicable withholding assumption. If no recent price exists, label any published-YTM tax adjustment as an approximation rather than a fully repriced result.",
+                    },
+                    {
+                      title: "Measure runway and reinvestment exposure.",
+                      copy: "Compare remaining maturity with the investor's objective. A high yield with three years left may be useful for a three-year liability but weak for a 20-year income plan. A long bond locks the rate longer but carries greater price volatility if sold before maturity.",
+                    },
+                    {
+                      title: "Stress the decision rather than admiring one number.",
+                      copy: "Recalculate at a higher purchase price, lower reinvestment rate, earlier forced-sale date, and delayed execution. Ask how much of the expected return comes from coupons, discount accretion, or an assumption that cannot be guaranteed.",
+                    },
+                    {
+                      title: "Preserve the evidence after purchase.",
+                      copy: "Store the broker confirmation, prospectus, settlement amount, accrued interest, fees, tax withheld, coupon dates, and maturity date in the private portfolio. Tracking actual cash flows against the original expected schedule turns a theoretical yield into an auditable investment record.",
+                    },
+                  ].map((step, index) => (
+                    <li key={step.title} className="flex gap-4">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary text-[10px] font-black text-on-primary">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <h4 className="font-black text-on-surface">
+                          {step.title}
+                        </h4>
+                        <p className="mt-1">{step.copy}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </LessonCard>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <article className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-6">
+                  <TrendingUp
+                    size={22}
+                    className="text-[var(--md-sys-color-primary)]"
+                  />
+                  <h3 className="mt-5 text-xl font-black text-on-surface">
+                    Evidence of potential relative value
+                  </h3>
+                  <p className="mt-4 text-sm leading-7 text-on-surface-variant">
+                    A recent executable price below par, an after-tax YTM that
+                    remains strong after all costs, a long remaining runway,
+                    adequate issue size, confirmed coupon dates, and a maturity
+                    aligned with the investor&apos;s plan together form a stronger
+                    case than any single high coupon.
+                  </p>
+                </article>
+                <article className="rounded-3xl border border-error/20 bg-error-container/10 p-6">
+                  <ShieldAlert size={22} className="text-error" />
+                  <h3 className="mt-5 text-xl font-black text-on-surface">
+                    Evidence that the apparent bargain may be false
+                  </h3>
+                  <p className="mt-4 text-sm leading-7 text-on-surface-variant">
+                    A stale closing price, no available seller, large accrued
+                    interest, an expensive premium, short remaining life,
+                    conflicting security identifiers, uncertain payment dates,
+                    or a maturity that forces an early sale can erase the
+                    screen&apos;s apparent advantage.
+                  </p>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <section
+            aria-labelledby="official-sources"
+            className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-6 md:p-8"
+          >
+            <div className="flex items-start gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-[var(--md-sys-color-primary)]">
+                <CircleDollarSign size={20} />
+              </span>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--md-sys-color-primary)]">
+                  Primary references
+                </p>
+                <h2
+                  id="official-sources"
+                  className="mt-1 text-2xl font-black text-on-surface"
+                >
+                  Verify the instrument before funding the trade.
+                </h2>
+              </div>
+            </div>
+            <p className="mt-5 max-w-4xl text-sm leading-7 text-on-surface-variant">
+              Market pages can change, and a broker quote can differ from the
+              last published trade. Use these official sources to validate the
+              live market row, issuance documents, auction result, and current
+              tax law. For a real purchase, the prospectus and broker
+              confirmation control the transaction details, not an educational
+              example on this page.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {[
+                {
+                  label: "RSE Fixed Income Board",
+                  href: "https://www.rse.rw/fixed-income-board",
+                  copy: "Bond codes, maturity dates, coupon rates, and published YTM.",
+                },
+                {
+                  label: "RSE Bond Market",
+                  href: "https://www.rse.rw/bond-market",
+                  copy: "Recent closing prices, trading volume, and market value.",
+                },
+                {
+                  label: "BNR Money Market Instruments",
+                  href: "https://www.bnr.rw/mminstruments",
+                  copy: "Prospectuses, reopening notices, calendars, and auction results.",
+                },
+                {
+                  label: "RRA Income Tax Laws",
+                  href: "https://www.rra.gov.rw/en/taxes-fees/domestic-taxes/income-tax/about-income-tax",
+                  copy: "The 2022 income-tax law and its 2023 and 2025 amendments.",
+                },
+              ].map((source) => (
+                <a
+                  key={source.href}
+                  href={source.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group rounded-2xl border border-outline/10 bg-surface-container-low/60 p-5 transition hover:border-primary/30"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-black text-on-surface">
+                      {source.label}
+                    </h3>
+                    <ExternalLink
+                      size={14}
+                      className="shrink-0 text-outline group-hover:text-primary"
+                    />
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-on-surface-variant">
+                    {source.copy}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-primary/20 bg-primary/5 p-7 md:p-10">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--md-sys-color-primary)]">
+              Put the mechanics to work
+            </p>
+            <h2 className="mt-3 max-w-3xl text-3xl font-black tracking-tight text-on-surface md:text-4xl">
+              Compare the lesson with live RSE listings, then model the cash
+              flows.
+            </h2>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-on-surface-variant">
+              The market table calculates an after-tax yield estimate, remaining
+              maturity, price score, data confidence, and long-term strategy
+              score. The simulator then shows how repeated purchases and coupon
+              reinvestment may develop over time. Neither replaces a current
+              executable quote or the official prospectus.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link
+                href="/bonds#rse-market"
+                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-black text-on-primary"
+              >
+                Review live market data <ArrowRight size={16} />
+              </Link>
+              <Link
+                href="/bonds/simulator"
+                className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface hover:border-primary/35 hover:text-primary"
+              >
+                Open the simulator <Calculator size={16} />
+              </Link>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <footer className="border-t border-outline/10 bg-surface-container-lowest/30">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 px-6 py-10 md:flex-row md:items-center md:px-8">
+          <GaboBrand />
+          <p className="max-w-xl text-xs leading-5 text-on-surface-variant md:text-right">
+            Rwanda Treasury Bond Lab · Detailed educational material, analytical
+            simulations, and private position tracking
+          </p>
+        </div>
+      </footer>
+    </main>
+  );
+}
