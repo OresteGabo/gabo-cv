@@ -7,10 +7,10 @@ import {
   ChevronDown,
   ChevronRight,
   Database,
-  Landmark,
   LockKeyhole,
   LogOut,
   Menu,
+  Pencil,
   Plus,
   RefreshCcw,
   ShieldCheck,
@@ -49,8 +49,11 @@ import type {
   BondPurchase,
   BondPurchaseInput,
 } from "@/lib/bonds/types";
+import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
+import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
+import { calculateBondTracking } from "@/lib/bonds/tracking";
 
-type Section = "simulator" | "projection" | "portfolio" | "guide";
+type PlannerView = "simulator" | "portfolio";
 
 const STORAGE_KEY = "rwanda-bond-planner-assumptions-v1";
 const INJECTIONS_STORAGE_KEY = "rwanda-bond-planner-injections-v1";
@@ -59,16 +62,67 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 const EMPTY_PURCHASE: BondPurchaseInput = {
+  instrumentType: "treasury",
+  issuer: "Government of Rwanda",
+  currency: "RWF",
+  market: "primary",
   purchaseDate: "",
+  settlementDate: "",
   bondName: "",
   isin: "",
   tenorYears: 5,
+  faceValue: 100_000,
+  pricePercent: 100,
+  accruedInterestPaid: 0,
+  feesPaid: 0,
   amountInvested: 100_000,
   couponRate: 0.12,
+  withholdingTaxRate: WITHHOLDING_TAX_RATE,
   maturityDate: "",
+  firstCouponDate: "",
+  couponDates: [],
   couponFrequency: 2,
+  scheduleConfidence: "confirmed",
+  broker: "BK Capital",
+  accountReference: "",
+  sourceUrl: "",
+  status: "active",
   notes: "",
 };
+
+function generateSemiannualCouponDates(
+  firstCouponDate: string,
+  maturityDate: string,
+) {
+  if (!firstCouponDate || !maturityDate) return [];
+  const first = new Date(`${firstCouponDate}T00:00:00Z`);
+  const maturity = new Date(`${maturityDate}T00:00:00Z`);
+  if (
+    Number.isNaN(first.getTime()) ||
+    Number.isNaN(maturity.getTime()) ||
+    first > maturity
+  ) {
+    return [];
+  }
+
+  const dates: string[] = [];
+  for (let date = first; date <= maturity; ) {
+    dates.push(date.toISOString().slice(0, 10));
+    const next = new Date(date);
+    const day = next.getUTCDate();
+    next.setUTCDate(1);
+    next.setUTCMonth(next.getUTCMonth() + 6);
+    const finalDay = new Date(
+      Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    next.setUTCDate(Math.min(day, finalDay));
+    date = next;
+  }
+
+  const maturityValue = maturity.toISOString().slice(0, 10);
+  if (dates.at(-1) !== maturityValue) dates.push(maturityValue);
+  return dates;
+}
 
 function Metric({
   label,
@@ -85,18 +139,201 @@ function Metric({
     <article
       className={`rounded-3xl border p-5 md:p-6 ${
         accent
-          ? "border-[#3568a8]/35 bg-[#3568a8]/10"
-          : "border-slate-200 bg-white"
+          ? "border-[var(--md-sys-color-primary)]/35 bg-[var(--md-sys-color-primary)]/10"
+          : "border-outline/10 bg-surface-container-lowest"
       }`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.19em] text-[#64748b]">
+      <p className="text-[10px] font-black uppercase tracking-[0.19em] text-[var(--md-sys-color-on-surface-variant)]">
         {label}
       </p>
       <p className="mt-3 break-words text-2xl font-black tracking-tight md:text-3xl">
         {value}
       </p>
-      {detail && <p className="mt-2 text-xs text-[#64748b]">{detail}</p>}
+      {detail && <p className="mt-2 text-xs text-[var(--md-sys-color-on-surface-variant)]">{detail}</p>}
     </article>
+  );
+}
+
+function InfoTip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        aria-label={label}
+        className="grid h-5 w-5 place-items-center rounded-full border border-[var(--md-sys-color-primary)]/35 bg-[var(--md-sys-color-primary)]/[0.07] text-[11px] font-black text-[var(--md-sys-color-primary)] outline-none transition hover:border-[var(--md-sys-color-primary)]/70 hover:bg-[var(--md-sys-color-primary)]/10 focus-visible:ring-2 focus-visible:ring-[var(--md-sys-color-primary)]/30"
+      >
+        !
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none invisible absolute left-1/2 top-7 z-50 w-64 -translate-x-1/2 rounded-xl border border-outline/10 bg-surface-container-lowest p-3 text-left text-[11px] font-medium leading-5 text-on-surface-variant opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+        style={{
+          backgroundColor:
+            "var(--md-sys-color-surface-container-lowest)",
+        }}
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
+
+function PurchaseLotTip({
+  id,
+  open,
+  onOpen,
+  onClose,
+  onCancelClose,
+  label,
+  amount,
+  calendarMonth,
+  calendarYear,
+  tenorYears,
+  annualCouponRate,
+  tone = "blue",
+  placement = "below",
+  modeledPurchaseAmount,
+  fundingBreakdown,
+  strategyNote,
+  detailHref,
+}: {
+  id: string;
+  open: boolean;
+  onOpen: (id: string) => void;
+  onClose: () => void;
+  onCancelClose: () => void;
+  label: string;
+  amount: number;
+  calendarMonth: number;
+  calendarYear: number;
+  tenorYears: number;
+  annualCouponRate: number;
+  tone?: "blue" | "gold";
+  placement?: "above" | "below";
+  modeledPurchaseAmount?: number;
+  fundingBreakdown?: { label: string; amount: number }[];
+  strategyNote?: string;
+  detailHref?: string;
+}) {
+  const purchaseDate = new Date(calendarYear, calendarMonth - 1, 5);
+  const maturityDate = new Date(
+    calendarYear + tenorYears,
+    calendarMonth - 1,
+    5,
+  );
+  const netRate = annualCouponRate * (1 - WITHHOLDING_TAX_RATE);
+  const purchaseAmount = modeledPurchaseAmount ?? amount;
+  const couponPerPayment = purchaseAmount * netRate / 2;
+  const color =
+    tone === "gold"
+      ? "text-[var(--md-sys-color-tertiary)] decoration-[var(--md-sys-color-tertiary)]/35"
+      : "text-[var(--md-sys-color-primary)] decoration-[var(--md-sys-color-primary)]/35";
+
+  return (
+    <span
+      className="relative block w-fit"
+      data-purchase-lot
+      onMouseEnter={() => {
+        onCancelClose();
+        onOpen(id);
+      }}
+      onMouseLeave={onClose}
+      onFocus={() => {
+        onCancelClose();
+        onOpen(id);
+      }}
+      onBlur={onClose}
+    >
+      <button
+        type="button"
+        className={`cursor-help font-bold underline decoration-dotted underline-offset-4 ${color}`}
+        aria-label={`View modeled details for ${label}`}
+        aria-expanded={open}
+        onClick={() => (open ? onClose() : onOpen(id))}
+      >
+        {formatRwf(amount)}
+      </button>
+      <div
+        role="tooltip"
+        className={`absolute left-0 z-40 w-72 rounded-2xl border border-outline/10 bg-surface-container-lowest p-4 text-left text-[11px] font-medium leading-5 text-on-surface-variant shadow-xl transition ${
+          placement === "above" ? "bottom-7" : "top-7"
+        } ${open ? "visible opacity-100" : "pointer-events-none invisible opacity-0"}`}
+        style={{
+          backgroundColor:
+            "var(--md-sys-color-surface-container-lowest)",
+        }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-black text-on-surface">{label}</p>
+            <p className="text-[10px] text-on-surface-variant">Modeled purchase lot</p>
+          </div>
+          <span className="rounded-lg bg-surface-container px-2 py-1 text-[10px] font-black text-on-surface">
+            {tenorYears}Y
+          </span>
+        </div>
+        <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5">
+          <dt className="font-black text-on-surface">Purchase amount</dt>
+          <dd className="font-black text-on-surface">
+            {formatRwf(purchaseAmount)}
+          </dd>
+          {fundingBreakdown?.map((item) => (
+            <Fragment key={item.label}>
+              <dt>{item.label}</dt>
+              <dd className="font-bold text-on-surface">
+                {formatRwf(item.amount)}
+              </dd>
+            </Fragment>
+          ))}
+          <dt>Suggested purchase</dt>
+          <dd className="font-bold text-on-surface">
+            {purchaseDate.toLocaleDateString("en", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </dd>
+          <dt>Gross coupon rate</dt>
+          <dd className="font-bold text-on-surface">
+            {formatPercent(annualCouponRate, 2)}
+          </dd>
+          <dt>Net coupon rate</dt>
+          <dd className="font-bold text-on-surface">
+            {formatPercent(netRate, 2)}
+          </dd>
+          <dt>Est. semiannual coupon</dt>
+          <dd className="font-bold text-[var(--md-sys-color-tertiary)]">
+            {formatRwf(couponPerPayment)}
+          </dd>
+          <dt>Modeled maturity</dt>
+          <dd className="font-bold text-on-surface">
+            {maturityDate.toLocaleDateString("en", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </dd>
+        </dl>
+        {strategyNote && (
+          <p className="mt-3 rounded-lg bg-[var(--md-sys-color-primary)]/[0.06] px-3 py-2 text-[10px] leading-4 text-[var(--md-sys-color-primary)]">
+            {strategyNote}
+          </p>
+        )}
+        <p className="mt-3 border-t border-outline/10 pt-3 text-[10px] leading-4 text-on-surface-variant">
+          Uses the simulator&apos;s current tenor and coupon rate. Actual purchases
+          can have different terms and should be recorded separately in Portfolio.
+        </p>
+        {detailHref && (
+          <Link
+            href={detailHref}
+            className="mt-3 flex items-center justify-between rounded-xl bg-primary px-3 py-2.5 text-xs font-black text-on-primary transition hover:opacity-90"
+          >
+            View full details
+            <ChevronRight size={15} />
+          </Link>
+        )}
+      </div>
+    </span>
   );
 }
 
@@ -110,6 +347,7 @@ function NumberControl({
   suffix,
   prefix,
   hint,
+  help,
 }: {
   label: string;
   value: number;
@@ -120,12 +358,16 @@ function NumberControl({
   suffix?: string;
   prefix?: string;
   hint?: string;
+  help?: ReactNode;
 }) {
   return (
-    <label className="block rounded-2xl border border-slate-200 bg-white/70 p-4">
+    <div className="block rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
       <span className="flex items-center justify-between gap-3">
-        <span className="text-xs font-bold text-[#334155]">{label}</span>
-        <span className="rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-[#3568a8]">
+        <span className="flex items-center gap-2 text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+          {label}
+          {help && <InfoTip label={`About ${label}`}>{help}</InfoTip>}
+        </span>
+        <span className="rounded-lg bg-surface-container px-2.5 py-1 font-mono text-xs font-bold text-[var(--md-sys-color-primary)]">
           {prefix}
           {value.toLocaleString("en-RW")}
           {suffix}
@@ -138,10 +380,11 @@ function NumberControl({
         max={max}
         step={step}
         value={value}
+        aria-label={label}
         onChange={(event) => onChange(Number(event.target.value))}
       />
-      {hint && <span className="mt-2 block text-[11px] text-[#718096]">{hint}</span>}
-    </label>
+      {hint && <span className="mt-2 block text-[11px] text-[var(--md-sys-color-outline)]">{hint}</span>}
+    </div>
   );
 }
 
@@ -149,8 +392,9 @@ function GrowthChart({
   values,
 }: {
   values: {
-    year: number;
-    completionYear: number;
+    month: number;
+    calendarMonth: number;
+    calendarYear: number;
     portfolio: number;
     contributions: number;
   }[];
@@ -162,29 +406,45 @@ function GrowthChart({
   const point = (value: number, index: number) => {
     const x = pad + (index / Math.max(1, values.length - 1)) * (width - pad * 2);
     const y = height - pad - (value / max) * (height - pad * 2);
-    return `${x},${y}`;
+    return { x, y };
   };
-  const portfolioPoints = values.map((v, i) => point(v.portfolio, i)).join(" ");
-  const contributionPoints = values
-    .map((v, i) => point(v.contributions, i))
-    .join(" ");
-  const areaPoints = `${pad},${height - pad} ${portfolioPoints} ${width - pad},${height - pad}`;
+  const stepPath = (key: "portfolio" | "contributions") => {
+    if (values.length === 0) return "";
+    const first = point(values[0][key], 0);
+    return values.slice(1).reduce((path, value, offset) => {
+      const next = point(value[key], offset + 1);
+      return `${path} H ${next.x} V ${next.y}`;
+    }, `M ${first.x} ${first.y}`);
+  };
+  const portfolioPath = stepPath("portfolio");
+  const contributionPath = stepPath("contributions");
+  const firstPortfolioPoint = point(values[0]?.portfolio ?? 0, 0);
+  const lastPortfolioPoint = point(
+    values.at(-1)?.portfolio ?? 0,
+    Math.max(0, values.length - 1),
+  );
+  const portfolioSteps = portfolioPath.includes(" H")
+    ? portfolioPath.slice(portfolioPath.indexOf(" H"))
+    : "";
+  const areaPath = `M ${firstPortfolioPoint.x} ${height - pad} L ${firstPortfolioPoint.x} ${firstPortfolioPoint.y}${portfolioSteps} L ${lastPortfolioPoint.x} ${height - pad} Z`;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-[#ffffff] p-4 md:p-6">
+    <div className="overflow-hidden rounded-3xl border border-outline/10 bg-[var(--md-sys-color-surface-container-lowest)] p-4 md:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#3568a8]">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--md-sys-color-primary)]">
             Growth curve
           </p>
-          <h3 className="mt-1 text-xl font-black">Portfolio vs contributions</h3>
+          <h3 className="mt-1 text-xl font-black">
+            Monthly portfolio steps
+          </h3>
         </div>
-        <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider text-[#64748b]">
+        <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
           <span className="flex items-center gap-2">
-            <i className="h-2 w-2 rounded-full bg-[#3568a8]" /> Portfolio
+            <i className="h-2 w-2 rounded-full bg-[var(--md-sys-color-primary)]" /> Portfolio
           </span>
           <span className="flex items-center gap-2">
-            <i className="h-2 w-2 rounded-full bg-[#b7791f]" /> Contributions
+            <i className="h-2 w-2 rounded-full bg-[var(--md-sys-color-tertiary)]" /> Contributions
           </span>
         </div>
       </div>
@@ -192,7 +452,7 @@ function GrowthChart({
         viewBox={`0 0 ${width} ${height}`}
         className="h-auto w-full overflow-visible"
         role="img"
-        aria-label="Projected portfolio value and personal contributions by year"
+        aria-label="Monthly stepped portfolio value and personal contributions"
       >
         {[0.25, 0.5, 0.75, 1].map((tick) => (
           <g key={tick}>
@@ -207,68 +467,72 @@ function GrowthChart({
             <text
               x={pad}
               y={height - pad - tick * (height - pad * 2) - 7}
-              fill="#718096"
+              fill="var(--md-sys-color-outline)"
               fontSize="10"
             >
               {formatRwf(max * tick, true)}
             </text>
           </g>
         ))}
-        <polygon points={areaPoints} fill="rgba(122,162,247,.09)" />
-        <polyline
-          points={contributionPoints}
+        <path d={areaPath} fill="rgba(122,162,247,.09)" />
+        <path
+          d={contributionPath}
           fill="none"
-          stroke="#b7791f"
+          stroke="var(--md-sys-color-tertiary)"
           strokeWidth="2"
           strokeDasharray="6 6"
         />
-        <polyline
-          points={portfolioPoints}
+        <path
+          d={portfolioPath}
           fill="none"
-          stroke="#3568a8"
+          stroke="var(--md-sys-color-primary)"
           strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          strokeLinecap="butt"
+          strokeLinejoin="miter"
+          shapeRendering="geometricPrecision"
         />
       </svg>
-      <div className="mt-2 flex justify-between text-[10px] font-bold text-[#718096]">
-        <span>Year 1 ({values[0]?.completionYear ?? ""})</span>
+      <div className="mt-2 flex justify-between text-[10px] font-bold text-[var(--md-sys-color-outline)]">
         <span>
-          Year {values.at(-1)?.year ?? 1} ({values.at(-1)?.completionYear ?? ""})
+          {MONTH_NAMES[(values[0]?.calendarMonth ?? 1) - 1]}{" "}
+          {values[0]?.calendarYear ?? ""}
+        </span>
+        <span>
+          {MONTH_NAMES[(values.at(-1)?.calendarMonth ?? 1) - 1]}{" "}
+          {values.at(-1)?.calendarYear ?? ""}
         </span>
       </div>
     </div>
   );
 }
 
-function NavButton({
+function NavLink({
   active,
-  onClick,
+  href,
   icon,
   children,
 }: {
   active: boolean;
-  onClick: () => void;
+  href: string;
   icon: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <button
-      onClick={onClick}
+    <Link
+      href={href}
       className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black transition ${
         active
-          ? "bg-[#3568a8] text-white"
-          : "text-[#64748b] hover:bg-slate-100 hover:text-slate-900"
+          ? "bg-primary text-on-primary"
+          : "text-[var(--md-sys-color-on-surface-variant)] hover:bg-surface-container hover:text-on-surface"
       }`}
     >
       {icon}
       <span>{children}</span>
-    </button>
+    </Link>
   );
 }
 
-export function BondPlanner() {
-  const [activeSection, setActiveSection] = useState<Section>("simulator");
+export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [assumptions, setAssumptions] =
     useState<BondAssumptions>(DEFAULT_ASSUMPTIONS);
@@ -287,8 +551,58 @@ export function BondPlanner() {
   const [purchases, setPurchases] = useState<BondPurchase[]>([]);
   const [portfolioError, setPortfolioError] = useState("");
   const [purchase, setPurchase] = useState<BondPurchaseInput>(EMPTY_PURCHASE);
+  const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(
+    null,
+  );
   const [savingPurchase, setSavingPurchase] = useState(false);
+  const [openPurchaseLot, setOpenPurchaseLot] = useState<string | null>(null);
   const assumptionsHydrated = useRef(false);
+  const purchaseLotCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  function cancelPurchaseLotClose() {
+    if (!purchaseLotCloseTimer.current) return;
+    clearTimeout(purchaseLotCloseTimer.current);
+    purchaseLotCloseTimer.current = null;
+  }
+
+  function openPurchaseLotDetails(id: string) {
+    cancelPurchaseLotClose();
+    setOpenPurchaseLot(id);
+  }
+
+  function schedulePurchaseLotClose(delay = 350) {
+    cancelPurchaseLotClose();
+    purchaseLotCloseTimer.current = setTimeout(() => {
+      setOpenPurchaseLot(null);
+      purchaseLotCloseTimer.current = null;
+    }, delay);
+  }
+
+  useEffect(() => {
+    function dismissPurchaseLot(event: PointerEvent) {
+      if (!(event.target instanceof Element)) return;
+      if (!event.target.closest("[data-purchase-lot]")) {
+        cancelPurchaseLotClose();
+        setOpenPurchaseLot(null);
+      }
+    }
+
+    function dismissPurchaseLotWithKeyboard(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      cancelPurchaseLotClose();
+      setOpenPurchaseLot(null);
+    }
+
+    document.addEventListener("pointerdown", dismissPurchaseLot);
+    document.addEventListener("keydown", dismissPurchaseLotWithKeyboard);
+    return () => {
+      document.removeEventListener("pointerdown", dismissPurchaseLot);
+      document.removeEventListener("keydown", dismissPurchaseLotWithKeyboard);
+      cancelPurchaseLotClose();
+    };
+  }, []);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -323,11 +637,15 @@ export function BondPlanner() {
   }, [cashInjections]);
 
   useEffect(() => {
+    if (view !== "portfolio") {
+      setSessionLoading(false);
+      return;
+    }
     fetch("/api/bonds/auth/session", { cache: "no-store" })
       .then((response) => response.json())
       .then((data) => setAuthenticated(Boolean(data.authenticated)))
       .finally(() => setSessionLoading(false));
-  }, []);
+  }, [view]);
 
   useEffect(() => {
     if (!authenticated) return;
@@ -370,20 +688,40 @@ export function BondPlanner() {
     () =>
       projection
         .filter((row) => row.month % 12 === 0)
-        .map((row, index) => ({
-          year: row.year,
-          completionYear: row.calendarYear,
-          portfolio: row.closingPortfolio,
-          contributions: row.totalContributions,
-          annualContributions:
-            row.totalContributions -
-            (index > 0 ? projection[index * 12 - 1].totalContributions : 0),
-          coupons: row.totalCoupons,
-          annualCoupons:
-            row.totalCoupons -
-            (index > 0 ? projection[index * 12 - 1].totalCoupons : 0),
-          passiveIncome: row.annualPassiveIncome,
-        })),
+        .map((row, index) => {
+          const periodStart = projection[index * 12];
+          return {
+            year: row.year,
+            completionYear: row.calendarYear,
+            periodStartMonth: periodStart.calendarMonth,
+            periodStartYear: periodStart.calendarYear,
+            periodEndMonth: row.calendarMonth,
+            periodEndYear: row.calendarYear,
+            portfolio: row.totalAccountValue,
+            bondHoldings: row.closingPortfolio,
+            cashBalance: row.closingCashBalance,
+            contributions: row.totalContributions,
+            annualContributions:
+              row.totalContributions -
+              (index > 0 ? projection[index * 12 - 1].totalContributions : 0),
+            coupons: row.totalCoupons,
+            annualCoupons:
+              row.totalCoupons -
+              (index > 0 ? projection[index * 12 - 1].totalCoupons : 0),
+            passiveIncome: row.annualPassiveIncome,
+          };
+        }),
+    [projection],
+  );
+  const chartProjection = useMemo(
+    () =>
+      projection.map((row) => ({
+        month: row.month,
+        calendarMonth: row.calendarMonth,
+        calendarYear: row.calendarYear,
+        portfolio: row.totalAccountValue,
+        contributions: row.totalContributions,
+      })),
     [projection],
   );
   const modeledCouponRate = Math.min(
@@ -392,6 +730,11 @@ export function BondPlanner() {
   );
   const netAnnualRate = modeledCouponRate * (1 - WITHHOLDING_TAX_RATE);
   const actualPortfolio = purchases.reduce(
+    (total, item) =>
+      total + (item.status === "active" ? item.faceValue : 0),
+    0,
+  );
+  const actualCashCost = purchases.reduce(
     (total, item) => total + item.amountInvested,
     0,
   );
@@ -400,16 +743,48 @@ export function BondPlanner() {
     0,
   );
   const injectionFinalImpact =
-    summary.finalPortfolio - baselineSummary.finalPortfolio;
+    summary.finalAccountValue - baselineSummary.finalAccountValue;
   const simulationEnd = projection.at(-1);
   const actualAnnualIncome = purchases.reduce(
     (total, item) =>
       total +
-      item.amountInvested *
-        item.couponRate *
-        (1 - WITHHOLDING_TAX_RATE),
+      (item.status === "active"
+        ? item.faceValue *
+          item.couponRate *
+          (1 - item.withholdingTaxRate)
+        : 0),
     0,
   );
+  const purchaseCashCost =
+    Math.round(
+      (purchase.faceValue * (purchase.pricePercent / 100) +
+        purchase.accruedInterestPaid +
+        purchase.feesPaid) *
+        100,
+    ) / 100;
+  const selectedInjectionMonth = Math.min(
+    projection.length,
+    Math.max(
+      1,
+      (injectionDraft.year - 1) * 12 + injectionDraft.monthInYear,
+    ),
+  );
+  const selectedInjectionRow = projection[selectedInjectionMonth - 1];
+  const waitingCash = selectedInjectionRow?.closingCashBalance ?? 0;
+  const draftInjectionAmount = Math.max(0, injectionDraft.amount);
+  const additionalBondPurchase =
+    Math.floor(
+      (waitingCash + draftInjectionAmount + 0.001) /
+        assumptions.purchaseMinimum,
+    ) * assumptions.purchaseMinimum;
+  const combinedBondPurchase =
+    (selectedInjectionRow?.newBondPurchase ?? 0) + additionalBondPurchase;
+  const cashAfterDraftInjection =
+    Math.round(
+      (waitingCash + draftInjectionAmount - additionalBondPurchase) * 100,
+    ) / 100;
+  const amountNeededForNextLot =
+    waitingCash > 0 ? assumptions.purchaseMinimum - waitingCash : 0;
 
   function update<K extends keyof BondAssumptions>(
     key: K,
@@ -444,14 +819,6 @@ export function BondPlanner() {
     );
   }
 
-  function goTo(section: Section) {
-    setActiveSection(section);
-    setMenuOpen(false);
-    window.setTimeout(() => {
-      document.getElementById(section)?.scrollIntoView({ behavior: "smooth" });
-    }, 0);
-  }
-
   function toggleYear(year: number) {
     setExpandedYears((current) => {
       const next = new Set(current);
@@ -468,12 +835,7 @@ export function BondPlanner() {
       Math.max(1, injectionDraft.year),
     );
     const monthInYear = Math.min(12, Math.max(1, injectionDraft.monthInYear));
-    if (
-      injectionDraft.amount < assumptions.purchaseMinimum ||
-      injectionDraft.amount % assumptions.purchaseMinimum !== 0
-    ) {
-      return;
-    }
+    if (injectionDraft.amount <= 0) return;
 
     setCashInjections((current) => [
       ...current,
@@ -530,10 +892,33 @@ export function BondPlanner() {
     event.preventDefault();
     setSavingPurchase(true);
     setPortfolioError("");
-    const response = await fetch("/api/bonds/purchases", {
-      method: "POST",
+    const couponDates =
+      purchase.couponDates.length > 0
+        ? purchase.couponDates
+        : generateSemiannualCouponDates(
+            purchase.firstCouponDate,
+            purchase.maturityDate,
+          );
+    const response = await fetch(
+      editingPurchaseId
+        ? `/api/bonds/purchases/${editingPurchaseId}`
+        : "/api/bonds/purchases",
+      {
+      method: editingPurchaseId ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(purchase),
+      body: JSON.stringify({
+        ...purchase,
+        instrumentType: "treasury",
+        issuer: "Government of Rwanda",
+        currency: "RWF",
+        market: "primary",
+        broker: "BK Capital",
+        withholdingTaxRate: WITHHOLDING_TAX_RATE,
+        couponFrequency: 2,
+        scheduleConfidence: "confirmed",
+        couponDates,
+        amountInvested: purchaseCashCost,
+      }),
     });
     const data = await response.json();
     setSavingPurchase(false);
@@ -541,8 +926,36 @@ export function BondPlanner() {
       setPortfolioError(data.error ?? "The purchase could not be saved.");
       return;
     }
-    setPurchases((current) => [data.purchase, ...current]);
+    setPurchases((current) =>
+      editingPurchaseId
+        ? current.map((item) =>
+            item.id === editingPurchaseId ? data.purchase : item,
+          )
+        : [data.purchase, ...current],
+    );
     setPurchase(EMPTY_PURCHASE);
+    setEditingPurchaseId(null);
+  }
+
+  function editPurchase(item: BondPurchase) {
+    const { id, createdAt, ...input } = item;
+    void id;
+    void createdAt;
+    setPurchase({
+      ...input,
+      instrumentType: "treasury",
+      issuer: "Government of Rwanda",
+      currency: "RWF",
+      market: "primary",
+      broker: "BK Capital",
+      withholdingTaxRate: WITHHOLDING_TAX_RATE,
+      couponFrequency: 2,
+      scheduleConfidence: "confirmed",
+    });
+    setEditingPurchaseId(item.id);
+    document
+      .getElementById("portfolio-transaction-form")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function removePurchase(id: string) {
@@ -561,11 +974,19 @@ export function BondPlanner() {
       "Calendar Year",
       "Year",
       "Opening Portfolio",
+      "Opening Cash Balance",
       "Personal Contribution",
       "Extra Cash Injection",
       "Coupon Payment",
+      "Matured Principal",
       "Reinvested Coupon",
+      "Available Cash",
+      "New Bond Purchase",
+      "Modeled Purchase Lot",
+      "Active Bond Lots",
+      "Closing Cash Balance",
       "Closing Portfolio",
+      "Total Account Value",
       "Total Contributions",
       "Total Coupons",
       "Annual Passive Income",
@@ -577,11 +998,19 @@ export function BondPlanner() {
       row.calendarYear,
       row.year,
       row.openingPortfolio,
+      row.openingCashBalance,
       row.personalContribution,
       row.cashInjection,
       row.couponPayment,
+      row.maturedPrincipal,
       row.reinvestedCoupon,
+      row.availableCash,
+      row.newBondPurchase,
+      row.newBondPurchaseLot?.id ?? "",
+      row.activeBondCount,
+      row.closingCashBalance,
       row.closingPortfolio,
+      row.totalAccountValue,
       row.totalContributions,
       row.totalCoupons,
       row.annualPassiveIncome,
@@ -599,106 +1028,112 @@ export function BondPlanner() {
   }
 
   return (
-    <main className="bond-app font-sans">
-      <div className="bond-grid pointer-events-none absolute inset-0 h-[920px] opacity-20" />
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-[#f7f5ef]/88 backdrop-blur-xl">
+    <main className="bond-app relative min-h-screen overflow-x-hidden bg-background font-sans text-on-background">
+      <ImigongoBackground />
+      <header className="sticky top-0 z-50 mx-auto w-full max-w-7xl border-b border-outline/5 bg-background/80 px-1 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#3568a8] text-white">
-              <Landmark size={20} strokeWidth={2.6} />
+          <div className="flex items-center gap-4">
+            <span className="hidden sm:block"><GaboBrand /></span>
+            <span className="sm:hidden"><GaboBrand compact /></span>
+            <span className="hidden h-5 w-px bg-outline/20 sm:block" />
+            <span className="hidden text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant sm:block">
+              Treasury Bond Lab
             </span>
-            <span>
-              <strong className="block text-sm font-black tracking-tight">Rwanda Bond Planner</strong>
-              <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-[#718096]">
-                by Gabo
-              </span>
-            </span>
-          </Link>
+          </div>
 
           <nav className="hidden items-center gap-1 lg:flex">
-            <NavButton active={activeSection === "simulator"} onClick={() => goTo("simulator")} icon={<Sparkles size={15} />}>
+            <NavLink active={false} href="/bonds" icon={<ShieldCheck size={15} />}>
+              Learn
+            </NavLink>
+            <NavLink active={view === "simulator"} href="/bonds/simulator" icon={<Sparkles size={15} />}>
               Simulator
-            </NavButton>
-            <NavButton active={activeSection === "projection"} onClick={() => goTo("projection")} icon={<BarChart3 size={15} />}>
-              Projection
-            </NavButton>
-            <NavButton active={activeSection === "portfolio"} onClick={() => goTo("portfolio")} icon={<WalletCards size={15} />}>
+            </NavLink>
+            <NavLink active={view === "portfolio"} href="/bonds/portfolio" icon={<WalletCards size={15} />}>
               Portfolio
-            </NavButton>
-            <NavButton active={activeSection === "guide"} onClick={() => goTo("guide")} icon={<ShieldCheck size={15} />}>
-              Guide
-            </NavButton>
+            </NavLink>
           </nav>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={exportProjection}
-              className="hidden items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-[#334155] transition hover:border-[#3568a8]/40 hover:text-[#3568a8] sm:flex"
-            >
-              <ArrowDownToLine size={15} /> Export CSV
-            </button>
+            <BondThemeToggle />
+            {view === "simulator" && (
+              <button
+                onClick={exportProjection}
+                className="hidden items-center gap-2 rounded-xl border border-outline/10 px-3 py-2 text-xs font-black text-[var(--md-sys-color-on-surface)] transition hover:border-[var(--md-sys-color-primary)]/40 hover:text-[var(--md-sys-color-primary)] sm:flex"
+              >
+                <ArrowDownToLine size={15} /> Export CSV
+              </button>
+            )}
             <button
               onClick={() => setMenuOpen((open) => !open)}
               aria-label="Open navigation"
-              className="rounded-xl border border-slate-200 p-2.5 lg:hidden"
+              className="rounded-xl border border-outline/10 p-2.5 lg:hidden"
             >
               {menuOpen ? <X size={19} /> : <Menu size={19} />}
             </button>
           </div>
         </div>
         {menuOpen && (
-          <nav className="grid grid-cols-2 gap-2 border-t border-slate-200 p-3 lg:hidden">
-            <NavButton active={activeSection === "simulator"} onClick={() => goTo("simulator")} icon={<Sparkles size={15} />}>Simulator</NavButton>
-            <NavButton active={activeSection === "projection"} onClick={() => goTo("projection")} icon={<BarChart3 size={15} />}>Projection</NavButton>
-            <NavButton active={activeSection === "portfolio"} onClick={() => goTo("portfolio")} icon={<WalletCards size={15} />}>Portfolio</NavButton>
-            <NavButton active={activeSection === "guide"} onClick={() => goTo("guide")} icon={<ShieldCheck size={15} />}>Guide</NavButton>
+          <nav className="grid grid-cols-2 gap-2 border-t border-outline/10 p-3 lg:hidden">
+            <NavLink active={false} href="/bonds" icon={<ShieldCheck size={15} />}>Learn</NavLink>
+            <NavLink active={view === "simulator"} href="/bonds/simulator" icon={<Sparkles size={15} />}>Simulator</NavLink>
+            <NavLink active={view === "portfolio"} href="/bonds/portfolio" icon={<WalletCards size={15} />}>Portfolio</NavLink>
           </nav>
         )}
       </header>
 
-      <section className="relative mx-auto max-w-7xl px-4 pb-14 pt-16 md:px-8 md:pb-24 md:pt-24">
-        <div className="grid items-end gap-12 lg:grid-cols-[1.08fr_0.92fr]">
+      {view === "simulator" && (
+        <>
+      <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-24 md:px-8 md:pb-28 md:pt-32">
+        <div className="grid items-center gap-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#3568a8]/25 bg-[#3568a8]/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#3568a8]">
-              <Landmark size={13} /> Rwanda Treasury Bond Planner
+            <div className="mb-7 flex items-center gap-3">
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
+              </span>
+              <span className="text-xs font-black uppercase tracking-[0.3em] text-primary">
+                Personal Finance System · Rwanda
+              </span>
             </div>
-            <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-[-0.06em] sm:text-6xl md:text-7xl">
-              See what steady investing
-              <span className="block text-[#3568a8]">could build for you.</span>
+            <p className="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-on-surface-variant">
+              Designed and built by Gabo
+            </p>
+            <h1 className="max-w-4xl text-5xl font-black uppercase leading-[0.88] tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">
+              Treasury
+              <span className="block text-primary">Bonds.</span>
             </h1>
-            <p className="mt-7 max-w-2xl text-base leading-7 text-[#64748b] md:text-lg">
-              Model monthly Treasury bond investing, after-tax coupons, reinvestment,
-              and extra cash injections. Change any assumption and see the effect
-              through every month of the journey.
+            <p className="mt-8 max-w-xl text-lg font-medium leading-relaxed text-on-surface-variant md:text-xl">
+              A personal planning system for building long-term RWF income through
+              government bonds, monthly discipline, and transparent coupon tracking.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => goTo("simulator")}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#3568a8] px-5 py-3 text-sm font-black text-white transition hover:bg-[#4d7db8]"
+              <a
+                href="#simulator"
+                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-on-primary shadow-lg shadow-primary/15 transition hover:-translate-y-0.5"
               >
                 Adjust my plan <ChevronRight size={17} />
-              </button>
-              <button
-                type="button"
-                onClick={() => goTo("projection")}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-black text-[#334155] transition hover:border-[#3568a8]/40 hover:text-slate-900"
+              </a>
+              <a
+                href="#projection"
+                className="inline-flex items-center gap-2 rounded-2xl border border-outline/10 bg-surface-container-low/60 px-5 py-3 text-sm font-black text-on-surface transition hover:border-primary/30 hover:text-primary"
               >
                 View yearly projection <BarChart3 size={16} />
-              </button>
+              </a>
             </div>
           </div>
 
-          <article className="overflow-hidden rounded-[2rem] border border-[#3568a8]/25 bg-[#ffffff]/90 shadow-2xl shadow-slate-300/40">
-            <div className="border-b border-slate-200 p-6 md:p-7">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#3568a8]">
-                Your current scenario
+          <article className="relative overflow-hidden rounded-[2.5rem] border-2 border-primary/30 bg-surface-container-high/80 shadow-2xl shadow-primary/10 backdrop-blur-3xl">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rotate-45 border border-primary/15" />
+            <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rotate-45 border border-primary/20" />
+            <div className="border-b border-outline/10 p-6 md:p-7">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
+                Current scenario · Live model
               </p>
               <p className="mt-3 text-xl font-black leading-snug md:text-2xl">
                 Invest {formatRwf(assumptions.monthlyContribution)} each month for{" "}
                 {assumptions.horizonYears} years
               </p>
-              <p className="mt-2 text-sm leading-6 text-[#64748b]">
+              <p className="mt-2 text-sm leading-6 text-[var(--md-sys-color-on-surface-variant)]">
                 Starting {MONTH_NAMES[assumptions.startMonth - 1]}{" "}
                 {assumptions.startYear}, at a {formatPercent(modeledCouponRate)} annual
                 coupon rate with {formatPercent(assumptions.reinvestmentRate)} of net
@@ -708,46 +1143,46 @@ export function BondPlanner() {
 
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 p-6 md:p-7">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--md-sys-color-on-surface-variant)]">
                   You contribute
                 </p>
                 <p className="mt-2 text-xl font-black md:text-2xl">
                   {formatRwf(summary.totalContributions, true)}
                 </p>
-                <p className="mt-1 text-xs text-[#718096]">
+                <p className="mt-1 text-xs text-[var(--md-sys-color-outline)]">
                   Including extra cash
                 </p>
               </div>
-              <ChevronRight className="text-[#3568a8]" size={24} />
+              <ChevronRight className="text-[var(--md-sys-color-primary)]" size={24} />
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#3568a8]">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">
                   Projected value
                 </p>
-                <p className="mt-2 text-2xl font-black text-[#3568a8] md:text-3xl">
-                  {formatRwf(summary.finalPortfolio, true)}
+                <p className="mt-2 text-2xl font-black text-primary md:text-3xl">
+                  {formatRwf(summary.finalAccountValue, true)}
                 </p>
-                <p className="mt-1 text-xs text-[#718096]">
+                <p className="mt-1 text-xs text-[var(--md-sys-color-outline)]">
                   {simulationEnd
-                    ? `By ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
+                    ? `${formatRwf(summary.finalPortfolio, true)} in bonds + ${formatRwf(summary.finalCashBalance, true)} cash by ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
                     : "At the end of the plan"}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 border-t border-slate-200 bg-white/70">
-              <div className="border-r border-slate-200 p-5 md:px-7">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
+            <div className="grid grid-cols-2 border-t border-outline/10 bg-surface-container-lowest/70">
+              <div className="border-r border-outline/10 p-5 md:px-7">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--md-sys-color-on-surface-variant)]">
                   Potential annual income
                 </p>
-                <p className="mt-2 text-lg font-black text-[#b7791f] md:text-xl">
+                <p className="mt-2 text-lg font-black text-tertiary md:text-xl">
                   {formatRwf(summary.annualPassiveIncome, true)}
                 </p>
               </div>
               <div className="p-5 md:px-7">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#64748b]">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--md-sys-color-on-surface-variant)]">
                   Potential monthly income
                 </p>
-                <p className="mt-2 text-lg font-black text-[#b7791f] md:text-xl">
+                <p className="mt-2 text-lg font-black text-tertiary md:text-xl">
                   {formatRwf(summary.monthlyPassiveIncome, true)}
                 </p>
               </div>
@@ -755,25 +1190,25 @@ export function BondPlanner() {
           </article>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[#718096]">
+        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[var(--md-sys-color-outline)]">
           <span>Net coupon rate: {formatPercent(netAnnualRate, 2)}</span>
           <span>Government withholding tax: {formatPercent(WITHHOLDING_TAX_RATE, 0)}</span>
           <span>Projection, not a guaranteed return</span>
         </div>
       </section>
 
-      <section id="simulator" className="scroll-mt-24 border-y border-slate-200 bg-[#f1f4f8]/72">
+      <section id="simulator" className="scroll-mt-24 border-y border-outline/10 bg-[var(--md-sys-color-surface-container-low)]/72">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 md:px-8 md:py-20 lg:grid-cols-[390px_1fr]">
           <aside>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#3568a8]">Assumptions</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--md-sys-color-primary)]">Assumptions</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight">Tune the model</h2>
               </div>
               <button
                 type="button"
                 onClick={resetScenario}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-black text-[#64748b] hover:border-[#3568a8]/30 hover:text-slate-900"
+                className="flex items-center gap-2 rounded-xl border border-outline/10 px-3 py-2.5 text-xs font-black text-[var(--md-sys-color-on-surface-variant)] hover:border-[var(--md-sys-color-primary)]/30 hover:text-on-surface"
                 aria-label="Reset entire simulation"
               >
                 <RefreshCcw size={16} />
@@ -782,15 +1217,24 @@ export function BondPlanner() {
             </div>
             <div className="mt-7 space-y-3">
               <NumberControl label="Monthly contribution" value={assumptions.monthlyContribution} onChange={(value) => update("monthlyContribution", value)} min={0} max={2_000_000} step={50_000} prefix="RWF " />
-              <NumberControl label="Investment horizon" value={assumptions.horizonYears} onChange={(value) => update("horizonYears", value)} min={1} max={40} step={1} suffix=" years" />
-              <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
-                <span className="text-xs font-bold text-[#334155]">Investment start</span>
+              <NumberControl
+                label="Investment horizon"
+                value={assumptions.horizonYears}
+                onChange={(value) => update("horizonYears", value)}
+                min={1}
+                max={40}
+                step={1}
+                suffix=" years"
+                help="How long you plan to follow the overall investment strategy. A 20-year horizon can include several individual bonds that mature and are replaced."
+              />
+              <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
+                <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Investment start</span>
                 <div className="mt-3 grid grid-cols-[1fr_110px] gap-3">
                   <select
                     aria-label="Investment start month"
                     value={assumptions.startMonth}
                     onChange={(event) => update("startMonth", Number(event.target.value))}
-                    className="w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-3 text-sm font-bold text-slate-900 outline-none focus:border-[#3568a8]/60"
+                    className="w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-3 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
                   >
                     {MONTH_NAMES.map((month, index) => (
                       <option key={month} value={index + 1}>{month}</option>
@@ -803,31 +1247,38 @@ export function BondPlanner() {
                     max={2100}
                     value={assumptions.startYear}
                     onChange={(event) => update("startYear", Number(event.target.value))}
-                    className="w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-3 text-sm font-bold text-slate-900 outline-none focus:border-[#3568a8]/60"
+                    className="w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-3 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
                   />
                 </div>
-                <p className="mt-2 text-[11px] text-[#718096]">
+                <p className="mt-2 text-[11px] text-[var(--md-sys-color-outline)]">
                   The {assumptions.horizonYears}-year projection ends in{" "}
                   {simulationEnd
                     ? `${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
                     : "the selected horizon"}.
                 </p>
               </div>
-              <label className="block rounded-2xl border border-slate-200 bg-white/70 p-4">
+              <div className="block rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
                 <span className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-bold text-[#334155]">Bond tenor</span>
-                  <span className="text-[11px] text-[#718096]">Official options</span>
+                  <span className="flex items-center gap-2 text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                    Bond tenor
+                    <InfoTip label="About bond tenor">
+                      The lifetime of one specific bond before its principal is repaid.
+                      For example, a 10-year bond bought in 2026 matures in 2036.
+                    </InfoTip>
+                  </span>
+                  <span className="text-[11px] text-[var(--md-sys-color-outline)]">Official options</span>
                 </span>
                 <select
+                  aria-label="Bond tenor"
                   value={assumptions.tenorYears}
                   onChange={(event) => update("tenorYears", Number(event.target.value))}
-                  className="mt-3 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-3 text-sm font-bold text-slate-900 outline-none focus:border-[#3568a8]/60"
+                  className="mt-3 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-3 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
                 >
                   {TREASURY_BOND_TENORS.map((tenor) => (
                     <option key={tenor} value={tenor}>{tenor} years</option>
                   ))}
                 </select>
-              </label>
+              </div>
               <NumberControl
                 label="Annual coupon rate"
                 value={Math.round(modeledCouponRate * 10_000) / 100}
@@ -838,12 +1289,12 @@ export function BondPlanner() {
                 suffix="% p.a."
                 hint={`BK Capital range: ${formatPercent(MIN_ANNUAL_COUPON_RATE, 2)}–${formatPercent(MAX_ANNUAL_COUPON_RATE, 2)}. Use the rate published for the specific NBR issuance.`}
               />
-              <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
+              <div className="flex items-center justify-between gap-4 rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
                 <div>
-                  <p className="text-xs font-bold text-[#334155]">Withholding tax</p>
-                  <p className="mt-1 text-[11px] text-[#718096]">Fixed government rate</p>
+                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Withholding tax</p>
+                  <p className="mt-1 text-[11px] text-[var(--md-sys-color-outline)]">Fixed government rate</p>
                 </div>
-                <span className="rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-[#3568a8]">
+                <span className="rounded-lg bg-surface-container px-2.5 py-1 font-mono text-xs font-bold text-[var(--md-sys-color-primary)]">
                   {formatPercent(WITHHOLDING_TAX_RATE)}
                 </span>
               </div>
@@ -851,17 +1302,17 @@ export function BondPlanner() {
               <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={5_000_000} step={50_000} prefix="RWF " />
             </div>
 
-            <div className="mt-6 rounded-3xl border border-[#b7791f]/20 bg-[#b7791f]/[0.05] p-4">
+            <div className="mt-6 rounded-3xl border border-[var(--md-sys-color-tertiary)]/20 bg-[var(--md-sys-color-tertiary)]/[0.05] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#b7791f]">Extra cash</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--md-sys-color-tertiary)]">Extra cash</p>
                   <h3 className="mt-1 font-black">One-time injections</h3>
                 </div>
-                <span className="rounded-lg bg-[#b7791f]/10 px-2 py-1 text-[10px] font-bold text-[#b7791f]">
+                <span className="rounded-lg bg-[var(--md-sys-color-tertiary)]/10 px-2 py-1 text-[10px] font-bold text-[var(--md-sys-color-tertiary)]">
                   {cashInjections.length} added
                 </span>
               </div>
-              <p className="mt-2 text-[11px] leading-5 text-[#64748b]">
+              <p className="mt-2 text-[11px] leading-5 text-[var(--md-sys-color-on-surface-variant)]">
                 Model gifts, bonuses, or other occasional money separately from your monthly plan.
               </p>
               <form onSubmit={addCashInjection} className="mt-4 grid gap-3">
@@ -870,22 +1321,22 @@ export function BondPlanner() {
                   placeholder="Source, e.g. Gift from a friend"
                   value={injectionDraft.label}
                   onChange={(event) => setInjectionDraft((current) => ({ ...current, label: event.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-[#94a3b8] focus:border-[#b7791f]/50"
+                  className="w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm text-on-surface outline-none placeholder:text-[var(--md-sys-color-outline)] focus:border-[var(--md-sys-color-tertiary)]/50"
                 />
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#718096]">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-outline)]">
                   Amount
                   <input
                     type="number"
-                    min={100_000}
-                    step={100_000}
+                    min={1}
+                    step={1}
                     required
                     value={injectionDraft.amount}
                     onChange={(event) => setInjectionDraft((current) => ({ ...current, amount: Number(event.target.value) }))}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#b7791f]/50"
+                    className="mt-1.5 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm text-on-surface outline-none focus:border-[var(--md-sys-color-tertiary)]/50"
                   />
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#718096]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-outline)]">
                     Simulation year
                     <input
                       type="number"
@@ -894,15 +1345,15 @@ export function BondPlanner() {
                       required
                       value={injectionDraft.year}
                       onChange={(event) => setInjectionDraft((current) => ({ ...current, year: Number(event.target.value) }))}
-                      className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#b7791f]/50"
+                      className="mt-1.5 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm text-on-surface outline-none focus:border-[var(--md-sys-color-tertiary)]/50"
                     />
                   </label>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#718096]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-outline)]">
                     Month in that year
                     <select
                       value={injectionDraft.monthInYear}
                       onChange={(event) => setInjectionDraft((current) => ({ ...current, monthInYear: Number(event.target.value) }))}
-                      className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#b7791f]/50"
+                      className="mt-1.5 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm text-on-surface outline-none focus:border-[var(--md-sys-color-tertiary)]/50"
                     >
                       {MONTH_NAMES.map((_month, index) => {
                         const date = injectionCalendarDate(
@@ -918,21 +1369,62 @@ export function BondPlanner() {
                     </select>
                   </label>
                 </div>
-                <button className="flex items-center justify-center gap-2 rounded-xl bg-[#b7791f] px-4 py-3 text-xs font-black text-[#30260a] hover:bg-[#d69e2e]">
+                <div className="rounded-xl border border-[var(--md-sys-color-tertiary)]/15 bg-surface-container-lowest p-3 text-[10px] leading-4 text-on-surface-variant">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Cash already waiting</span>
+                    <strong className="text-on-surface">
+                      {formatRwf(waitingCash)}
+                    </strong>
+                  </div>
+                  {amountNeededForNextLot > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setInjectionDraft((current) => ({
+                          ...current,
+                          amount: amountNeededForNextLot,
+                        }))
+                      }
+                      className="mt-2 flex w-full items-center justify-between rounded-lg bg-[var(--md-sys-color-tertiary)]/10 px-2.5 py-2 font-bold text-[var(--md-sys-color-tertiary)] transition hover:bg-[var(--md-sys-color-tertiary)]/15"
+                    >
+                      <span>Top up the next RWF 100K lot</span>
+                      <span>{formatRwf(amountNeededForNextLot)}</span>
+                    </button>
+                  )}
+                  <div className="mt-2 grid grid-cols-2 gap-2 border-t border-outline/10 pt-2">
+                    <span>
+                      Combined monthly purchase
+                      <strong className="mt-0.5 block text-on-surface">
+                        {formatRwf(combinedBondPurchase)}
+                      </strong>
+                    </span>
+                    <span>
+                      Cash remaining
+                      <strong className="mt-0.5 block text-on-surface">
+                        {formatRwf(cashAfterDraftInjection)}
+                      </strong>
+                    </span>
+                  </div>
+                  <p className="mt-2">
+                    Deposits can be any positive amount. Only the resulting
+                    bond purchase must be in RWF 100,000 multiples.
+                  </p>
+                </div>
+                <button className="flex items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-tertiary)] px-4 py-3 text-xs font-black text-[var(--md-sys-color-on-primary)] hover:bg-[var(--md-sys-color-primary)]">
                   <Plus size={15} /> Add to scenario
                 </button>
               </form>
 
               {cashInjections.length > 0 && (
-                <div className="mt-4 space-y-2 border-t border-slate-200 pt-4">
+                <div className="mt-4 space-y-2 border-t border-outline/10 pt-4">
                   {cashInjections
                     .slice()
                     .sort((a, b) => a.month - b.month)
                     .map((injection) => (
-                      <div key={injection.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-100 p-3">
+                      <div key={injection.id} className="flex items-center justify-between gap-3 rounded-xl bg-surface-container p-3">
                         <div className="min-w-0">
                           <p className="truncate text-xs font-bold">{injection.label}</p>
-                          <p className="mt-1 text-[10px] text-[#718096]">
+                          <p className="mt-1 text-[10px] text-[var(--md-sys-color-outline)]">
                             {formatRwf(injection.amount)} ·{" "}
                             {MONTH_NAMES[
                               new Date(
@@ -952,7 +1444,7 @@ export function BondPlanner() {
                           type="button"
                           onClick={() => removeCashInjection(injection.id)}
                           aria-label={`Remove ${injection.label}`}
-                          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-red-300/10 px-2.5 py-2 text-[10px] font-black uppercase tracking-wider text-red-200/70 hover:border-red-300/25 hover:bg-red-300/10 hover:text-red-100"
+                          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-error/10 px-2.5 py-2 text-[10px] font-black uppercase tracking-wider text-error hover:border-error/25 hover:bg-error-container/30"
                         >
                           <Trash2 size={14} />
                           Delete
@@ -965,12 +1457,19 @@ export function BondPlanner() {
           </aside>
 
           <div className="min-w-0">
-            <GrowthChart values={annualProjection} />
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <GrowthChart values={chartProjection} />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               <Metric label="Total cash invested" value={formatRwf(summary.totalContributions)} detail="Monthly plan plus one-time injections" />
+              <Metric
+                label="Modeled bond purchases"
+                value={String(
+                  projection.filter((row) => row.newBondPurchaseLot).length,
+                )}
+                detail="Each monthly pooled purchase is tracked as one independent lot"
+              />
               <Metric label="Net coupons earned" value={formatRwf(summary.totalCoupons)} detail={`${formatPercent(netAnnualRate)} net annual rate`} />
               <Metric label="Coupons reinvested" value={formatRwf(summary.totalReinvested)} detail={`${formatPercent(assumptions.reinvestmentRate)} reinvested`} />
-              <Metric label="Growth above contributions" value={formatRwf(summary.finalPortfolio - summary.totalContributions - assumptions.startingPortfolio)} accent />
+              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - assumptions.startingPortfolio)} accent />
             </div>
             {cashInjections.length > 0 && (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -994,13 +1493,13 @@ export function BondPlanner() {
                 ["RWF 100M", summary.milestone100m],
                 ["RWF 200M", summary.milestone200m],
               ].map(([label, month]) => (
-                <div key={String(label)} className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#b7791f]/10 text-[#b7791f]">
+                <div key={String(label)} className="flex items-center gap-4 rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--md-sys-color-tertiary)]/10 text-[var(--md-sys-color-tertiary)]">
                     <Target size={18} />
                   </span>
                   <span>
                     <strong className="block text-sm">{label}</strong>
-                    <span className="text-xs text-[#64748b]">
+                    <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
                       {month
                         ? `${MONTH_NAMES[projection[Number(month) - 1].calendarMonth - 1]} ${projection[Number(month) - 1].calendarYear} · Month ${month}`
                         : "Not reached"}
@@ -1016,35 +1515,43 @@ export function BondPlanner() {
       <section id="projection" className="scroll-mt-24 mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#3568a8]">Projection</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--md-sys-color-primary)]">Projection</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">See where every franc goes</h2>
           </div>
-          <div className="rounded-2xl border border-[#b7791f]/20 bg-[#b7791f]/[0.07] px-4 py-3 text-xs text-[#7c5a24]">
+          <div className="rounded-2xl border border-[var(--md-sys-color-tertiary)]/20 bg-[var(--md-sys-color-tertiary)]/[0.07] px-4 py-3 text-xs text-[var(--md-sys-color-on-secondary-container)]">
             Passive income exceeds annual contributions in{" "}
-            <strong className="text-[#8a5a16]">
+            <strong className="text-[var(--md-sys-color-on-primary-container)]">
               {summary.passiveIncomeCrossoverYear
-                ? `Year ${summary.passiveIncomeCrossoverYear} (${annualProjection[summary.passiveIncomeCrossoverYear - 1]?.completionYear})`
+                ? `Year ${summary.passiveIncomeCrossoverYear} · ${MONTH_NAMES[annualProjection[summary.passiveIncomeCrossoverYear - 1]?.periodStartMonth - 1]} ${annualProjection[summary.passiveIncomeCrossoverYear - 1]?.periodStartYear}–${MONTH_NAMES[annualProjection[summary.passiveIncomeCrossoverYear - 1]?.periodEndMonth - 1]} ${annualProjection[summary.passiveIncomeCrossoverYear - 1]?.periodEndYear}`
                 : "no modeled year"}
             </strong>
           </div>
         </div>
 
-        <div className="mt-6 flex items-center gap-3 rounded-2xl border border-[#3568a8]/15 bg-[#3568a8]/[0.05] px-4 py-3 text-xs text-[#64748b]">
-          <CalendarDays size={16} className="shrink-0 text-[#3568a8]" />
-          <p>
-            Suggested routine: invest on the <strong className="text-slate-900">5th of every month</strong>,
-            or the next business day. This gives salary transfers time to settle while keeping the habit consistent.
-          </p>
+        <div className="mt-6 flex items-center gap-3 rounded-2xl border border-[var(--md-sys-color-primary)]/15 bg-[var(--md-sys-color-primary)]/[0.05] px-4 py-3 text-xs text-[var(--md-sys-color-on-surface-variant)]">
+          <CalendarDays size={16} className="shrink-0 text-[var(--md-sys-color-primary)]" />
+          <div>
+            <p>
+              Suggested routine: invest on the <strong className="text-on-surface">5th of every month</strong>,
+              or the next business day.
+            </p>
+            <p className="mt-1 text-[10px] leading-4">
+              Coupon dates are issuance-specific, not universally January and
+              July. The projection estimates each monthly purchase as a separate
+              issuance with its first coupon six months later. Use the bond&apos;s
+              NBR prospectus for its exact payment dates.
+            </p>
+          </div>
         </div>
 
-        <div className="bond-scrollbar mt-5 max-h-[72vh] overflow-auto rounded-3xl border border-slate-200 lg:max-h-none lg:overflow-visible">
+        <div className="bond-scrollbar mt-5 max-h-[72vh] overflow-auto rounded-3xl border border-outline/10 lg:max-h-none lg:overflow-visible">
           <table className="w-full min-w-[940px] border-collapse text-left">
-            <thead className="sticky top-0 z-30 bg-[#eef2f7] text-[10px] uppercase tracking-[0.15em] text-[#64748b] shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">
+            <thead className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] text-[10px] uppercase tracking-[0.15em] text-[var(--md-sys-color-on-surface-variant)] shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">
               <tr>
                 <th className="px-5 py-4">Year</th>
                 <th className="px-5 py-4">Invested this year</th>
                 <th className="px-5 py-4">Coupons this year</th>
-                <th className="px-5 py-4">Closing portfolio</th>
+                <th className="px-5 py-4">Account value</th>
                 <th className="px-5 py-4">Annual passive income</th>
                 <th className="w-16 px-5 py-4 text-right">Details</th>
               </tr>
@@ -1058,28 +1565,44 @@ export function BondPlanner() {
                 );
                 return (
                   <Fragment key={row.year}>
-                    <tr className={`border-t border-slate-200 text-sm transition hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : ""}`}>
+                    <tr className={`border-t border-outline/10 text-sm transition hover:bg-surface-container-low ${isExpanded ? "bg-surface-container-low" : ""}`}>
                       <td className="px-5 py-4">
-                        <span className="font-black text-[#3568a8]">
-                          Year {row.year} ({row.completionYear})
+                        <span className="font-black text-[var(--md-sys-color-primary)]">
+                          Year {row.year}
+                        </span>
+                        <span className="mt-1 block text-[10px] font-medium text-on-surface-variant">
+                          {MONTH_NAMES[row.periodStartMonth - 1]}{" "}
+                          {row.periodStartYear} –{" "}
+                          {MONTH_NAMES[row.periodEndMonth - 1]}{" "}
+                          {row.periodEndYear}
                         </span>
                         {yearInjections.length > 0 && (
-                          <span className="ml-2 rounded-full bg-[#b7791f]/10 px-2 py-1 text-[9px] font-black uppercase text-[#b7791f]">
+                          <span className="ml-2 rounded-full bg-[var(--md-sys-color-tertiary)]/10 px-2 py-1 text-[9px] font-black uppercase text-[var(--md-sys-color-tertiary)]">
                             {yearInjections.length} extra {yearInjections.length === 1 ? "deposit" : "deposits"}
                           </span>
                         )}
                       </td>
                       <td className="px-5 py-4">{formatRwf(row.annualContributions)}</td>
-                      <td className="px-5 py-4 text-[#64748b]">{formatRwf(row.annualCoupons)}</td>
-                      <td className="px-5 py-4 font-bold">{formatRwf(row.portfolio)}</td>
-                      <td className="px-5 py-4 text-[#b7791f]">{formatRwf(row.passiveIncome)}</td>
+                      <td className="px-5 py-4 text-[var(--md-sys-color-on-surface-variant)]">{formatRwf(row.annualCoupons)}</td>
+                      <td className="px-5 py-4">
+                        <span className="block font-bold">
+                          {formatRwf(row.portfolio)}
+                        </span>
+                        {row.cashBalance > 0 && (
+                          <span className="mt-1 block text-[9px] text-on-surface-variant">
+                            {formatRwf(row.bondHoldings)} bonds ·{" "}
+                            {formatRwf(row.cashBalance)} cash
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-[var(--md-sys-color-tertiary)]">{formatRwf(row.passiveIncome)}</td>
                       <td className="px-5 py-4 text-right">
                         <button
                           type="button"
                           onClick={() => toggleYear(row.year)}
                           aria-expanded={isExpanded}
                           aria-label={`${isExpanded ? "Collapse" : "Expand"} year ${row.year}`}
-                          className="inline-grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-[#64748b] transition hover:border-[#3568a8]/40 hover:text-[#3568a8]"
+                          className="inline-grid h-9 w-9 place-items-center rounded-xl border border-outline/10 text-[var(--md-sys-color-on-surface-variant)] transition hover:border-[var(--md-sys-color-primary)]/40 hover:text-[var(--md-sys-color-primary)]"
                         >
                           <ChevronDown
                             size={17}
@@ -1089,27 +1612,29 @@ export function BondPlanner() {
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr className="border-t border-[#3568a8]/10 bg-[#f8fafc]">
+                      <tr className="border-t border-[var(--md-sys-color-primary)]/10 bg-[var(--md-sys-color-surface-container-lowest)]">
                         <td colSpan={6} className="p-0">
                           <div className="overflow-x-auto px-4 py-4 md:px-6 lg:overflow-visible">
-                            <table className="w-full min-w-[960px] border-collapse text-left">
-                              <thead className="sticky top-[49px] z-20 bg-[#f8fafc] text-[9px] uppercase tracking-[0.14em] text-[#718096] shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">
+                            <table className="w-full min-w-[1120px] border-collapse text-left">
+                              <thead className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] text-[9px] uppercase tracking-[0.14em] text-[var(--md-sys-color-outline)] shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">
                                 <tr>
                                   <th className="px-3 py-2">Month</th>
-                                  <th className="px-3 py-2">Suggested date</th>
                                   <th className="px-3 py-2">Opening</th>
                                   <th className="px-3 py-2">Monthly plan</th>
                                   <th className="px-3 py-2">Extra cash</th>
                                   <th className="px-3 py-2">Coupon paid</th>
                                   <th className="px-3 py-2">Reinvested</th>
-                                  <th className="px-3 py-2">Closing</th>
+                                  <th className="px-3 py-2">Bond purchase</th>
+                                  <th className="px-3 py-2">Cash balance</th>
+                                  <th className="px-3 py-2">Bond holdings</th>
+                                  <th className="px-3 py-2">Account value</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {months.map((month) => (
                                   <tr
                                     key={month.month}
-                                    className={`border-t border-slate-200 text-xs ${month.couponPayment > 0 ? "bg-[#3568a8]/[0.05]" : ""}`}
+                                    className={`border-t border-outline/10 text-xs ${month.couponPayment > 0 ? "bg-[var(--md-sys-color-primary)]/[0.05]" : ""}`}
                                   >
                                     <td className="px-3 py-3 font-bold">
                                       {new Intl.DateTimeFormat("en", {
@@ -1122,32 +1647,355 @@ export function BondPlanner() {
                                           1,
                                         ),
                                       )}
-                                    </td>
-                                    <td className="px-3 py-3 text-[#64748b]">
-                                      5 {MONTH_NAMES[month.calendarMonth - 1].slice(0, 3)} {month.calendarYear}
                                       {month.couponPayment > 0 && (
-                                        <span className="ml-2 rounded-full bg-[#3568a8]/10 px-2 py-1 text-[9px] font-black uppercase text-[#3568a8]">
-                                          Coupon month
+                                        <span className="ml-2 inline-block rounded-full bg-[var(--md-sys-color-primary)]/10 px-2 py-1 text-[9px] font-black uppercase text-[var(--md-sys-color-primary)]">
+                                          {month.couponPayments.length}{" "}
+                                          {month.couponPayments.length === 1
+                                            ? "lot pays"
+                                            : "lots pay"}
                                         </span>
                                       )}
                                     </td>
-                                    <td className="px-3 py-3 text-[#718096]">{formatRwf(month.openingPortfolio)}</td>
-                                    <td className="px-3 py-3 font-bold">{formatRwf(month.personalContribution)}</td>
+                                    <td className="px-3 py-3 text-[var(--md-sys-color-outline)]">{formatRwf(month.openingPortfolio)}</td>
+                                    <td className="px-3 py-3">
+                                      <PurchaseLotTip
+                                        id={`monthly-${month.month}`}
+                                        open={openPurchaseLot === `monthly-${month.month}`}
+                                        onOpen={openPurchaseLotDetails}
+                                        onClose={schedulePurchaseLotClose}
+                                        onCancelClose={cancelPurchaseLotClose}
+                                        label="Monthly plan"
+                                        amount={month.personalContribution}
+                                        calendarMonth={month.calendarMonth}
+                                        calendarYear={month.calendarYear}
+                                        tenorYears={assumptions.tenorYears}
+                                        annualCouponRate={modeledCouponRate}
+                                        modeledPurchaseAmount={month.newBondPurchase}
+                                        fundingBreakdown={[
+                                          ...(month.openingCashBalance > 0
+                                            ? [
+                                                {
+                                                  label: "Cash carried in",
+                                                  amount:
+                                                    month.openingCashBalance,
+                                                },
+                                              ]
+                                            : []),
+                                          {
+                                            label: "Monthly contribution",
+                                            amount: month.personalContribution,
+                                          },
+                                          ...(month.cashInjection > 0
+                                            ? [
+                                                {
+                                                  label: "Extra cash",
+                                                  amount: month.cashInjection,
+                                                },
+                                              ]
+                                            : []),
+                                          ...(month.reinvestedCoupon > 0
+                                            ? [
+                                                {
+                                                  label: "Reinvested coupon",
+                                                  amount:
+                                                    month.reinvestedCoupon,
+                                                },
+                                              ]
+                                            : []),
+                                          ...(month.maturedPrincipal > 0
+                                            ? [
+                                                {
+                                                  label: "Matured principal",
+                                                  amount:
+                                                    month.maturedPrincipal,
+                                                },
+                                              ]
+                                            : []),
+                                          {
+                                            label: "Unallocated cash remainder",
+                                            amount: month.closingCashBalance,
+                                          },
+                                        ]}
+                                        strategyNote="All available funding is pooled. Bonds are purchased only in RWF 100K multiples, and the remaining cash carries into the next month."
+                                        placement={month.monthInYear > 7 ? "above" : "below"}
+                                        detailHref={
+                                          month.newBondPurchase >=
+                                          assumptions.purchaseMinimum
+                                            ? `/bonds/modeled-purchase?${new URLSearchParams({
+                                                label: "Pooled monthly purchase",
+                                                amount: String(month.newBondPurchase),
+                                                date: `${month.calendarYear}-${String(month.calendarMonth).padStart(2, "0")}-05`,
+                                                tenor: String(
+                                                  assumptions.tenorYears,
+                                                ),
+                                                rate: String(
+                                                  modeledCouponRate,
+                                                ),
+                                                lot:
+                                                  month.newBondPurchaseLot?.id ??
+                                                  "",
+                                              })}`
+                                            : undefined
+                                        }
+                                      />
+                                    </td>
                                     <td className="px-3 py-3">
                                       {month.cashInjection > 0 ? (
                                         <>
-                                          <span className="font-bold text-[#b7791f]">{formatRwf(month.cashInjection)}</span>
-                                          <span className="mt-1 block max-w-36 truncate text-[9px] text-[#8a682e]">
+                                          <PurchaseLotTip
+                                            id={`extra-${month.month}`}
+                                            open={openPurchaseLot === `extra-${month.month}`}
+                                            onOpen={openPurchaseLotDetails}
+                                            onClose={schedulePurchaseLotClose}
+                                            onCancelClose={cancelPurchaseLotClose}
+                                            label={
+                                              month.cashInjectionLabels.join(", ") ||
+                                              "Extra cash"
+                                            }
+                                            amount={month.cashInjection}
+                                            calendarMonth={month.calendarMonth}
+                                            calendarYear={month.calendarYear}
+                                            tenorYears={assumptions.tenorYears}
+                                            annualCouponRate={modeledCouponRate}
+                                            modeledPurchaseAmount={
+                                              month.newBondPurchase
+                                            }
+                                            fundingBreakdown={[
+                                              ...(month.openingCashBalance > 0
+                                                ? [
+                                                    {
+                                                      label:
+                                                        "Cash carried in",
+                                                      amount:
+                                                        month.openingCashBalance,
+                                                    },
+                                                  ]
+                                                : []),
+                                              {
+                                                label:
+                                                  "Monthly contribution",
+                                                amount:
+                                                  month.personalContribution,
+                                              },
+                                              {
+                                                label: "Extra cash",
+                                                amount: month.cashInjection,
+                                              },
+                                              ...(month.reinvestedCoupon > 0
+                                                ? [
+                                                    {
+                                                      label:
+                                                        "Reinvested coupon",
+                                                      amount:
+                                                        month.reinvestedCoupon,
+                                                    },
+                                                  ]
+                                                : []),
+                                              ...(month.maturedPrincipal > 0
+                                                ? [
+                                                    {
+                                                      label:
+                                                        "Matured principal",
+                                                      amount:
+                                                        month.maturedPrincipal,
+                                                    },
+                                                  ]
+                                                : []),
+                                              {
+                                                label:
+                                                  "Unallocated cash remainder",
+                                                amount:
+                                                  month.closingCashBalance,
+                                              },
+                                            ]}
+                                            strategyNote="All available funding is pooled. Bonds are purchased only in RWF 100K multiples, and the remaining cash carries into the next month."
+                                            tone="gold"
+                                            placement={month.monthInYear > 7 ? "above" : "below"}
+                                            detailHref={
+                                              month.newBondPurchase >=
+                                              assumptions.purchaseMinimum
+                                                ? `/bonds/modeled-purchase?${new URLSearchParams({
+                                              label: "Pooled monthly purchase",
+                                              amount: String(month.newBondPurchase),
+                                              date: `${month.calendarYear}-${String(month.calendarMonth).padStart(2, "0")}-05`,
+                                              tenor: String(
+                                                assumptions.tenorYears,
+                                              ),
+                                              rate: String(modeledCouponRate),
+                                              lot:
+                                                month.newBondPurchaseLot?.id ??
+                                                "",
+                                            })}`
+                                                : undefined
+                                            }
+                                          />
+                                          <span className="mt-1 block max-w-36 truncate text-[9px] text-[var(--md-sys-color-on-secondary-container)]">
                                             {month.cashInjectionLabels.join(", ")}
                                           </span>
                                         </>
                                       ) : (
-                                        <span className="text-[#94a3b8]">—</span>
+                                        <span className="text-[var(--md-sys-color-outline)]">—</span>
                                       )}
                                     </td>
-                                    <td className="px-3 py-3 text-[#3568a8]">{formatRwf(month.couponPayment)}</td>
-                                    <td className="px-3 py-3 text-[#64748b]">{formatRwf(month.reinvestedCoupon)}</td>
-                                    <td className="px-3 py-3 font-bold">{formatRwf(month.closingPortfolio)}</td>
+                                    <td className="px-3 py-3 text-[var(--md-sys-color-primary)]">
+                                      {formatRwf(month.couponPayment)}
+                                      {month.couponPayments.length > 0 && (
+                                        <span className="mt-1 block text-[9px] text-on-surface-variant">
+                                          From {month.couponPayments.length}{" "}
+                                          independent{" "}
+                                          {month.couponPayments.length === 1
+                                            ? "lot"
+                                            : "lots"}
+                                        </span>
+                                      )}
+                                      {month.maturedPrincipal > 0 && (
+                                        <span className="mt-1 block text-[9px] font-bold text-[var(--md-sys-color-tertiary)]">
+                                          {formatRwf(month.maturedPrincipal)}{" "}
+                                          principal matured
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-3">
+                                      {month.reinvestedCoupon > 0 ? (
+                                        <PurchaseLotTip
+                                          id={`reinvested-${month.month}`}
+                                          open={
+                                            openPurchaseLot ===
+                                            `reinvested-${month.month}`
+                                          }
+                                          onOpen={openPurchaseLotDetails}
+                                          onClose={schedulePurchaseLotClose}
+                                          onCancelClose={cancelPurchaseLotClose}
+                                          label="Reinvested coupon funding"
+                                          amount={month.reinvestedCoupon}
+                                          calendarMonth={month.calendarMonth}
+                                          calendarYear={month.calendarYear}
+                                          tenorYears={assumptions.tenorYears}
+                                          annualCouponRate={modeledCouponRate}
+                                          modeledPurchaseAmount={month.newBondPurchase}
+                                          fundingBreakdown={[
+                                            ...(month.openingCashBalance > 0
+                                              ? [
+                                                  {
+                                                    label: "Cash carried in",
+                                                    amount:
+                                                      month.openingCashBalance,
+                                                  },
+                                                ]
+                                              : []),
+                                            {
+                                              label: "Monthly contribution",
+                                              amount: month.personalContribution,
+                                            },
+                                            ...(month.cashInjection > 0
+                                              ? [
+                                                  {
+                                                    label: "Extra cash",
+                                                    amount: month.cashInjection,
+                                                  },
+                                                ]
+                                              : []),
+                                            {
+                                              label: "Reinvested coupon",
+                                              amount: month.reinvestedCoupon,
+                                            },
+                                            ...(month.maturedPrincipal > 0
+                                              ? [
+                                                  {
+                                                    label:
+                                                      "Matured principal",
+                                                    amount:
+                                                      month.maturedPrincipal,
+                                                  },
+                                                ]
+                                              : []),
+                                            {
+                                              label: "Unallocated cash remainder",
+                                              amount: month.closingCashBalance,
+                                            },
+                                          ]}
+                                          strategyNote="The coupon stays as cash and is pooled with other funding. Bonds are purchased only in RWF 100K multiples; any remainder carries forward."
+                                          tone="gold"
+                                          detailHref={
+                                            month.newBondPurchase >=
+                                            assumptions.purchaseMinimum
+                                              ? `/bonds/modeled-purchase?${new URLSearchParams({
+                                            label:
+                                              "Pooled reinvestment purchase",
+                                            amount: String(month.newBondPurchase),
+                                            date: `${month.calendarYear}-${String(month.calendarMonth).padStart(2, "0")}-05`,
+                                            tenor: String(
+                                              assumptions.tenorYears,
+                                            ),
+                                            rate: String(modeledCouponRate),
+                                            lot:
+                                              month.newBondPurchaseLot?.id ??
+                                              "",
+                                          })}`
+                                              : undefined
+                                          }
+                                          placement={
+                                            month.monthInYear > 7
+                                              ? "above"
+                                              : "below"
+                                          }
+                                        />
+                                      ) : (
+                                        <span className="text-[var(--md-sys-color-outline)]">—</span>
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-3 font-black text-primary">
+                                      {month.newBondPurchaseLot ? (
+                                        <Link
+                                          href={`/bonds/modeled-purchase?${new URLSearchParams({
+                                            label: `Pooled purchase lot ${String(month.month).padStart(3, "0")}`,
+                                            amount: String(
+                                              month.newBondPurchaseLot.amount,
+                                            ),
+                                            date:
+                                              month.newBondPurchaseLot
+                                                .purchaseDate,
+                                            tenor: String(
+                                              month.newBondPurchaseLot
+                                                .tenorYears,
+                                            ),
+                                            rate: String(
+                                              month.newBondPurchaseLot
+                                                .annualCouponRate,
+                                            ),
+                                            lot:
+                                              month.newBondPurchaseLot.id,
+                                          })}`}
+                                          className="underline decoration-dotted underline-offset-4"
+                                        >
+                                          {formatRwf(month.newBondPurchase)}
+                                          <span className="mt-1 block text-[9px] font-bold text-on-surface-variant">
+                                            Lot{" "}
+                                            {String(month.month).padStart(
+                                              3,
+                                              "0",
+                                            )}
+                                          </span>
+                                        </Link>
+                                      ) : (
+                                        formatRwf(0)
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-3 text-on-surface-variant">
+                                      {formatRwf(month.closingCashBalance)}
+                                    </td>
+                                    <td className="px-3 py-3 font-bold">
+                                      {formatRwf(month.closingPortfolio)}
+                                      <span className="mt-1 block text-[9px] font-medium text-on-surface-variant">
+                                        {month.activeBondCount} active{" "}
+                                        {month.activeBondCount === 1
+                                          ? "lot"
+                                          : "lots"}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-3 font-black">
+                                      {formatRwf(month.totalAccountValue)}
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1163,175 +2011,440 @@ export function BondPlanner() {
           </table>
         </div>
       </section>
+        </>
+      )}
 
-      <section id="portfolio" className="scroll-mt-24 border-y border-slate-200 bg-[#f1f4f8]/72">
+      {view === "portfolio" && (
+      <section id="portfolio" className="scroll-mt-24 border-y border-outline/10 bg-[var(--md-sys-color-surface-container-low)]/72">
         <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
-              <div className="flex items-center gap-2 text-[#3568a8]">
+              <div className="flex items-center gap-2 text-[var(--md-sys-color-primary)]">
                 <LockKeyhole size={16} />
                 <p className="text-[10px] font-black uppercase tracking-[0.22em]">Private portfolio</p>
               </div>
               <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Track real bond purchases</h2>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-[#64748b]">
+              <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--md-sys-color-on-surface-variant)]">
                 Simulation is public. Actual purchases are stored in Neon and only returned after your signed admin session is verified.
               </p>
             </div>
             {authenticated && (
-              <button onClick={logout} className="flex w-fit items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-[#64748b] hover:text-slate-900">
+              <button onClick={logout} className="flex w-fit items-center gap-2 rounded-xl border border-outline/10 px-3 py-2 text-xs font-black text-[var(--md-sys-color-on-surface-variant)] hover:text-on-surface">
                 <LogOut size={15} /> Sign out
               </button>
             )}
           </div>
 
           {portfolioError && (
-            <div className="mt-6 rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
+            <div className="mt-6 rounded-2xl border border-error/20 bg-error-container/30 px-4 py-3 text-sm text-on-error-container">
               {portfolioError}
             </div>
           )}
 
           {sessionLoading ? (
-            <div className="mt-8 rounded-3xl border border-slate-200 p-8 text-sm text-[#64748b]">Checking private session…</div>
+            <div className="mt-8 rounded-3xl border border-outline/10 p-8 text-sm text-[var(--md-sys-color-on-surface-variant)]">Checking private session…</div>
           ) : !authenticated ? (
-            <form onSubmit={login} className="mt-8 max-w-lg rounded-3xl border border-slate-200 bg-white/70 p-5 md:p-7">
+            <form onSubmit={login} className="mt-8 max-w-lg rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5 md:p-7">
               <div className="mb-6 flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#3568a8]/10 text-[#3568a8]"><ShieldCheck size={21} /></span>
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--md-sys-color-primary)]/10 text-[var(--md-sys-color-primary)]"><ShieldCheck size={21} /></span>
                 <div>
                   <h3 className="font-black">Owner access</h3>
-                  <p className="text-xs text-[#718096]">Use the email and password configured in Vercel.</p>
+                  <p className="text-xs text-[var(--md-sys-color-outline)]">Sign in with your temporary owner account.</p>
                 </div>
               </div>
-              <label className="block text-xs font-bold text-[#64748b]">
+              <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)]">
                 Email
-                <input name="email" type="email" required autoComplete="username" className="mt-2 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-4 py-3 text-slate-900 outline-none focus:border-[#3568a8]/60" />
+                <input name="email" type="email" required autoComplete="username" defaultValue="orestegabo@icloud.com" className="mt-2 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-4 py-3 text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60" />
               </label>
-              <label className="mt-4 block text-xs font-bold text-[#64748b]">
+              <label className="mt-4 block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)]">
                 Password
-                <input name="password" type="password" required minLength={12} autoComplete="current-password" className="mt-2 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-4 py-3 text-slate-900 outline-none focus:border-[#3568a8]/60" />
+                <input name="password" type="password" required minLength={12} autoComplete="current-password" className="mt-2 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-4 py-3 text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60" />
               </label>
-              <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#3568a8] px-4 py-3 text-sm font-black text-white hover:bg-[#4d7db8]">
+              <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90">
                 Open private portfolio <ChevronRight size={16} />
               </button>
             </form>
           ) : (
             <>
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <Metric label="Actual invested" value={formatRwf(actualPortfolio)} accent />
+              <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <Metric label="Principal held" value={formatRwf(actualPortfolio)} accent />
+                <Metric label="Total cash cost" value={formatRwf(actualCashCost)} />
                 <Metric label="Expected annual net coupons" value={formatRwf(actualAnnualIncome)} />
-                <Metric label="Recorded bonds" value={String(purchases.length)} />
+                <Metric label="Recorded transactions" value={String(purchases.length)} />
               </div>
-              <div className="mt-6 grid gap-6 xl:grid-cols-[420px_1fr]">
-                <form onSubmit={savePurchase} className="rounded-3xl border border-slate-200 bg-white/70 p-5">
+              <div className="mt-6 grid gap-6 xl:grid-cols-[480px_1fr]">
+                <form id="portfolio-transaction-form" onSubmit={savePurchase} className="scroll-mt-24 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
                   <div className="flex items-center gap-3">
-                    <Plus size={18} className="text-[#3568a8]" />
-                    <h3 className="font-black">Add a purchase</h3>
+                    <Plus size={18} className="text-[var(--md-sys-color-primary)]" />
+                    <div>
+                      <h3 className="font-black">
+                        {editingPurchaseId
+                          ? "Edit Treasury bond purchase"
+                          : "Record Treasury bond purchase"}
+                      </h3>
+                      <p className="mt-1 text-[10px] text-on-surface-variant">
+                        Record the transaction confirmed by BK Capital.
+                      </p>
+                    </div>
                   </div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <label className="text-[11px] font-bold text-[#64748b]">
-                      Tenor years
-                      <select
-                        value={purchase.tenorYears}
-                        onChange={(event) => setPurchase((current) => ({ ...current, tenorYears: Number(event.target.value) }))}
-                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#3568a8]/60"
-                      >
-                        {TREASURY_BOND_TENORS.map((tenor) => (
-                          <option key={tenor} value={tenor}>{tenor} years</option>
+                    <div className="sm:col-span-2 rounded-2xl border border-primary/15 bg-primary/5 p-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {[
+                          "Rwanda Treasury Bond",
+                          "BK Capital",
+                          "RWF",
+                          "5% tax",
+                          "Semiannual coupons",
+                        ].map((label) => (
+                          <span
+                            key={label}
+                            className="rounded-full border border-primary/15 bg-background/70 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-primary"
+                          >
+                            {label}
+                          </span>
                         ))}
-                      </select>
-                    </label>
+                      </div>
+                      <p className="mt-3 text-[10px] leading-4 text-on-surface-variant">
+                        These portfolio defaults are applied automatically to every
+                        transaction.
+                      </p>
+                    </div>
                     {[
-                      ["Purchase date", "purchaseDate", "date"],
-                      ["Maturity date", "maturityDate", "date"],
-                      ["Bond name", "bondName", "text"],
-                      ["ISIN", "isin", "text"],
-                      ["Amount invested", "amountInvested", "number"],
-                      ["Coupon rate (%)", "couponRate", "number"],
-                      ["Coupon frequency", "couponFrequency", "number"],
-                    ].map(([label, key, type]) => {
-                      const current = purchase[key as keyof BondPurchaseInput];
-                      const displayValue = key === "couponRate" ? Number(current) * 100 : current;
+                      ["Bond name", "bondName", "text", true],
+                      ["ISIN / security code", "isin", "text", false],
+                      ["Trade date", "purchaseDate", "date", true],
+                      ["Settlement date", "settlementDate", "date", true],
+                      ["Maturity date", "maturityDate", "date", true],
+                    ].map(([label, key, type, required]) => {
+                      const fieldKey =
+                        String(key) as keyof BondPurchaseInput;
                       return (
-                        <label key={key} className={`text-[11px] font-bold text-[#64748b] ${key === "bondName" || key === "isin" ? "sm:col-span-2" : ""}`}>
+                        <label key={fieldKey} className={`text-[11px] font-bold text-on-surface-variant ${fieldKey === "bondName" ? "sm:col-span-2" : ""}`}>
                           {label}
                           <input
-                            type={type}
-                            required={!["isin"].includes(key)}
-                            value={displayValue}
-                            min={
-                              key === "couponRate"
-                                ? MIN_ANNUAL_COUPON_RATE * 100
-                                : key === "amountInvested"
-                                  ? 100_000
-                                  : type === "number"
-                                    ? 0
-                                    : undefined
+                            type={String(type)}
+                            required={Boolean(required)}
+                            value={String(purchase[fieldKey])}
+                            onChange={(event) =>
+                              setPurchase((current) => ({
+                                ...current,
+                                [fieldKey]: event.target.value,
+                                ...(fieldKey === "maturityDate"
+                                  ? { couponDates: [] }
+                                  : {}),
+                              }))
                             }
-                            max={key === "couponRate" ? MAX_ANNUAL_COUPON_RATE * 100 : undefined}
-                            step={
-                              key === "couponRate"
-                                ? "0.01"
-                                : key === "amountInvested"
-                                  ? "100000"
-                                  : "1"
-                            }
-                            onChange={(event) => {
-                              const value = type === "number" ? Number(event.target.value) : event.target.value;
-                              setPurchase((currentPurchase) => ({
-                                ...currentPurchase,
-                                [key]: key === "couponRate" ? Number(value) / 100 : value,
-                              }));
-                            }}
-                            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#3568a8]/60"
+                            className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
                           />
                         </label>
                       );
                     })}
-                    <label className="sm:col-span-2 text-[11px] font-bold text-[#64748b]">
+                    {[
+                      ["Face value / principal", "faceValue", 1],
+                      ["Executed price (% of face)", "pricePercent", 0.001],
+                      ["Accrued interest paid", "accruedInterestPaid", 1],
+                      ["Fees and commission", "feesPaid", 1],
+                      ["Coupon rate (%)", "couponRate", 0.001],
+                    ].map(([label, key, step]) => {
+                      const fieldKey =
+                        String(key) as keyof BondPurchaseInput;
+                      return (
+                        <label key={fieldKey} className="text-[11px] font-bold text-on-surface-variant">
+                          {label}
+                          <input
+                            type="number"
+                            min={0}
+                            step={Number(step)}
+                            required
+                            value={
+                              fieldKey === "couponRate"
+                                ? purchase.couponRate * 100
+                                : Number(purchase[fieldKey])
+                            }
+                            onChange={(event) => {
+                              const value = Number(event.target.value);
+                              setPurchase((current) => ({
+                                ...current,
+                                [fieldKey]:
+                                  fieldKey === "couponRate"
+                                    ? value / 100
+                                    : value,
+                              }));
+                            }}
+                            className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
+                          />
+                        </label>
+                      );
+                    })}
+                    <label className="text-[11px] font-bold text-on-surface-variant">
+                      Tenor
+                      <select
+                        required
+                        value={purchase.tenorYears}
+                        onChange={(event) =>
+                          setPurchase((current) => ({
+                            ...current,
+                            tenorYears: Number(event.target.value),
+                          }))
+                        }
+                        className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface"
+                      >
+                        {TREASURY_BOND_TENORS.map((tenor) => (
+                          <option key={tenor} value={tenor}>
+                            {tenor} years
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="text-[11px] font-bold text-on-surface-variant">
+                      Position status
+                      <select value={purchase.status} onChange={(event) => setPurchase((current) => ({ ...current, status: event.target.value as BondPurchaseInput["status"] }))} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface">
+                        <option value="active">Active</option>
+                        <option value="sold">Sold</option>
+                        <option value="matured">Matured</option>
+                      </select>
+                    </label>
+                    <div className="sm:col-span-2 rounded-2xl border border-outline/10 bg-surface-container-low/60 p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+                            Semiannual coupon schedule
+                          </p>
+                          <p className="mt-1 text-[10px] leading-4 text-on-surface-variant">
+                            Enter the first prospectus payment date, then generate the
+                            six-month schedule through maturity.
+                          </p>
+                        </div>
+                        <CalendarDays size={18} className="shrink-0 text-primary" />
+                      </div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                        <label className="text-[11px] font-bold text-on-surface-variant">
+                          First coupon payment
+                          <input
+                            type="date"
+                            required
+                            value={purchase.firstCouponDate}
+                            onChange={(event) =>
+                              setPurchase((current) => ({
+                                ...current,
+                                firstCouponDate: event.target.value,
+                                couponDates: [],
+                              }))
+                            }
+                            className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          disabled={!purchase.firstCouponDate || !purchase.maturityDate}
+                          onClick={() =>
+                            setPurchase((current) => ({
+                              ...current,
+                              couponDates: generateSemiannualCouponDates(
+                                current.firstCouponDate,
+                                current.maturityDate,
+                              ),
+                            }))
+                          }
+                          className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs font-black text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Generate dates
+                        </button>
+                      </div>
+
+                      {purchase.couponDates.length > 0 ? (
+                        <div className="bond-scrollbar mt-4 max-h-64 overflow-y-auto pr-1">
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {purchase.couponDates.map((date, index) => (
+                              <div
+                                key={`${date}-${index}`}
+                                className="flex items-center gap-2 rounded-xl border border-outline/10 bg-background/80 p-2"
+                              >
+                                <span className="w-7 text-center text-[9px] font-black text-outline">
+                                  {String(index + 1).padStart(2, "0")}
+                                </span>
+                                <input
+                                  type="date"
+                                  required
+                                  value={date}
+                                  onChange={(event) =>
+                                    setPurchase((current) => ({
+                                      ...current,
+                                      couponDates: current.couponDates
+                                        .map((item, itemIndex) =>
+                                          itemIndex === index
+                                            ? event.target.value
+                                            : item,
+                                        )
+                                        .filter(Boolean)
+                                        .sort(),
+                                    }))
+                                  }
+                                  className="min-w-0 flex-1 bg-transparent text-xs font-bold text-on-surface outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  aria-label={`Remove coupon date ${date}`}
+                                  onClick={() =>
+                                    setPurchase((current) => ({
+                                      ...current,
+                                      couponDates: current.couponDates.filter(
+                                        (_, itemIndex) => itemIndex !== index,
+                                      ),
+                                    }))
+                                  }
+                                  className="rounded-lg p-1.5 text-outline transition hover:bg-error-container/30 hover:text-error"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-4 rounded-xl border border-dashed border-outline/20 px-3 py-4 text-center text-[10px] text-on-surface-variant">
+                          No coupon dates generated yet.
+                        </p>
+                      )}
+                    </div>
+                    <label className="text-[11px] font-bold text-on-surface-variant">
+                      Account reference
+                      <input value={purchase.accountReference} onChange={(event) => setPurchase((current) => ({ ...current, accountReference: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface" />
+                    </label>
+                    <label className="sm:col-span-2 text-[11px] font-bold text-on-surface-variant">
+                      Prospectus or source URL
+                      <input type="url" value={purchase.sourceUrl} onChange={(event) => setPurchase((current) => ({ ...current, sourceUrl: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface" />
+                    </label>
+                    <div className="sm:col-span-2 rounded-xl border border-primary/15 bg-primary/5 p-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-primary">Calculated transaction cost</p>
+                          <p className="mt-1 text-xl font-black">{formatRwf(purchaseCashCost)}</p>
+                          <p className="mt-1 text-[10px] text-on-surface-variant">
+                            Face value × executed price + accrued interest + fees.
+                          </p>
+                        </div>
+                        <div className="border-t border-primary/10 pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-primary">Net coupon every 6 months</p>
+                          <p className="mt-1 text-xl font-black">
+                            {formatRwf(
+                              purchase.faceValue *
+                                purchase.couponRate *
+                                (1 - WITHHOLDING_TAX_RATE) /
+                                2,
+                            )}
+                          </p>
+                          <p className="mt-1 text-[10px] text-on-surface-variant">
+                            Based on face value after the fixed 5% withholding tax.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <label className="sm:col-span-2 text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)]">
                       Notes
-                      <textarea value={purchase.notes} maxLength={1000} onChange={(event) => setPurchase((current) => ({ ...current, notes: event.target.value }))} className="mt-1.5 min-h-20 w-full resize-y rounded-xl border border-slate-200 bg-[#f7f5ef] px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#3568a8]/60" />
+                      <textarea value={purchase.notes} maxLength={1000} onChange={(event) => setPurchase((current) => ({ ...current, notes: event.target.value }))} className="mt-1.5 min-h-20 w-full resize-y rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60" />
                     </label>
                   </div>
-                  <button disabled={savingPurchase} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#3568a8] px-4 py-3 text-sm font-black text-white disabled:opacity-50">
-                    <Database size={16} /> {savingPurchase ? "Saving…" : "Save to Neon"}
-                  </button>
+                  <div className="mt-4 flex gap-2">
+                    {editingPurchaseId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingPurchaseId(null);
+                          setPurchase(EMPTY_PURCHASE);
+                        }}
+                        className="rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button disabled={savingPurchase} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90 disabled:opacity-50">
+                      <Database size={16} />{" "}
+                      {savingPurchase
+                        ? "Saving…"
+                        : editingPurchaseId
+                          ? "Update transaction"
+                          : "Save transaction"}
+                    </button>
+                  </div>
                 </form>
 
-                <div className="bond-scrollbar overflow-x-auto rounded-3xl border border-slate-200">
+                <div className="bond-scrollbar overflow-x-auto rounded-3xl border border-outline/10">
                   {purchases.length === 0 ? (
                     <div className="grid min-h-64 place-items-center p-8 text-center">
                       <div>
-                        <WalletCards className="mx-auto text-[#718096]" />
+                        <WalletCards className="mx-auto text-[var(--md-sys-color-outline)]" />
                         <p className="mt-3 font-bold">No purchases recorded yet</p>
-                        <p className="mt-1 text-xs text-[#718096]">Add your first treasury bond using the form.</p>
+                        <p className="mt-1 text-xs text-[var(--md-sys-color-outline)]">Add your first treasury bond using the form.</p>
                       </div>
                     </div>
                   ) : (
-                    <table className="w-full min-w-[760px] border-collapse text-left">
-                      <thead className="bg-[#eef2f7] text-[10px] uppercase tracking-[0.14em] text-[#64748b]">
+                    <table className="w-full min-w-[980px] border-collapse text-left">
+                      <thead className="bg-[var(--md-sys-color-surface-container)] text-[10px] uppercase tracking-[0.14em] text-[var(--md-sys-color-on-surface-variant)]">
                         <tr>
                           <th className="px-4 py-3">Bond</th>
-                          <th className="px-4 py-3">Invested</th>
-                          <th className="px-4 py-3">Net rate</th>
-                          <th className="px-4 py-3">Semiannual coupon</th>
-                          <th className="px-4 py-3">Maturity</th>
+                          <th className="px-4 py-3">Principal / cost</th>
+                          <th className="px-4 py-3">Price</th>
+                          <th className="px-4 py-3">Expected coupon</th>
+                          <th className="px-4 py-3">Next payment</th>
+                          <th className="px-4 py-3">Schedule</th>
                           <th className="px-4 py-3" />
                         </tr>
                       </thead>
                       <tbody>
                         {purchases.map((item) => {
-                          const netRate = item.couponRate * (1 - WITHHOLDING_TAX_RATE);
+                          const netRate =
+                            item.couponRate *
+                            (1 - item.withholdingTaxRate);
+                          const tracking = calculateBondTracking(
+                            item,
+                            new Date().toISOString().slice(0, 10),
+                          );
                           return (
-                            <tr key={item.id} className="border-t border-slate-200 text-xs">
+                            <tr key={item.id} className="border-t border-outline/10 text-xs">
                               <td className="px-4 py-4">
-                                <strong className="block text-sm">{item.bondName}</strong>
-                                <span className="text-[#718096]">{item.isin || item.purchaseDate}</span>
+                                <Link
+                                  href={`/bonds/purchases/${item.id}`}
+                                  className="inline-flex items-center gap-1.5 text-sm font-black text-on-surface hover:text-[var(--md-sys-color-primary)]"
+                                >
+                                  {item.bondName}
+                                  <ChevronRight size={14} />
+                                </Link>
+                                <span className="block text-[var(--md-sys-color-outline)]">
+                                  {item.issuer} · {item.isin || item.purchaseDate}
+                                </span>
+                                <span className="mt-1 inline-block rounded-full bg-surface-container px-2 py-1 text-[9px] font-black uppercase text-on-surface-variant">
+                                  BK Capital · RWF
+                                </span>
                               </td>
-                              <td className="px-4 py-4 font-bold">{formatRwf(item.amountInvested)}</td>
-                              <td className="px-4 py-4 text-[#3568a8]">{formatPercent(netRate)}</td>
-                              <td className="px-4 py-4">{formatRwf(item.amountInvested * netRate / item.couponFrequency)}</td>
-                              <td className="px-4 py-4 text-[#64748b]">{item.maturityDate}</td>
                               <td className="px-4 py-4">
-                                <button onClick={() => removePurchase(item.id)} aria-label={`Delete ${item.bondName}`} className="rounded-lg p-2 text-[#718096] hover:bg-red-300/10 hover:text-red-200">
+                                <strong className="block">{formatRwf(item.faceValue)}</strong>
+                                <span className="text-[10px] text-on-surface-variant">{formatRwf(item.amountInvested)} cash cost</span>
+                              </td>
+                              <td className="px-4 py-4">{item.pricePercent.toFixed(3)}%</td>
+                              <td className="px-4 py-4">
+                                <strong className="block text-primary">{formatRwf(item.faceValue * netRate / item.couponFrequency)}</strong>
+                                <span className="text-[10px] text-on-surface-variant">{formatPercent(netRate)} net rate</span>
+                              </td>
+                              <td className="px-4 py-4 text-on-surface-variant">
+                                {tracking.nextCouponDate ?? "No future payment"}
+                              </td>
+                              <td className="px-4 py-4">
+                                <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${item.scheduleConfidence === "confirmed" ? "bg-primary/10 text-primary" : "bg-tertiary/10 text-tertiary"}`}>
+                                  {item.scheduleConfidence}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4">
+                                <button
+                                  type="button"
+                                  onClick={() => editPurchase(item)}
+                                  aria-label={`Edit ${item.bondName}`}
+                                  className="mr-1 rounded-lg p-2 text-outline hover:bg-primary/10 hover:text-primary"
+                                >
+                                  <Pencil size={15} />
+                                </button>
+                                <button onClick={() => removePurchase(item.id)} aria-label={`Delete ${item.bondName}`} className="rounded-lg p-2 text-[var(--md-sys-color-outline)] hover:bg-error-container/30 hover:text-error">
                                   <Trash2 size={15} />
                                 </button>
                               </td>
@@ -1347,13 +2460,15 @@ export function BondPlanner() {
           )}
         </div>
       </section>
+      )}
 
+      {view === "simulator" && (
       <section id="guide" className="scroll-mt-24 mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
         <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#3568a8]">Model guide</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--md-sys-color-primary)]">Model guide</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Useful, transparent, intentionally conservative.</h2>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-[#64748b]">
+            <p className="mt-5 max-w-xl text-sm leading-7 text-[var(--md-sys-color-on-surface-variant)]">
               This planner follows the spreadsheet logic: contributions enter monthly,
               coupons are based on the opening portfolio in payment months, tax is
               deducted before reinvestment, and passive income is estimated from the
@@ -1369,34 +2484,42 @@ export function BondPlanner() {
               ["Projection only", "This model is educational and does not guarantee future returns."],
               ["Privacy boundary", "Simulation inputs remain on your device; only authenticated purchases are stored in Neon."],
             ].map(([title, copy], index) => (
-              <article key={title} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <span className="text-[10px] font-mono text-[#3568a8]">0{index + 1}</span>
+              <article key={title} className="rounded-2xl border border-outline/10 bg-surface-container-low p-5">
+                <span className="text-[10px] font-mono text-[var(--md-sys-color-primary)]">0{index + 1}</span>
                 <h3 className="mt-3 font-black">{title}</h3>
-                <p className="mt-2 text-xs leading-5 text-[#64748b]">{copy}</p>
+                <p className="mt-2 text-xs leading-5 text-[var(--md-sys-color-on-surface-variant)]">{copy}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
+      )}
 
-      <footer className="border-t border-slate-200">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-4 py-8 text-xs text-[#718096] md:flex-row md:px-8">
-          <span>Rwanda Treasury Bond Planner · RWF projections</span>
-          <span>Built by <Link href="https://orestegabo.dev" className="font-bold text-[#64748b] hover:text-[#3568a8]">Oreste Gabo</Link> · Not financial advice</span>
+      <footer className="border-t border-outline/10 bg-surface-container-lowest/30">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 px-6 py-10 md:flex-row md:items-center md:px-8">
+          <div>
+            <GaboBrand />
+            <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
+              Personal finance systems · Built with care
+            </p>
+          </div>
+          <div className="text-xs text-on-surface-variant md:text-right">
+            <p>Rwanda Treasury Bond Planner · RWF projections</p>
+            <p className="mt-1">Educational model · Not financial advice</p>
+          </div>
         </div>
       </footer>
 
-      <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-slate-200 bg-[#f7f5ef]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
-        {[
-          ["simulator", Sparkles],
-          ["projection", TrendingUp],
-          ["portfolio", WalletCards],
-          ["guide", CalendarDays],
-        ].map(([section, Icon]) => (
-          <button key={String(section)} onClick={() => goTo(section as Section)} aria-label={String(section)} className={`rounded-xl p-3 ${activeSection === section ? "bg-[#3568a8] text-white" : "text-[#718096]"}`}>
-            <Icon size={18} />
-          </button>
-        ))}
+      <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-outline/10 bg-[var(--md-sys-color-background)]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
+        <Link href="/bonds" aria-label="Learn about bonds" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
+          <ShieldCheck size={18} />
+        </Link>
+        <Link href="/bonds/simulator" aria-label="Open simulator" className={`rounded-xl p-3 ${view === "simulator" ? "bg-primary text-on-primary" : "text-[var(--md-sys-color-outline)]"}`}>
+          <TrendingUp size={18} />
+        </Link>
+        <Link href="/bonds/portfolio" aria-label="Open portfolio" className={`rounded-xl p-3 ${view === "portfolio" ? "bg-primary text-on-primary" : "text-[var(--md-sys-color-outline)]"}`}>
+          <WalletCards size={18} />
+        </Link>
       </nav>
     </main>
   );
