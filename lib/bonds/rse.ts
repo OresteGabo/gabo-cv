@@ -20,11 +20,23 @@ export type RseOutstandingBond = {
   maturityDate: string;
   couponRate: string;
   yieldToMaturity: string;
+  closingPrice: number | null;
+  grossYield: number;
+  netAnnualizedYield: number;
+  yearsRemaining: number;
+  strategyScore: number;
+  yieldScore: number;
+  durationScore: number;
+  priceScore: number;
+  confidenceScore: number;
+  yieldSource: "closing-price estimate" | "RSE published YTM";
 };
 
 export type RseMarketData = {
   trades: RseMarketTrade[];
   outstanding: RseOutstandingBond[];
+  fixedIncomePagesFetched: number;
+  treasuryRowsAnalyzed: number;
   fetchedAt: string | null;
 };
 
@@ -60,8 +72,116 @@ function tableRows(html: string) {
   );
 }
 
+function fixedIncomePageCount(html: string) {
+  const pages = [
+    ...html.matchAll(/page_bonds-trades=(\d+)/gi),
+  ].map((match) => Number(match[1]));
+  return Math.min(25, Math.max(1, ...pages.filter(Number.isFinite)));
+}
+
 function cleanBondName(value: string) {
   return value.replace(/\s*TREASURY\s*$/i, "").trim();
+}
+
+function normalizedBondName(value: string) {
+  return cleanBondName(value)
+    .toLowerCase()
+    .replace(/re-?opened/g, "reopened")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function percentage(value: string) {
+  const parsed = Number(value.replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed / 100 : 0;
+}
+
+function price(value: string) {
+  const parsed = Number(value.replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function parseRseDate(value: string) {
+  const parsed = new Date(`${value} UTC`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function yearsUntil(value: string, valuationDate: Date) {
+  const maturity = parseRseDate(value);
+  if (!maturity) return 0;
+  return Math.max(
+    0,
+    (maturity.getTime() - valuationDate.getTime()) /
+      (365.2425 * 24 * 60 * 60 * 1000),
+  );
+}
+
+function solveSemiannualYield({
+  marketPrice,
+  annualCouponRate,
+  yearsRemaining,
+  couponTaxRate,
+}: {
+  marketPrice: number;
+  annualCouponRate: number;
+  yearsRemaining: number;
+  couponTaxRate: number;
+}) {
+  const periods = Math.max(1, Math.ceil(yearsRemaining * 2));
+  const coupon = 100 * annualCouponRate * (1 - couponTaxRate) / 2;
+  const presentValue = (periodicYield: number) => {
+    let value = 0;
+    for (let period = 1; period <= periods; period += 1) {
+      value += coupon / (1 + periodicYield) ** period;
+    }
+    return value + 100 / (1 + periodicYield) ** periods;
+  };
+
+  let low = -0.49;
+  let high = 1;
+  for (let iteration = 0; iteration < 100; iteration += 1) {
+    const midpoint = (low + high) / 2;
+    if (presentValue(midpoint) > marketPrice) low = midpoint;
+    else high = midpoint;
+  }
+  return ((low + high) / 2) * 2;
+}
+
+function clampScore(value: number) {
+  return Math.max(0, Math.min(100, value));
+}
+
+function strategyScores({
+  netAnnualizedYield,
+  yearsRemaining,
+  closingPrice,
+}: {
+  netAnnualizedYield: number;
+  yearsRemaining: number;
+  closingPrice: number | null;
+}) {
+  const yieldScore = clampScore((netAnnualizedYield / 0.14) * 100);
+  const durationScore =
+    100 / (1 + Math.exp(-0.35 * (yearsRemaining - 10)));
+  const priceScore =
+    closingPrice === null
+      ? 50
+      : closingPrice <= 100
+        ? 100
+        : Math.max(0, 100 - ((closingPrice - 100) / 100) * 500);
+  const confidenceScore = closingPrice === null ? 60 : 100;
+  const strategyScore =
+    yieldScore * 0.6 +
+    durationScore * 0.25 +
+    priceScore * 0.1 +
+    confidenceScore * 0.05;
+
+  return {
+    strategyScore: Math.round(strategyScore * 10) / 10,
+    yieldScore,
+    durationScore,
+    priceScore,
+    confidenceScore,
+  };
 }
 
 async function rsePage(url: string, forceRefresh: boolean) {
@@ -78,15 +198,41 @@ async function rsePage(url: string, forceRefresh: boolean) {
   return response.text();
 }
 
+async function fixedIncomePages(forceRefresh: boolean) {
+  const firstPage = await rsePage(RSE_FIXED_INCOME_URL, forceRefresh);
+  const pageCount = fixedIncomePageCount(firstPage);
+  if (pageCount === 1) {
+    return { pages: [firstPage], pageCount: 1 };
+  }
+
+  const remaining = await Promise.allSettled(
+    Array.from({ length: pageCount - 1 }, (_, index) => {
+      const page = index + 2;
+      const url = new URL(RSE_FIXED_INCOME_URL);
+      url.searchParams.set("page_bonds-trades", String(page));
+      url.searchParams.set("category", "TREASURY");
+      return rsePage(url.toString(), forceRefresh);
+    }),
+  );
+  const pages = [
+    firstPage,
+    ...remaining.flatMap((result) =>
+      result.status === "fulfilled" ? [result.value] : [],
+    ),
+  ];
+  return { pages, pageCount: pages.length };
+}
+
 export async function getRseMarketData(
   forceRefresh = false,
 ): Promise<RseMarketData> {
   try {
-    const [marketHtml, fixedIncomeHtml] = await Promise.all([
+    const [marketHtml, fixedIncomeResult] = await Promise.all([
       rsePage(RSE_BOND_MARKET_URL, forceRefresh),
-      rsePage(RSE_FIXED_INCOME_URL, forceRefresh).catch(() =>
-        rsePage(RSE_OUTSTANDING_BONDS_URL, forceRefresh),
-      ),
+      fixedIncomePages(forceRefresh).catch(async () => ({
+        pages: [await rsePage(RSE_OUTSTANDING_BONDS_URL, forceRefresh)],
+        pageCount: 1,
+      })),
     ]);
 
     const trades = tableRows(marketHtml)
@@ -99,10 +245,20 @@ export async function getRseMarketData(
         volume,
         value,
       }));
+    const tradePrices = new Map(
+      trades.map((trade) => [
+        normalizedBondName(trade.bond),
+        price(trade.closing),
+      ]),
+    );
+    const valuationDate = new Date();
+    const fixedIncomeRows = fixedIncomeResult.pages.flatMap(tableRows);
+    const treasuryRows = fixedIncomeRows.filter(
+      (cells) => cells.length >= 6 && /TREASURY/i.test(cells[0]),
+    );
 
     const seen = new Set<string>();
-    const outstanding = tableRows(fixedIncomeHtml)
-      .filter((cells) => cells.length >= 6 && /TREASURY/i.test(cells[0]))
+    const outstanding = treasuryRows
       .map(
         ([
           bond,
@@ -111,29 +267,77 @@ export async function getRseMarketData(
           maturityDate,
           couponRate,
           yieldToMaturity,
-        ]) => ({
-          bond: cleanBondName(bond),
-          code,
-          issueDate,
-          maturityDate,
-          couponRate,
-          yieldToMaturity,
-        }),
+        ]) => {
+          const cleanedBond = cleanBondName(bond);
+          const closingPrice =
+            tradePrices.get(normalizedBondName(cleanedBond)) ?? null;
+          const annualCouponRate = percentage(couponRate);
+          const yearsRemaining = yearsUntil(maturityDate, valuationDate);
+          const publishedYield = percentage(yieldToMaturity);
+          const grossYield =
+            closingPrice === null
+              ? publishedYield
+              : solveSemiannualYield({
+                  marketPrice: closingPrice,
+                  annualCouponRate,
+                  yearsRemaining,
+                  couponTaxRate: 0,
+                });
+          const netAnnualizedYield =
+            closingPrice === null
+              ? publishedYield * (1 - 0.05)
+              : solveSemiannualYield({
+                  marketPrice: closingPrice,
+                  annualCouponRate,
+                  yearsRemaining,
+                  couponTaxRate: 0.05,
+                });
+          const scores = strategyScores({
+            netAnnualizedYield,
+            yearsRemaining,
+            closingPrice,
+          });
+
+          return {
+            bond: cleanedBond,
+            code,
+            issueDate,
+            maturityDate,
+            couponRate,
+            yieldToMaturity,
+            closingPrice,
+            grossYield,
+            netAnnualizedYield,
+            yearsRemaining,
+            ...scores,
+            yieldSource:
+              closingPrice === null
+                ? ("RSE published YTM" as const)
+                : ("closing-price estimate" as const),
+          };
+        },
       )
       .filter((bond) => {
         const key = `${bond.code}-${bond.yieldToMaturity}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
-      })
-      .slice(0, 8);
+      });
 
     return {
       trades,
       outstanding,
+      fixedIncomePagesFetched: fixedIncomeResult.pageCount,
+      treasuryRowsAnalyzed: treasuryRows.length,
       fetchedAt: new Date().toISOString(),
     };
   } catch {
-    return { trades: [], outstanding: [], fetchedAt: null };
+    return {
+      trades: [],
+      outstanding: [],
+      fixedIncomePagesFetched: 0,
+      treasuryRowsAnalyzed: 0,
+      fetchedAt: null,
+    };
   }
 }
