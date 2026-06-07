@@ -22,8 +22,11 @@ leaving `orestegabo.dev` unchanged.
 3. Copy `.env.bonds.example` values into `.env.local` for development.
 4. Add the same values in Vercel Project Settings > Environment Variables.
 
+Run `db/bonds-schema.sql` again when upgrading an existing installation. The
+file contains additive migrations for the real transaction ledger.
+
 Use a separate Neon role for this application when possible. Grant it only
-`SELECT`, `INSERT`, and `DELETE` on `bond_purchases`.
+`SELECT`, `INSERT`, `UPDATE`, and `DELETE` on `bond_purchases`.
 
 ## Owner password
 
