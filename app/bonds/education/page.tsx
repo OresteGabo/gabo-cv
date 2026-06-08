@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { BondEducation } from "@/component/bonds/BondEducation";
 
 export const metadata: Metadata = {
-  title: "Bond Trading Education | Rwanda Treasury Bond Lab",
+  title: "Rwanda Treasury Bonds from Zero | Bond Education",
   description:
-    "A detailed guide to bond prices, coupons, yield to maturity, accrued interest, tax, premium risk, reinvestment risk, discounts, and reopened Rwanda Treasury bond issues.",
+    "Learn Rwanda Treasury bonds from absolute beginner definitions through prices, coupons, YTM, tax, premium risk, discounts, reopenings, and advanced RSE analysis.",
   alternates: { canonical: "/bonds/education" },
 };
 
