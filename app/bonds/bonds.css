@@ -18,3 +18,35 @@
   scrollbar-width: thin;
   scrollbar-color: var(--md-sys-color-outline-variant) transparent;
 }
+
+.bond-math-card {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
+}
+
+.bond-math {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding: 0.25rem 0.5rem;
+  color: var(--md-sys-color-primary);
+  font-family:
+    "STIX Two Math",
+    "Cambria Math",
+    "Latin Modern Math",
+    "Times New Roman",
+    serif;
+  font-size: clamp(1.1rem, 2.6vw, 1.55rem);
+  line-height: 1.5;
+}
+
+.bond-math mtext {
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: 0.72em;
+}
+
+@media (max-width: 640px) {
+  .bond-math {
+    min-width: max-content;
+    font-size: 1.05rem;
+  }
+}
