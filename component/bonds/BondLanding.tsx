@@ -181,6 +181,46 @@ export async function BondLanding({
             </p>
           </div>
 
+          <article className="mt-7 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-6">
+            <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-primary-container/30 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--md-sys-color-primary)]">
+                  <span className="h-2 w-2 rounded-full bg-[var(--md-sys-color-primary)]" />
+                  Primary Source of Truth
+                </span>
+                <div className="mt-5 flex items-start gap-4">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-[var(--md-sys-color-primary)]">
+                    <Landmark size={20} />
+                  </span>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
+                      Live BNR Market Feed
+                    </p>
+                    <h3 className="mt-1 text-2xl font-black tracking-tight text-on-surface">
+                      Official BNR Market Monitor
+                    </h3>
+                  </div>
+                </div>
+                <p className="mt-5 max-w-3xl text-sm leading-7 text-on-surface-variant">
+                  Track newly issued bonds, active re-openings, official
+                  application forms, and real-time market auction results
+                  directly from the central bank the exact minute they drop.
+                </p>
+                <p className="mt-3 text-xs font-bold text-on-surface">
+                  Prospectus PDFs · Application Forms · Auction Results
+                </p>
+              </div>
+              <a
+                href="https://www.bnr.rw/mminstruments"
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-center font-bold text-on-primary transition-all hover:opacity-90 lg:min-w-72"
+              >
+                Go to Live BNR Instruments Board ↗
+              </a>
+            </div>
+          </article>
+
           <div className="mt-7 grid gap-3 md:grid-cols-3">
             {[
               {
