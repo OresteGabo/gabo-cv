@@ -21,22 +21,28 @@ import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 
 const anchors = [
   {
+    id: "start",
+    number: "00",
+    label: "Start from zero",
+    detail: "What a bond is and who pays whom",
+  },
+  {
     id: "physics",
     number: "01",
-    label: "Core mechanics",
-    detail: "Price, yield, accrued interest, and tax",
+    label: "Learn the numbers",
+    detail: "Face value, coupon, price, and tax",
   },
   {
     id: "bad-deals",
     number: "02",
-    label: "Bad deals",
-    detail: "Premium and reinvestment traps",
+    label: "Avoid bad deals",
+    detail: "YTM, premiums, and reinvestment risk",
   },
   {
     id: "alpha-deals",
     number: "03",
-    label: "Relative value",
-    detail: "Discounts, reopenings, and screening",
+    label: "Advanced analysis",
+    detail: "Discounts, reopenings, and RSE screening",
   },
 ];
 
@@ -177,42 +183,40 @@ export function BondEducation() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-outline/10 bg-surface-container-lowest/70 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--md-sys-color-primary)]">
               <BookOpenText size={14} />
-              Fixed-income field guide
+              No finance knowledge required
             </div>
             <h1 className="mt-7 max-w-5xl text-5xl font-black uppercase leading-[0.9] tracking-tighter sm:text-6xl md:text-7xl">
-              Learn to read
+              Rwanda bonds
               <span className="block text-[var(--md-sys-color-primary)]">
-                the deal, not the coupon.
+                from absolute zero.
               </span>
             </h1>
             <p className="mt-7 max-w-3xl text-lg leading-8 text-on-surface-variant">
-              A bond is a dated sequence of cash flows. Its coupon is only one
-              ingredient. The price you pay, accrued interest, tax, remaining
-              payment dates, maturity value, transaction costs, and the rate at
-              which future cash can be reinvested determine whether the
-              investment is genuinely attractive. This guide develops those
-              mechanics from first principles and applies them to Rwanda
-              Treasury bonds traded or displayed through the Rwanda Stock
-              Exchange.
+              Start here even if words such as coupon, par, yield, or maturity
+              mean nothing to you yet. The course first explains borrowing and
+              lending with one simple RWF 100,000 example. Each level then adds
+              one new idea, repeats the important definitions in context, and
+              gradually builds toward evaluating real Rwanda Treasury bonds on
+              the Rwanda Stock Exchange.
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
             {[
               {
-                label: "Price",
-                value: "What leaves today",
-                copy: "Clean price, accrued interest, fees, and settlement cash.",
+                label: "Level 0",
+                value: "Understand the promise",
+                copy: "Who borrows, who lends, what gets paid, and when.",
               },
               {
-                label: "Cash flows",
-                value: "What returns later",
-                copy: "After-tax coupons, sale proceeds, and principal redemption.",
+                label: "Levels 1–2",
+                value: "Understand the numbers",
+                copy: "Face value, coupon cash, price, tax, and yield.",
               },
               {
-                label: "Time",
-                value: "What makes them comparable",
-                copy: "YTM converts differently timed cash flows into one annualized rate.",
+                label: "Level 3 · Advanced",
+                value: "Evaluate the deal",
+                copy: "Premium traps, discounts, reinvestment, and RSE analysis.",
               },
             ].map((item) => (
               <article
@@ -234,7 +238,7 @@ export function BondEducation() {
         </div>
       </section>
 
-      <div className="sticky top-[57px] z-40 border-y border-outline/10 bg-background/92 backdrop-blur-xl lg:hidden">
+      <div className="sticky top-[57px] z-40 border-y border-outline/10 bg-background/92 backdrop-blur-xl md:hidden">
         <nav
           aria-label="Education sections"
           className="bond-scrollbar mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3"
@@ -251,14 +255,14 @@ export function BondEducation() {
         </nav>
       </div>
 
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 pb-24 md:px-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-14">
-        <aside className="hidden lg:block">
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 pb-24 md:grid-cols-[220px_minmax(0,1fr)] md:px-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-14">
+        <aside className="hidden md:block">
           <nav
             aria-label="Education sections"
             className="sticky top-28 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-3 shadow-sm backdrop-blur-xl"
           >
             <p className="px-3 pb-3 pt-2 text-[9px] font-black uppercase tracking-[0.18em] text-[var(--md-sys-color-primary)]">
-              On this page
+              Learning path
             </p>
             {anchors.map((anchor) => (
               <a
@@ -290,17 +294,225 @@ export function BondEducation() {
         </aside>
 
         <div className="min-w-0 space-y-24">
+          <section id="start" className="scroll-mt-36">
+            <LessonHeader
+              eyebrow="Level 0 · Start here"
+              title="A bond is simply a formal loan."
+              introduction="Before discussing percentages, market prices, or yield, begin with the basic exchange. One side needs money today. Another side has money available today. The borrower promises to make specified payments later. A bond is the written, transferable form of that promise. Everything else in this course explains the details attached to the promise."
+            />
+
+            <div className="mt-9 space-y-5">
+              <LessonCard
+                icon={<Landmark size={20} />}
+                kicker="First definition"
+                title="What Is a Rwanda Treasury Bond?"
+              >
+                <p>
+                  When the Government of Rwanda needs to finance public
+                  activities, it can borrow money by issuing Treasury bonds. In
+                  this relationship, the Government is the{" "}
+                  <strong className="text-on-surface">issuer</strong>, meaning the
+                  organization that creates the bond and promises to pay. The
+                  person, bank, pension fund, insurance company, or other
+                  institution providing money is the{" "}
+                  <strong className="text-on-surface">investor</strong>. Buying
+                  the bond means lending money under the bond&apos;s documented
+                  conditions. It does not mean buying part of the Government in
+                  the way a shareholder buys part of a company.
+                </p>
+                <p>
+                  The bond identifies how much principal exists, how interest is
+                  calculated, when interest is scheduled to be paid, and when
+                  principal is scheduled to be returned. Rwanda Treasury bonds
+                  commonly pay interest twice per year, but each bond series has
+                  its own exact dates. A buyer must read the prospectus or
+                  confirmation for that particular series rather than assuming
+                  that every bond pays in the same months.
+                </p>
+                <p>
+                  Treasury bonds are often described as lower-credit-risk
+                  investments because payment is backed by the Government.
+                  Lower credit risk does not make every purchase price good and
+                  does not make the account value permanently stable. If the
+                  investor sells before maturity, the selling price can be above
+                  or below the original purchase price. Inflation can also
+                  reduce what future Rwandan francs can buy.
+                </p>
+                <Equation title="The whole bond in one sentence">
+                  <p className="font-black">
+                    You provide money now; the issuer promises interest on
+                    scheduled dates and principal at maturity.
+                  </p>
+                </Equation>
+              </LessonCard>
+
+              <LessonCard
+                icon={<CircleDollarSign size={20} />}
+                kicker="One slow example"
+                title="Follow RWF 100,000 from Purchase to Maturity"
+              >
+                <p>
+                  Imagine a new Treasury bond with RWF 100,000 of face value, a
+                  12% annual coupon rate, two coupon payments per year, and a
+                  five-year maturity. For this first example, assume it is bought
+                  at its original issue for exactly RWF 100,000 and ignore tax
+                  and fees temporarily. Removing those extra details lets us see
+                  the basic promise clearly.
+                </p>
+                <p>
+                  The annual interest calculation is RWF 100,000 multiplied by
+                  12%, which equals RWF 12,000 per year. Because payment happens
+                  twice per year, each scheduled coupon is half of RWF 12,000,
+                  or RWF 6,000. The investor does not normally receive a little
+                  interest every day in the bank account. Interest accumulates
+                  economically, but cash arrives on the scheduled coupon dates.
+                </p>
+                <p>
+                  If the investor holds the bond for all five years and the
+                  Government pays as agreed, the investor receives ten coupon
+                  payments of RWF 6,000. Total gross coupon cash is therefore RWF
+                  60,000. On the maturity date, the investor also receives the
+                  RWF 100,000 principal. The principal repayment is not an extra
+                  RWF 100,000 profit; it is the original amount lent being
+                  returned.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    {
+                      label: "You provide",
+                      value: "RWF 100,000",
+                      copy: "The original amount lent in this simplified example.",
+                    },
+                    {
+                      label: "You receive during 5 years",
+                      value: "10 × RWF 6,000",
+                      copy: "Gross semiannual coupons before tax.",
+                    },
+                    {
+                      label: "You receive at maturity",
+                      value: "RWF 100,000",
+                      copy: "The principal is returned if payment occurs as agreed.",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-2xl border border-outline/10 bg-surface-container-low/60 p-4"
+                    >
+                      <p className="text-[9px] font-black uppercase tracking-[0.14em] text-on-surface-variant">
+                        {item.label}
+                      </p>
+                      <p className="mt-2 font-black text-[var(--md-sys-color-primary)]">
+                        {item.value}
+                      </p>
+                      <p className="mt-2 text-xs leading-5">{item.copy}</p>
+                    </div>
+                  ))}
+                </div>
+              </LessonCard>
+
+              <LessonCard
+                icon={<BookOpenText size={20} />}
+                kicker="Words you will see repeatedly"
+                title="The Beginner Vocabulary"
+              >
+                <p>
+                  <strong className="text-on-surface">Principal</strong> is the
+                  amount borrowed and expected to be repaid at maturity.{" "}
+                  <strong className="text-on-surface">Face value</strong> or{" "}
+                  <strong className="text-on-surface">par value</strong> is the
+                  principal amount printed in the bond records and used to
+                  calculate coupon cash. In everyday discussion, these terms
+                  often point to the same contractual amount.
+                </p>
+                <p>
+                  <strong className="text-on-surface">Interest</strong> is the
+                  compensation paid for using someone else&apos;s money. A{" "}
+                  <strong className="text-on-surface">coupon</strong> is one
+                  scheduled interest payment. The{" "}
+                  <strong className="text-on-surface">coupon rate</strong> is the
+                  annual percentage applied to face value to determine coupon
+                  cash. A 12% coupon rate on RWF 100,000 face value means RWF
+                  12,000 gross interest per full year, not necessarily a 12%
+                  return on whatever market price a later buyer pays.
+                </p>
+                <p>
+                  <strong className="text-on-surface">Maturity</strong> is the
+                  contractual end date when principal is due.{" "}
+                  <strong className="text-on-surface">Tenor</strong> describes
+                  the bond&apos;s length, often measured from original issuance
+                  to maturity. <strong className="text-on-surface">Remaining maturity</strong>{" "}
+                  describes how much time is left today. A bond originally issued
+                  with a 20-year tenor may have only 12 years remaining when you
+                  discover it.
+                </p>
+                <p>
+                  <strong className="text-on-surface">Price</strong> is what a
+                  buyer must pay to acquire the bond. Price and face value can be
+                  different after issuance.{" "}
+                  <strong className="text-on-surface">Yield</strong> is a way of
+                  expressing the return created by the cash flows relative to
+                  the price paid. The coupon rate belongs to the bond; yield
+                  changes when the market price or remaining time changes.
+                </p>
+              </LessonCard>
+
+              <LessonCard
+                icon={<ReceiptText size={20} />}
+                kicker="Where a purchase happens"
+                title="Primary Market, Secondary Market, Broker, and CSD"
+              >
+                <p>
+                  The <strong className="text-on-surface">primary market</strong>{" "}
+                  is where newly issued or reopened Government debt is offered.
+                  The National Bank of Rwanda acts as fiscal agent in the
+                  issuance process. Investors submit orders or bids through the
+                  permitted channels, often with assistance from an intermediary
+                  such as BK Capital. Money raised in the primary market goes
+                  toward the Government financing operation.
+                </p>
+                <p>
+                  The <strong className="text-on-surface">secondary market</strong>{" "}
+                  is where an existing investor sells a bond to another investor
+                  after issuance. The Government is not creating a new bond in
+                  that trade. The buyer pays the seller through the market&apos;s
+                  trading and settlement process. Because buyers and sellers
+                  negotiate under current market conditions, an existing bond
+                  can trade at 97, 100, 107, or another price.
+                </p>
+                <p>
+                  A <strong className="text-on-surface">broker</strong> helps
+                  communicate orders, locate available bonds, execute trades,
+                  and provide a contract note or confirmation. The Central
+                  Securities Depository, commonly shortened to{" "}
+                  <strong className="text-on-surface">CSD</strong>, maintains
+                  electronic ownership and supports settlement. You do not
+                  normally receive a paper certificate that must be hidden at
+                  home; ownership is recorded electronically.
+                </p>
+                <Equation title="Beginner checkpoint">
+                  <p>
+                    At this point, you only need four ideas: a bond is a loan,
+                    coupons are interest payments, maturity is when principal is
+                    due, and an existing bond&apos;s market price can differ from
+                    its face value. The next level explains why that price
+                    difference changes your real return.
+                  </p>
+                </Equation>
+              </LessonCard>
+            </div>
+          </section>
+
           <section id="physics" className="scroll-mt-36">
             <LessonHeader
-              eyebrow="01 · Deep-dive glossary and core physics"
-              title="Every bond return begins with price, cash flow, and time."
-              introduction="The most common analytical error is to compare bonds by coupon rate as though the coupon were a savings-account interest rate applied to the money paid. It is not. The coupon is applied to face value, while the investor may pay more or less than face value and may acquire the bond halfway through its payment cycle. A correct comparison reconstructs the complete cash-flow schedule and measures the return on the actual settlement amount."
+              eyebrow="Level 1 · Learn the numbers"
+              title="Now separate the bond's promise from the price you pay."
+              introduction="Level 0 used a new bond bought for exactly its face value. Real secondary-market purchases are less tidy. The bond keeps its original coupon and maturity date, but its price moves. This level introduces one distinction at a time: face value versus price, coupon rate versus yield, clean price versus total settlement cash, and gross coupon versus after-tax coupon."
             />
 
             <div className="mt-9 space-y-5">
               <LessonCard
                 icon={<Scale size={20} />}
-                kicker="Pricing foundation"
+                kicker="Level 1.1 · Price"
                 title="Face Value (Par) vs. Market Price"
               >
                 <p>
@@ -351,7 +563,7 @@ export function BondEducation() {
 
               <LessonCard
                 icon={<BadgePercent size={20} />}
-                kicker="Return measurement"
+                kicker="Level 1.2 · Return"
                 title="Coupon Rate vs. Yield to Maturity (YTM)"
               >
                 <p>
@@ -373,6 +585,16 @@ export function BondEducation() {
                   bought at a sufficiently high premium can have a lower YTM
                   than a lower coupon bond bought at par or at a discount.
                 </p>
+                <Equation title="YTM in beginner language">
+                  <p>
+                    YTM asks: “If I pay this price today, receive all remaining
+                    coupons, receive principal at maturity, and the issuer pays
+                    as promised, what single annualized rate makes those cash
+                    flows equivalent to my purchase price?” A lower purchase
+                    price usually raises YTM. A higher purchase price usually
+                    lowers YTM.
+                  </p>
+                </Equation>
                 <p>
                   Quoted YTM is not a promise that the investor will realize
                   exactly that annual compound return. It normally assumes the
@@ -401,7 +623,7 @@ export function BondEducation() {
 
               <LessonCard
                 icon={<ReceiptText size={20} />}
-                kicker="Settlement mechanics"
+                kicker="Level 1.3 · Settlement"
                 title="Accrued Interest and Clean vs. Dirty Price"
               >
                 <p>
@@ -451,7 +673,7 @@ export function BondEducation() {
 
               <LessonCard
                 icon={<Landmark size={20} />}
-                kicker="Rwanda-specific tax"
+                kicker="Level 1.4 · Tax"
                 title="Rwandan Sovereign Withholding Tax Treatment"
               >
                 <p>
@@ -507,15 +729,15 @@ export function BondEducation() {
 
           <section id="bad-deals" className="scroll-mt-36">
             <LessonHeader
-              eyebrow="02 · Anatomy of a bad deal"
-              title="A large coupon can hide an ordinary or inferior return."
-              introduction="The coupon is visually prominent because it is printed in the bond name, prospectus, or market table. The economic return is less visible because it must be calculated from price and time. The following scenarios deliberately isolate the mechanisms that can make a high-coupon security underperform."
+              eyebrow="Level 2 · Avoid bad deals"
+              title="A large coupon can still produce a disappointing return."
+              introduction="You now know that coupon rate and return are not the same number. This level combines price, time, tax, and maturity in worked examples. Read it slowly: each example begins with the attractive headline, identifies the hidden cost, and then explains how that cost changes the result."
             />
 
             <div className="mt-9 space-y-5">
               <LessonCard
                 icon={<TrendingDown size={20} />}
-                kicker="Worked scenario"
+                kicker="Level 2.1 · Worked scenario"
                 title="The Premium Price Trap: 13.5% Coupon at 107"
               >
                 <p>
@@ -606,7 +828,7 @@ export function BondEducation() {
 
               <LessonCard
                 icon={<CalendarClock size={20} />}
-                kicker="Horizon mismatch"
+                kicker="Level 2.2 · Time risk"
                 title="Reinvestment Risk and Short Remaining Duration"
               >
                 <p>
@@ -657,7 +879,7 @@ export function BondEducation() {
 
               <LessonCard
                 icon={<ShieldAlert size={20} />}
-                kicker="Additional failure modes"
+                kicker="Level 2.3 · Suitability"
                 title="A Yield Can Be Correct and the Purchase Can Still Be Wrong"
               >
                 <p>
@@ -695,15 +917,15 @@ export function BondEducation() {
 
           <section id="alpha-deals" className="scroll-mt-36">
             <LessonHeader
-              eyebrow="03 · Spotting relative value"
-              title="Look for cash flows the market is temporarily pricing cheaply."
-              introduction="In sovereign fixed income, an under-the-radar opportunity is better described as relative value than guaranteed alpha. The analytical goal is to find a price or yield that is unusually attractive after tax and costs, while confirming that the difference is not caused by stale data, an untradeable quote, a short runway, or terms that make the security unsuitable."
+              eyebrow="Level 3 · Analyze like an investor"
+              title="Look for good value without mistaking cheap for safe."
+              introduction="This is the advanced level. It assumes you can distinguish face value from price, coupon from YTM, and clean price from total settlement cash. The goal is no longer merely to understand a listing. The goal is to compare several listings consistently, investigate why one looks unusually attractive, and reject apparent bargains that depend on stale or untradeable data."
             />
 
             <div className="mt-9 space-y-5">
               <LessonCard
                 icon={<Search size={20} />}
-                kicker="Secondary-market screen"
+                kicker="Level 3.1 · Secondary market"
                 title="Spotting Discount Sovereigns Below Par"
               >
                 <p>
@@ -752,7 +974,7 @@ export function BondEducation() {
 
               <LessonCard
                 icon={<Landmark size={20} />}
-                kicker="Primary-market structure"
+                kicker="Level 3.2 · Primary market"
                 title="How Re-opened BNR Issues Work"
               >
                 <p>
@@ -801,7 +1023,7 @@ export function BondEducation() {
 
               <LessonCard
                 icon={<Calculator size={20} />}
-                kicker="Repeatable workflow"
+                kicker="Level 3.3 · Full analysis"
                 title="A Full RSE-to-Broker Evaluation Process"
               >
                 <ol className="space-y-6">
