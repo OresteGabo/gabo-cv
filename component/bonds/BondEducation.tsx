@@ -137,24 +137,36 @@ function Equation({
   );
 }
 
-function BeginnerQuestions({
+function MathFormula({
+  label,
+  caption,
   children,
 }: {
+  label: string;
+  caption?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-6 md:p-8">
-      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--md-sys-color-primary)]">
-        Common beginner questions & scenarios
-      </p>
-      <h3 className="mt-2 text-xl font-black text-on-surface">
-        Open only the question you need
-      </h3>
-      <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-        The answers stay folded so the lesson remains calm and easy to scan.
-      </p>
-      <div className="mt-6">{children}</div>
-    </section>
+    <figure
+      role="math"
+      aria-label={label}
+      className="bond-math-card rounded-2xl border border-primary/15 bg-surface-container-lowest/70 px-3 py-5 md:px-5"
+    >
+      <div className="bond-scrollbar overflow-x-auto">
+        <math
+          aria-hidden="true"
+          display="block"
+          className="bond-math mx-auto"
+        >
+          {children}
+        </math>
+      </div>
+      {caption ? (
+        <figcaption className="mt-4 border-t border-outline/10 pt-3 text-xs leading-5 text-on-surface-variant">
+          {caption}
+        </figcaption>
+      ) : null}
+    </figure>
   );
 }
 
@@ -166,7 +178,7 @@ function Question({
   children: ReactNode;
 }) {
   return (
-    <details className="group mb-4 rounded-2xl border border-outline/5 bg-surface-container-low/50 p-4 last:mb-0">
+    <details className="group rounded-2xl border border-outline/5 bg-surface-container-low/50 p-4">
       <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-base font-black text-[var(--md-sys-color-primary)] marker:content-none">
         <span>{question}</span>
         <ChevronDown
@@ -460,6 +472,27 @@ export function BondEducation() {
                     </div>
                   ))}
                 </div>
+                <Question question="Why can't I invest an arbitrary RWF 97,000 from the start? Why is it tied to the 100k unit rule?">
+                  <p>
+                    A Government bond is a standardized loan certificate, not a
+                    savings account that accepts any balance. BNR auction notices
+                    commonly structure non-competitive amounts in multiples of
+                    RWF 100,000. You choose how many face-value blocks you want.
+                  </p>
+                  <p>
+                    The market price of a block can move, just as a used
+                    smartphone can resell above or below its launch price. A
+                    block priced at 97 costs RWF 97,000 clean, but it remains a
+                    RWF 100,000 face-value block in the securities record.
+                  </p>
+                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
+                    <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                      1 block = RWF 100,000 face value<br />
+                      5 blocks = RWF 500,000 face value<br />
+                      At price 97, 5 blocks cost RWF 485,000 clean
+                    </p>
+                  </div>
+                </Question>
               </LessonCard>
 
               <LessonCard
@@ -550,9 +583,6 @@ export function BondEducation() {
                     difference changes your real return.
                   </p>
                 </Equation>
-              </LessonCard>
-
-              <BeginnerQuestions>
                 <Question question="If an investor sells a RWF 100,000 bond block for 97k, can I pay 97k and still own 100k face value?">
                   <p>
                     Yes. Think of it like a high-end smartphone that originally
@@ -577,28 +607,7 @@ export function BondEducation() {
                     </p>
                   </div>
                 </Question>
-                <Question question="Why can't I invest an arbitrary RWF 97,000 from the start? Why is it tied to the 100k unit rule?">
-                  <p>
-                    A Government bond is a standardized loan certificate, not a
-                    savings account that accepts any balance. BNR auction notices
-                    commonly structure non-competitive amounts in multiples of
-                    RWF 100,000. You choose how many face-value blocks you want.
-                  </p>
-                  <p>
-                    The market price of a block can move, just as a used
-                    smartphone can resell above or below its launch price. A
-                    block priced at 97 costs RWF 97,000 clean, but it remains a
-                    RWF 100,000 face-value block in the securities record.
-                  </p>
-                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
-                    <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
-                      1 block = RWF 100,000 face value<br />
-                      5 blocks = RWF 500,000 face value<br />
-                      At price 97, 5 blocks cost RWF 485,000 clean
-                    </p>
-                  </div>
-                </Question>
-              </BeginnerQuestions>
+              </LessonCard>
             </div>
           </section>
 
@@ -644,9 +653,31 @@ export function BondEducation() {
                   is called <strong className="text-on-surface">pull to par</strong>.
                 </p>
                 <Equation title="Translate a quoted price into clean cash">
-                  <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
-                    Clean consideration = Face value x Quoted price / 100
-                  </p>
+                  <MathFormula
+                    label="Clean consideration equals face value multiplied by quoted price divided by 100."
+                    caption={
+                      <>
+                        <strong className="text-on-surface">Cclean</strong> is the
+                        clean consideration, <strong className="text-on-surface">F</strong>{" "}
+                        is face value, and <strong className="text-on-surface">q</strong>{" "}
+                        is the quoted clean price.
+                      </>
+                    }
+                  >
+                    <mrow>
+                      <msub>
+                        <mi>C</mi>
+                        <mtext>clean</mtext>
+                      </msub>
+                      <mo>=</mo>
+                      <mi>F</mi>
+                      <mo>×</mo>
+                      <mfrac>
+                        <mi>q</mi>
+                        <mn>100</mn>
+                      </mfrac>
+                    </mrow>
+                  </MathFormula>
                   <p className="mt-2">
                     For RWF 1,000,000 face at 107, the clean consideration is
                     RWF 1,070,000. That is not yet the final settlement amount:
@@ -700,9 +731,73 @@ export function BondEducation() {
                   scheduled.
                 </p>
                 <Equation title="The comparison equation">
-                  <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
-                    Dirty price = Sum of [Coupon_t / (1 + y/2)^t] + [Par / (1 + y/2)^N]
-                  </p>
+                  <MathFormula
+                    label="Dirty price equals the sum from t equals 1 to N of coupon at period t divided by one plus annual yield over two raised to period t, plus face value divided by one plus annual yield over two raised to N."
+                    caption={
+                      <>
+                        <strong className="text-on-surface">Pdirty</strong> is the
+                        dirty price, <strong className="text-on-surface">Ct</strong>{" "}
+                        is the coupon paid in period t,{" "}
+                        <strong className="text-on-surface">y</strong> is annual
+                        YTM, <strong className="text-on-surface">N</strong> is the
+                        number of semiannual periods remaining, and{" "}
+                        <strong className="text-on-surface">F</strong> is face value.
+                      </>
+                    }
+                  >
+                    <mrow>
+                      <msub>
+                        <mi>P</mi>
+                        <mtext>dirty</mtext>
+                      </msub>
+                      <mo>=</mo>
+                      <munderover>
+                        <mo>∑</mo>
+                        <mrow>
+                          <mi>t</mi>
+                          <mo>=</mo>
+                          <mn>1</mn>
+                        </mrow>
+                        <mi>N</mi>
+                      </munderover>
+                      <mfrac>
+                        <msub>
+                          <mi>C</mi>
+                          <mi>t</mi>
+                        </msub>
+                        <msup>
+                          <mrow>
+                            <mo>(</mo>
+                            <mn>1</mn>
+                            <mo>+</mo>
+                            <mfrac>
+                              <mi>y</mi>
+                              <mn>2</mn>
+                            </mfrac>
+                            <mo>)</mo>
+                          </mrow>
+                          <mi>t</mi>
+                        </msup>
+                      </mfrac>
+                      <mo>+</mo>
+                      <mfrac>
+                        <mi>F</mi>
+                        <msup>
+                          <mrow>
+                            <mo>(</mo>
+                            <mn>1</mn>
+                            <mo>+</mo>
+                            <mfrac>
+                              <mi>y</mi>
+                              <mn>2</mn>
+                            </mfrac>
+                            <mo>)</mo>
+                          </mrow>
+                          <mi>N</mi>
+                        </msup>
+                      </mfrac>
+                    </mrow>
+                  </MathFormula>
                   <p className="mt-2">
                     For a semiannual bond, the model solves for annualized yield{" "}
                     <span className="font-mono">y</span>. A net-of-tax version
@@ -768,6 +863,28 @@ export function BondEducation() {
                     profit would double count the pre-purchase accrual.
                   </p>
                 </Equation>
+                <Question question="If I buy a bond right before a coupon date and get the next interest check almost immediately, is that free money?">
+                  <p>
+                    No. The coupon may arrive soon, but the seller did not give
+                    away the interest they earned during the current six-month
+                    cycle. On settlement day, you normally compensate the seller
+                    for the days they already held the bond. When the full
+                    coupon later lands in your account, part of it is simply the
+                    system returning cash you advanced at purchase.
+                  </p>
+                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
+                    <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                      Semiannual coupon: RWF 60,000<br />
+                      Seller held roughly half the period<br />
+                      Accrued interest paid to seller: about RWF 30,000<br />
+                      Next coupon received by you: RWF 60,000 gross
+                    </p>
+                  </div>
+                  <p>
+                    The first coupon can feel exciting, but it is not pure
+                    profit if you paid accrued interest upfront.
+                  </p>
+                </Question>
               </LessonCard>
 
               <LessonCard
@@ -809,31 +926,6 @@ export function BondEducation() {
                     ruling.
                   </p>
                 </Equation>
-              </LessonCard>
-
-              <BeginnerQuestions>
-                <Question question="If I buy a bond right before a coupon date and get the next interest check almost immediately, is that free money?">
-                  <p>
-                    No. The coupon may arrive soon, but the seller did not give
-                    away the interest they earned during the current six-month
-                    cycle. On settlement day, you normally compensate the seller
-                    for the days they already held the bond. When the full
-                    coupon later lands in your account, part of it is simply the
-                    system returning cash you advanced at purchase.
-                  </p>
-                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
-                    <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
-                      Semiannual coupon: RWF 60,000<br />
-                      Seller held roughly half the period<br />
-                      Accrued interest paid to seller: about RWF 30,000<br />
-                      Next coupon received by you: RWF 60,000 gross
-                    </p>
-                  </div>
-                  <p>
-                    The first coupon can feel exciting, but it is not pure
-                    profit if you paid accrued interest upfront.
-                  </p>
-                </Question>
                 <Question question="How exactly does the 5% withholding tax incentive work in Rwanda?">
                   <p>
                     Rwanda&apos;s income-tax law provides a reduced 5% withholding
@@ -856,7 +948,7 @@ export function BondEducation() {
                     taxpayer status is unusual.
                   </p>
                 </Question>
-              </BeginnerQuestions>
+              </LessonCard>
             </div>
           </section>
 
@@ -957,6 +1049,29 @@ export function BondEducation() {
                     for a particular security.
                   </p>
                 </Equation>
+                <Question question="Should I always buy the bond with the highest printed coupon rate?">
+                  <p>
+                    Absolutely not. The coupon is the attractive number printed
+                    on the bond, but the purchase price decides how expensive
+                    those coupons are for you. If a 13.5% bond trades at 107,
+                    one RWF 1,000,000 face-value position costs RWF 1,070,000
+                    clean. At maturity, the issuer returns RWF 1,000,000, so the
+                    RWF 70,000 premium disappears through the pull back to par.
+                  </p>
+                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
+                    <p className="font-black">The premium trap</p>
+                    <p className="mt-2 font-mono text-xs leading-6">
+                      Clean purchase price: RWF 1,070,000<br />
+                      Principal returned at maturity: RWF 1,000,000<br />
+                      Premium lost at maturity: RWF 70,000
+                    </p>
+                  </div>
+                  <p>
+                    Compare listings by Yield to Maturity, not coupon alone.
+                    YTM combines the price you pay, every remaining coupon, and
+                    the principal returned at maturity.
+                  </p>
+                </Question>
               </LessonCard>
 
               <LessonCard
@@ -1008,6 +1123,207 @@ export function BondEducation() {
                     matching maturity to the liability.
                   </p>
                 </Equation>
+                <Question question="What is reinvestment risk, and how can it ruin long-term compounding?">
+                  <p>
+                    Imagine finding a wonderful 13% bond that matures in only
+                    two years. You enjoy that rate for 24 months, and then the
+                    Government returns your principal. Now you must find a new
+                    place for the money. If market rates have fallen to 8%, the
+                    high-rate part of your plan is over.
+                  </p>
+                  <p>
+                    A slightly lower 11.8% bond with 15 or 20 years remaining
+                    may be more useful for a long-term income plan because the
+                    rate stays attached to the principal for much longer. That
+                    does not make long bonds universally better: their market
+                    prices can move more, and they are unsuitable if you need
+                    the money soon.
+                  </p>
+                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
+                    <p className="font-black">The hidden question</p>
+                    <p className="mt-2">
+                      Do not ask only, “What rate do I get today?” Also ask,
+                      “How soon will I be forced to find another investment?”
+                    </p>
+                  </div>
+                </Question>
+                <Question question="Starting with RWF 1,000,000 in a 12% Treasury bond, how long should it take to reach RWF 2,000,000 if I reinvest every net coupon? Please include the 5% tax, semiannual payments, the RWF 100,000 purchase unit, idle coupon cash, optional personal top-ups, and coupons pooled from other bonds.">
+                  <p>
+                    This is the clearer version of the question because it
+                    separates four things that are easy to mix together: the
+                    printed 12% coupon, the 5% tax on coupon cash, the fact that
+                    coupons arrive only twice per year, and the rule that new
+                    bond purchases must be made in RWF 100,000 face-value chunks.
+                  </p>
+                  <p>
+                    After 5% withholding, the net annual coupon rate is 11.4%.
+                    With two payments per year, each six-month payment is 5.7%
+                    of the bond face value. Your first RWF 1,000,000 position
+                    therefore pays RWF 57,000 net every six months.
+                  </p>
+
+                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
+                    <p className="font-black text-on-surface">
+                      Paper theory: fractional semiannual reinvestment
+                    </p>
+                    <div className="mt-3">
+                      <MathFormula
+                        label="The net six-month rate is 12 percent multiplied by one minus 5 percent tax, divided by 2, which equals 5.7 percent. To double, 2 equals 1.057 raised to n, so n equals the natural logarithm of 2 divided by the natural logarithm of 1.057, approximately 12.5 periods."
+                        caption="n counts six-month coupon periods, not calendar years."
+                      >
+                        <mtable rowspacing="0.75em">
+                          <mtr>
+                            <mtd>
+                              <msub>
+                                <mi>r</mi>
+                                <mtext>6m</mtext>
+                              </msub>
+                            </mtd>
+                            <mtd>
+                              <mo>=</mo>
+                            </mtd>
+                            <mtd>
+                              <mfrac>
+                                <mrow>
+                                  <mn>0.12</mn>
+                                  <mo>×</mo>
+                                  <mo>(</mo>
+                                  <mn>1</mn>
+                                  <mo>−</mo>
+                                  <mn>0.05</mn>
+                                  <mo>)</mo>
+                                </mrow>
+                                <mn>2</mn>
+                              </mfrac>
+                              <mo>=</mo>
+                              <mn>0.057</mn>
+                            </mtd>
+                          </mtr>
+                          <mtr>
+                            <mtd>
+                              <mn>2</mn>
+                            </mtd>
+                            <mtd>
+                              <mo>=</mo>
+                            </mtd>
+                            <mtd>
+                              <msup>
+                                <mrow>
+                                  <mo>(</mo>
+                                  <mn>1.057</mn>
+                                  <mo>)</mo>
+                                </mrow>
+                                <mi>n</mi>
+                              </msup>
+                            </mtd>
+                          </mtr>
+                          <mtr>
+                            <mtd>
+                              <mi>n</mi>
+                            </mtd>
+                            <mtd>
+                              <mo>=</mo>
+                            </mtd>
+                            <mtd>
+                              <mfrac>
+                                <mrow>
+                                  <mi>ln</mi>
+                                  <mo>(</mo>
+                                  <mn>2</mn>
+                                  <mo>)</mo>
+                                </mrow>
+                                <mrow>
+                                  <mi>ln</mi>
+                                  <mo>(</mo>
+                                  <mn>1.057</mn>
+                                  <mo>)</mo>
+                                </mrow>
+                              </mfrac>
+                              <mo>≈</mo>
+                              <mn>12.5</mn>
+                            </mtd>
+                          </mtr>
+                        </mtable>
+                      </MathFormula>
+                    </div>
+                    <div className="mt-3 space-y-2 font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                      <p>But cash is paid only on coupon dates</p>
+                      <p>After 12 payments: about RWF 1,944,912</p>
+                      <p>After 13 payments: about RWF 2,055,771</p>
+                    </div>
+                  </div>
+
+                  <p>
+                    The equation&apos;s decimal answer is approximately 6.25 years,
+                    but you cannot reinvest half of a coupon period before the
+                    coupon is paid. On an actual semiannual payment calendar,
+                    perfect fractional reinvestment first passes RWF 2,000,000
+                    at payment 13, around 6.5 years.
+                  </p>
+
+                  <p>
+                    Now apply the RWF 100,000 purchase rule. At month six, the
+                    RWF 57,000 coupon waits as cash. At month twelve, another RWF
+                    57,000 raises cash to RWF 114,000, allowing one RWF 100,000
+                    bond purchase and leaving RWF 14,000 idle. The same process
+                    repeats, but the coupon grows as more RWF 100,000 blocks are
+                    added.
+                  </p>
+
+                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
+                    <p className="font-black text-on-surface">
+                      Simplified RWF 100,000-lot result
+                    </p>
+                    <div className="mt-3 space-y-2 font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                      <p>Month 12: RWF 1,100,000 bonds + RWF 14,000 cash</p>
+                      <p>Month 36: RWF 1,300,000 bonds + RWF 81,900 cash</p>
+                      <p>Month 60: RWF 1,700,000 bonds + RWF 12,500 cash</p>
+                      <p>Month 72: RWF 1,900,000 bonds + RWF 12,000 cash</p>
+                      <p>Month 78: RWF 2,000,000 bonds + RWF 20,300 cash</p>
+                    </div>
+                  </div>
+
+                  <p>
+                    Under these simplified assumptions, the unassisted portfolio
+                    also reaches RWF 2,000,000 of bond face value at month 78,
+                    which is 6.5 years. Cash drag is still real: perfect
+                    fractional reinvestment would be worth about RWF 2,055,771
+                    at that point, while the chunked strategy is about RWF
+                    2,020,300. The minimum-unit rule costs roughly RWF 35,471 of
+                    modeled value by that date, but it does not push this
+                    particular first doubling into year seven.
+                  </p>
+
+                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
+                    <p className="font-black">
+                      Be careful when adding personal top-ups
+                    </p>
+                    <p className="mt-2">
+                      Adding your own cash to complete each RWF 100,000 block is
+                      a useful strategy because it keeps coupons invested. It can
+                      make the account balance reach RWF 2,000,000 earlier.
+                      However, part of that second million came from your new
+                      contributions. That is not the same as the original RWF
+                      1,000,000 doubling from investment returns alone.
+                    </p>
+                  </div>
+
+                  <p>
+                    Pooling coupons from several bonds, using income from other
+                    investments, or staggering coupon dates can improve the
+                    percentage of cash that stays invested and reduce the
+                    average waiting time. As the portfolio becomes larger, a
+                    leftover below RWF 100,000 becomes a smaller percentage of
+                    total wealth, so performance moves closer to the theoretical
+                    line. A practical planning estimate is therefore{" "}
+                    <strong className="text-on-surface">
+                      approximately 6.5 years without extra contributions
+                    </strong>
+                    , assuming 12% gross coupon, 5% withholding, stable
+                    reinvestment at similar rates, immediate RWF 100,000 purchases
+                    when cash permits, and no fees or price premiums.
+                  </p>
+                </Question>
               </LessonCard>
 
               <LessonCard
@@ -1047,55 +1363,6 @@ export function BondEducation() {
                 </p>
               </LessonCard>
 
-              <BeginnerQuestions>
-                <Question question="Should I always buy the bond with the highest printed coupon rate?">
-                  <p>
-                    Absolutely not. The coupon is the attractive number printed
-                    on the bond, but the purchase price decides how expensive
-                    those coupons are for you. If a 13.5% bond trades at 107,
-                    one RWF 1,000,000 face-value position costs RWF 1,070,000
-                    clean. At maturity, the issuer returns RWF 1,000,000, so the
-                    RWF 70,000 premium disappears through the pull back to par.
-                  </p>
-                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
-                    <p className="font-black">The premium trap</p>
-                    <p className="mt-2 font-mono text-xs leading-6">
-                      Clean purchase price: RWF 1,070,000<br />
-                      Principal returned at maturity: RWF 1,000,000<br />
-                      Premium lost at maturity: RWF 70,000
-                    </p>
-                  </div>
-                  <p>
-                    Compare listings by Yield to Maturity, not coupon alone.
-                    YTM combines the price you pay, every remaining coupon, and
-                    the principal returned at maturity.
-                  </p>
-                </Question>
-                <Question question="What is reinvestment risk, and how can it ruin long-term compounding?">
-                  <p>
-                    Imagine finding a wonderful 13% bond that matures in only
-                    two years. You enjoy that rate for 24 months, and then the
-                    Government returns your principal. Now you must find a new
-                    place for the money. If market rates have fallen to 8%, the
-                    high-rate part of your plan is over.
-                  </p>
-                  <p>
-                    A slightly lower 11.8% bond with 15 or 20 years remaining
-                    may be more useful for a long-term income plan because the
-                    rate stays attached to the principal for much longer. That
-                    does not make long bonds universally better: their market
-                    prices can move more, and they are unsuitable if you need
-                    the money soon.
-                  </p>
-                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
-                    <p className="font-black">The hidden question</p>
-                    <p className="mt-2">
-                      Do not ask only, “What rate do I get today?” Also ask,
-                      “How soon will I be forced to find another investment?”
-                    </p>
-                  </div>
-                </Question>
-              </BeginnerQuestions>
             </div>
           </section>
 
@@ -1136,6 +1403,47 @@ export function BondEducation() {
                   all-in settlement amount. Keep the order email, prospectus,
                   contract note, payment proof, and CSD record together.
                 </p>
+                <Question question="Can I buy these bonds myself electronically, or do I need an intermediary?">
+                  <p>
+                    As an individual, you normally give the order through an
+                    authorized market intermediary or bank channel rather than
+                    logging directly into the professional CSD bidding interface.
+                    BNR auction notices state that authorized commercial-bank
+                    treasurers and brokers submit CSD bids for their clients.
+                  </p>
+                  <p>
+                    BK Capital appears on CMA&apos;s licensee list as an investment
+                    bank. Other licensed intermediaries also exist, so verify the
+                    current CMA licensee list before sending money or identity
+                    documents. The intermediary can help open or reference your
+                    CSD account, clarify the order type, confirm settlement
+                    funding, and provide the trade confirmation.
+                  </p>
+                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
+                    <p className="font-black">Protect the order</p>
+                    <p className="mt-2">
+                      Use verified contact details from the institution or CMA
+                      licensee list. Do not send funds to an account supplied
+                      only through an unverified message.
+                    </p>
+                  </div>
+                </Question>
+                <Question question="What is the simplest way to start a trade by email with BK Capital?">
+                  <p>
+                    Send a clear instruction that identifies you, your CSD
+                    account, the exact security, the order type, and the desired
+                    face value. Ask the trading desk to confirm the price or
+                    auction terms, fees, accrued interest, settlement amount,
+                    deadline, funding method, and documents before execution.
+                  </p>
+                  <CopyOrderTemplate />
+                  <p>
+                    This is a communication template, not proof that an order has
+                    been accepted. Replace every placeholder, verify the ticker
+                    against the current official notice, and wait for BK Capital
+                    to confirm the instructions and settlement amount.
+                  </p>
+                </Question>
               </LessonCard>
 
               <LessonCard
@@ -1175,9 +1483,43 @@ export function BondEducation() {
                   closing price alone.
                 </p>
                 <Equation title="Discount return has two engines">
-                  <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
-                    Hold-to-maturity economics = Net coupons + Pull to par - Costs
-                  </p>
+                  <MathFormula
+                    label="Hold-to-maturity return equals the sum of net coupons plus face value minus clean purchase price, minus costs."
+                    caption="The pull-to-par term is positive when the clean purchase price is below face value."
+                  >
+                    <mrow>
+                      <msub>
+                        <mi>R</mi>
+                        <mtext>hold</mtext>
+                      </msub>
+                      <mo>=</mo>
+                      <munderover>
+                        <mo>∑</mo>
+                        <mrow>
+                          <mi>t</mi>
+                          <mo>=</mo>
+                          <mn>1</mn>
+                        </mrow>
+                        <mi>N</mi>
+                      </munderover>
+                      <msubsup>
+                        <mi>C</mi>
+                        <mi>t</mi>
+                        <mtext>net</mtext>
+                      </msubsup>
+                      <mo>+</mo>
+                      <mo>(</mo>
+                      <mi>F</mi>
+                      <mo>−</mo>
+                      <msub>
+                        <mi>P</mi>
+                        <mtext>clean</mtext>
+                      </msub>
+                      <mo>)</mo>
+                      <mo>−</mo>
+                      <mi>K</mi>
+                    </mrow>
+                  </MathFormula>
                   <p className="mt-2">
                     A discount increases yield because coupon cash is earned on
                     face value while less clean capital is paid, and because par
@@ -1323,49 +1665,6 @@ export function BondEducation() {
                 </article>
               </div>
 
-              <BeginnerQuestions>
-                <Question question="Can I buy these bonds myself electronically, or do I need an intermediary?">
-                  <p>
-                    As an individual, you normally give the order through an
-                    authorized market intermediary or bank channel rather than
-                    logging directly into the professional CSD bidding interface.
-                    BNR auction notices state that authorized commercial-bank
-                    treasurers and brokers submit CSD bids for their clients.
-                  </p>
-                  <p>
-                    BK Capital appears on CMA&apos;s licensee list as an investment
-                    bank. Other licensed intermediaries also exist, so verify the
-                    current CMA licensee list before sending money or identity
-                    documents. The intermediary can help open or reference your
-                    CSD account, clarify the order type, confirm settlement
-                    funding, and provide the trade confirmation.
-                  </p>
-                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
-                    <p className="font-black">Protect the order</p>
-                    <p className="mt-2">
-                      Use verified contact details from the institution or CMA
-                      licensee list. Do not send funds to an account supplied
-                      only through an unverified message.
-                    </p>
-                  </div>
-                </Question>
-                <Question question="What is the simplest way to start a trade by email with BK Capital?">
-                  <p>
-                    Send a clear instruction that identifies you, your CSD
-                    account, the exact security, the order type, and the desired
-                    face value. Ask the trading desk to confirm the price or
-                    auction terms, fees, accrued interest, settlement amount,
-                    deadline, funding method, and documents before execution.
-                  </p>
-                  <CopyOrderTemplate />
-                  <p>
-                    This is a communication template, not proof that an order has
-                    been accepted. Replace every placeholder, verify the ticker
-                    against the current official notice, and wait for BK Capital
-                    to confirm the instructions and settlement amount.
-                  </p>
-                </Question>
-              </BeginnerQuestions>
             </div>
           </section>
 
