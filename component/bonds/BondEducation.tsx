@@ -4,6 +4,7 @@ import {
   BookOpenText,
   Calculator,
   CalendarClock,
+  ChevronDown,
   CircleDollarSign,
   ExternalLink,
   Landmark,
@@ -18,13 +19,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
+import { CopyOrderTemplate } from "./CopyOrderTemplate";
 
 const anchors = [
   {
     id: "start",
     number: "00",
     label: "Start from zero",
-    detail: "What a bond is and who pays whom",
+    detail: "Definitions, 100k units, and beginner FAQ",
   },
   {
     id: "physics",
@@ -41,8 +43,8 @@ const anchors = [
   {
     id: "alpha-deals",
     number: "03",
-    label: "Advanced analysis",
-    detail: "Discounts, reopenings, and RSE screening",
+    label: "Execute the deal",
+    detail: "Broker orders, discounts, and RSE screening",
   },
 ];
 
@@ -135,6 +137,50 @@ function Equation({
   );
 }
 
+function BeginnerQuestions({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-6 md:p-8">
+      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--md-sys-color-primary)]">
+        Common beginner questions & scenarios
+      </p>
+      <h3 className="mt-2 text-xl font-black text-on-surface">
+        Open only the question you need
+      </h3>
+      <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+        The answers stay folded so the lesson remains calm and easy to scan.
+      </p>
+      <div className="mt-6">{children}</div>
+    </section>
+  );
+}
+
+function Question({
+  question,
+  children,
+}: {
+  question: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group mb-4 rounded-2xl border border-outline/5 bg-surface-container-low/50 p-4 last:mb-0">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-base font-black text-[var(--md-sys-color-primary)] marker:content-none">
+        <span>{question}</span>
+        <ChevronDown
+          size={18}
+          className="mt-0.5 shrink-0 transition-transform group-open:rotate-180"
+        />
+      </summary>
+      <div className="mt-4 space-y-4 border-t border-outline/10 pt-4 text-sm leading-6 text-on-surface-variant">
+        {children}
+      </div>
+    </details>
+  );
+}
+
 export function BondEducation() {
   return (
     <main className="bond-app relative min-h-screen overflow-x-clip bg-background font-sans text-on-background">
@@ -215,8 +261,8 @@ export function BondEducation() {
               },
               {
                 label: "Level 3 · Advanced",
-                value: "Evaluate the deal",
-                copy: "Premium traps, discounts, reinvestment, and RSE analysis.",
+                value: "Evaluate and execute",
+                copy: "Compare listings, contact a broker, and place an order.",
               },
             ].map((item) => (
               <article
@@ -297,8 +343,8 @@ export function BondEducation() {
           <section id="start" className="scroll-mt-36">
             <LessonHeader
               eyebrow="Level 0 · Start here"
-              title="A bond is simply a formal loan."
-              introduction="Before discussing percentages, market prices, or yield, begin with the basic exchange. One side needs money today. Another side has money available today. The borrower promises to make specified payments later. A bond is the written, transferable form of that promise. Everything else in this course explains the details attached to the promise."
+              title="A bond is a formal government I.O.U."
+              introduction="Imagine lending money to someone who gives you a written promise showing how much they borrowed, when they will pay you interest, and the date they will return your original money. A Treasury bond is the Government version of that promise. It has more rules and an electronic ownership record, but the basic idea is still lending."
             />
 
             <div className="mt-9 space-y-5">
@@ -308,17 +354,13 @@ export function BondEducation() {
                 title="What Is a Rwanda Treasury Bond?"
               >
                 <p>
-                  When the Government of Rwanda needs to finance public
-                  activities, it can borrow money by issuing Treasury bonds. In
-                  this relationship, the Government is the{" "}
-                  <strong className="text-on-surface">issuer</strong>, meaning the
-                  organization that creates the bond and promises to pay. The
-                  person, bank, pension fund, insurance company, or other
-                  institution providing money is the{" "}
-                  <strong className="text-on-surface">investor</strong>. Buying
-                  the bond means lending money under the bond&apos;s documented
-                  conditions. It does not mean buying part of the Government in
-                  the way a shareholder buys part of a company.
+                  When the Government of Rwanda needs money for public
+                  financing, it can issue Treasury bonds. The Government is the{" "}
+                  <strong className="text-on-surface">issuer</strong>: it creates
+                  the promise and owes the payments. You are the{" "}
+                  <strong className="text-on-surface">investor</strong>: you
+                  provide the money and receive the promised cash flows. You are
+                  lending to the Government, not buying a piece of it.
                 </p>
                 <p>
                   The bond identifies how much principal exists, how interest is
@@ -337,6 +379,16 @@ export function BondEducation() {
                   investor sells before maturity, the selling price can be above
                   or below the original purchase price. Inflation can also
                   reduce what future Rwandan francs can buy.
+                </p>
+                <p>
+                  A familiar comparison is a brand-new high-end smartphone. The
+                  manufacturer releases one model with fixed specifications, but
+                  later owners may resell that same phone for different prices.
+                  Someone who urgently needs cash might sell cheaply; strong
+                  demand might push another resale price higher. A bond behaves
+                  similarly on the secondary market: its face value, coupon, and
+                  maturity stay attached to the bond, while the price buyers and
+                  sellers agree to can move.
                 </p>
                 <Equation title="The whole bond in one sentence">
                   <p className="font-black">
@@ -499,6 +551,54 @@ export function BondEducation() {
                   </p>
                 </Equation>
               </LessonCard>
+
+              <BeginnerQuestions>
+                <Question question="If an investor sells a RWF 100,000 bond block for 97k, can I pay 97k and still own 100k face value?">
+                  <p>
+                    Yes. Think of it like a high-end smartphone that originally
+                    came with a fixed specification. A person who urgently needs
+                    cash may resell that same phone for less, but the phone does
+                    not lose its original storage capacity. Here, the previous
+                    investor accepts RWF 97,000 clean for a bond block registered
+                    with RWF 100,000 face value.
+                  </p>
+                  <p>
+                    After settlement, the electronic ownership record moves to
+                    your CSD account. Coupon cash and maturity principal follow
+                    the RWF 100,000 face value, not the RWF 97,000 bargain price.
+                    Your final debit can still include accrued interest and fees.
+                  </p>
+                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
+                    <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                      Clean price: RWF 97,000<br />
+                      Face value owned: RWF 100,000<br />
+                      12% annual gross coupon: RWF 12,000<br />
+                      Principal due at maturity: RWF 100,000
+                    </p>
+                  </div>
+                </Question>
+                <Question question="Why can't I invest an arbitrary RWF 97,000 from the start? Why is it tied to the 100k unit rule?">
+                  <p>
+                    A Government bond is a standardized loan certificate, not a
+                    savings account that accepts any balance. BNR auction notices
+                    commonly structure non-competitive amounts in multiples of
+                    RWF 100,000. You choose how many face-value blocks you want.
+                  </p>
+                  <p>
+                    The market price of a block can move, just as a used
+                    smartphone can resell above or below its launch price. A
+                    block priced at 97 costs RWF 97,000 clean, but it remains a
+                    RWF 100,000 face-value block in the securities record.
+                  </p>
+                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
+                    <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                      1 block = RWF 100,000 face value<br />
+                      5 blocks = RWF 500,000 face value<br />
+                      At price 97, 5 blocks cost RWF 485,000 clean
+                    </p>
+                  </div>
+                </Question>
+              </BeginnerQuestions>
             </div>
           </section>
 
@@ -517,13 +617,12 @@ export function BondEducation() {
               >
                 <p>
                   <strong className="text-on-surface">Face value</strong>, also
-                  called par value or principal, is the contractual amount on
-                  which the coupon is calculated and the amount the issuer is
-                  expected to repay at maturity. If you own RWF 1,000,000 face
-                  value of a 12% fixed-rate Treasury bond, the contractual gross
-                  coupon is RWF 120,000 per year regardless of whether you paid
-                  RWF 970,000, RWF 1,000,000, or RWF 1,070,000 to acquire that
-                  face value in the secondary market.
+                  called par value, is the number written on the bond&apos;s
+                  official record. It is the amount used to calculate coupon
+                  cash and the principal expected back at maturity. If you own
+                  RWF 1,000,000 face value with a 12% coupon, the gross annual
+                  coupon is RWF 120,000, even if you bought that position for
+                  less or more than RWF 1,000,000.
                 </p>
                 <p>
                   Bond prices are commonly expressed as a percentage of par.
@@ -537,16 +636,12 @@ export function BondEducation() {
                   market cash paid.
                 </p>
                 <p>
-                  The maturity payment pulls every surviving bond toward par.
-                  A discount buyer receives more principal than the clean price
-                  paid, creating a capital accretion if the bond is held to
-                  maturity and the issuer pays as promised. A premium buyer
-                  receives less principal than the clean price paid, creating a
-                  capital loss at redemption. That loss is not necessarily a
-                  bad outcome because the bond may pay above-market coupons, but
-                  it must be included when measuring return. The direction of
-                  the pull-to-par effect is why market price and yield move in
-                  opposite directions for otherwise unchanged cash flows.
+                  At maturity, the issuer pays face value, not whatever price
+                  you happened to pay another investor. Buy below 100 and you
+                  can receive more principal than your clean purchase price.
+                  Buy above 100 and part of your purchase price disappears when
+                  principal returns to 100. This movement back toward face value
+                  is called <strong className="text-on-surface">pull to par</strong>.
                 </p>
                 <Equation title="Translate a quoted price into clean cash">
                   <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
@@ -568,8 +663,8 @@ export function BondEducation() {
               >
                 <p>
                   The <strong className="text-on-surface">coupon rate</strong> is
-                  a contractual property of the bond. It determines coupon cash
-                  by multiplying the annual coupon percentage by face value.
+                  the interest percentage printed on the bond. It determines
+                  coupon cash by multiplying that percentage by face value.
                   With semiannual payments, a 13.5% bond with RWF 1,000,000 face
                   value pays RWF 67,500 gross every six months. The rate does
                   not adjust merely because the bond later trades above or
@@ -577,13 +672,11 @@ export function BondEducation() {
                 </p>
                 <p>
                   <strong className="text-on-surface">Yield to maturity</strong>{" "}
-                  is a market-dependent internal rate of return. It is the
-                  discount rate that makes the present value of all remaining
-                  coupons plus the maturity principal equal to the price paid.
-                  YTM therefore incorporates the coupon size, purchase price,
-                  remaining payment dates, and pull to par. A high coupon bond
-                  bought at a sufficiently high premium can have a lower YTM
-                  than a lower coupon bond bought at par or at a discount.
+                  is the fairer comparison number. It asks what annualized return
+                  the whole deal represents when you include today&apos;s price,
+                  every remaining coupon, and the principal paid at maturity. A
+                  high-coupon bond bought at an expensive premium can therefore
+                  have a lower YTM than a lower-coupon bond bought cheaply.
                 </p>
                 <Equation title="YTM in beginner language">
                   <p>
@@ -627,26 +720,32 @@ export function BondEducation() {
                 title="Accrued Interest and Clean vs. Dirty Price"
               >
                 <p>
-                  Coupon interest is earned economically day by day even though
-                  cash is distributed only on scheduled dates. When a seller
-                  transfers a bond between coupon dates, the seller has held the
-                  security for part of the current coupon period. The buyer will
-                  normally receive the entire next coupon from the payment
-                  system, so settlement compensates the seller for the portion
-                  accumulated before the buyer owned the bond. That compensation
-                  is accrued interest.
+                  Accrued interest sounds technical, but the household version
+                  is simple. Imagine you move into a rented house on the 15th of
+                  the month. At month-end, the electricity bill covers all 30
+                  days. The previous tenant used electricity for the first half
+                  of the month, so you should not keep the benefit of that whole
+                  bill calculation for yourself. You settle up for the days they
+                  were there.
+                </p>
+                <p>
+                  Bonds have the same idea. Coupon interest builds up day by
+                  day, but the cash is paid only on scheduled coupon dates. If
+                  you buy from a seller halfway through a six-month coupon
+                  period, the seller has already earned roughly half of that
+                  coupon period. You usually pay them that earned portion on
+                  settlement day. Later, when the full coupon arrives in your
+                  account, part of it is really reimbursing money you already
+                  advanced to the seller.
                 </p>
                 <p>
                   The <strong className="text-on-surface">clean price</strong>{" "}
-                  excludes accrued interest and makes market quotations easier
-                  to compare across days. The{" "}
-                  <strong className="text-on-surface">dirty price</strong>, also
-                  called the full price, includes accrued interest. The cash
-                  required at settlement is based on the dirty amount and may
-                  also include commission, exchange charges, custody charges,
-                  or other items shown on the broker confirmation. A listing at
-                  101.50 therefore does not necessarily mean the bank account
-                  will be debited by exactly 101.50% of face value.
+                  is the simple market quote before that interest adjustment.
+                  The <strong className="text-on-surface">dirty price</strong>{" "}
+                  is the fuller settlement price after accrued interest is added.
+                  Your final cash debit can also include broker commission and
+                  other charges. So a clean quote of 101.50 is useful, but it is
+                  not automatically the exact amount leaving your bank account.
                 </p>
                 <p>
                   The exact accrued-interest calculation depends on the
@@ -677,17 +776,12 @@ export function BondEducation() {
                 title="Rwandan Sovereign Withholding Tax Treatment"
               >
                 <p>
-                  Rwanda&apos;s Law No. 027/2022 of October 20, 2022 establishes a
-                  general 15% withholding framework for specified payments and
-                  then provides a reduced 5% rate for qualifying interest. The
-                  text includes interest derived from Treasury bonds with a
-                  maturity of at least three years. The law also contains a
-                  separate 5% rule for dividends and interest on securities
-                  listed on the capital market when the beneficiary is a
-                  resident taxpayer of Rwanda or another East African Community
-                  country. The 2023 and May 2025 amendments listed by RRA did
-                  not amend Article 60, where this Treasury-bond treatment
-                  appears.
+                  Tax is removed before coupon cash reaches your account.
+                  Rwanda&apos;s Law No. 027/2022 provides a reduced 5% withholding
+                  treatment for interest from Treasury bonds with a maturity of
+                  at least three years. That is why this planner normally shows
+                  5% rather than the broader 15% withholding rate mentioned for
+                  other covered payments.
                 </p>
                 <p>
                   For a qualifying Rwanda Treasury bond modeled at a 5%
@@ -699,18 +793,10 @@ export function BondEducation() {
                   the bond&apos;s contractual coupon printed in the prospectus.
                 </p>
                 <p>
-                  The three-year wording should not be reinterpreted casually as
-                  a rolling test of remaining life. A bond originally issued as
-                  a qualifying longer-term Treasury bond may have fewer than
-                  three years left when it trades later. The tax result should
-                  be confirmed from the security classification, current law,
-                  broker treatment, and the investor&apos;s residence or taxpayer
-                  status rather than inferred only from today&apos;s maturity
-                  countdown. Short-term Treasury bills, which BNR describes as
-                  instruments with maturity of one year or less, do not satisfy
-                  the specific three-year Treasury-bond condition; other
-                  exemptions or taxpayer rules may nevertheless affect a
-                  particular investor.
+                  Do not guess the tax from the countdown shown in a market
+                  table. Confirm the bond&apos;s classification, current law, and
+                  the broker or paying agent&apos;s treatment. Personal residence,
+                  taxpayer status, and later legal changes can affect the answer.
                 </p>
                 <Equation tone="error" title="Tax is an input, not a permanent law of nature">
                   <p>
@@ -724,6 +810,53 @@ export function BondEducation() {
                   </p>
                 </Equation>
               </LessonCard>
+
+              <BeginnerQuestions>
+                <Question question="If I buy a bond right before a coupon date and get the next interest check almost immediately, is that free money?">
+                  <p>
+                    No. The coupon may arrive soon, but the seller did not give
+                    away the interest they earned during the current six-month
+                    cycle. On settlement day, you normally compensate the seller
+                    for the days they already held the bond. When the full
+                    coupon later lands in your account, part of it is simply the
+                    system returning cash you advanced at purchase.
+                  </p>
+                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
+                    <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                      Semiannual coupon: RWF 60,000<br />
+                      Seller held roughly half the period<br />
+                      Accrued interest paid to seller: about RWF 30,000<br />
+                      Next coupon received by you: RWF 60,000 gross
+                    </p>
+                  </div>
+                  <p>
+                    The first coupon can feel exciting, but it is not pure
+                    profit if you paid accrued interest upfront.
+                  </p>
+                </Question>
+                <Question question="How exactly does the 5% withholding tax incentive work in Rwanda?">
+                  <p>
+                    Rwanda&apos;s income-tax law provides a reduced 5% withholding
+                    treatment for interest from Treasury bonds with a maturity
+                    of at least three years. In everyday terms, the tax is taken
+                    out of the interest payment before the net coupon reaches
+                    you. The bond still has the same gross coupon rate; your
+                    cash account receives the amount after withholding.
+                  </p>
+                  <div className="rounded-xl border border-primary/10 bg-primary-container/20 p-4">
+                    <p className="font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
+                      Raw semiannual interest: RWF 60,000<br />
+                      Withholding tax at 5%: RWF 3,000<br />
+                      Net cash received: RWF 57,000
+                    </p>
+                  </div>
+                  <p>
+                    Always confirm the current tax treatment from the prospectus,
+                    RRA rules, and the broker confirmation, especially if your
+                    taxpayer status is unusual.
+                  </p>
+                </Question>
+              </BeginnerQuestions>
             </div>
           </section>
 
@@ -902,8 +1035,9 @@ export function BondEducation() {
                   the market price.
                 </p>
                 <p>
-                  The final discipline is liability matching. Money reserved for
-                  school fees in four years should not be placed reflexively
+                  The final discipline is matching the bond to your real-life
+                  need for cash. Money reserved for school fees in four years
+                  should not be placed reflexively
                   into a 20-year bond merely because its strategy score is
                   higher. Selling before maturity exposes the investor to the
                   market price then available. Government payment reliability
@@ -912,20 +1046,101 @@ export function BondEducation() {
                   personal risk of needing cash at an inconvenient time.
                 </p>
               </LessonCard>
+
+              <BeginnerQuestions>
+                <Question question="Should I always buy the bond with the highest printed coupon rate?">
+                  <p>
+                    Absolutely not. The coupon is the attractive number printed
+                    on the bond, but the purchase price decides how expensive
+                    those coupons are for you. If a 13.5% bond trades at 107,
+                    one RWF 1,000,000 face-value position costs RWF 1,070,000
+                    clean. At maturity, the issuer returns RWF 1,000,000, so the
+                    RWF 70,000 premium disappears through the pull back to par.
+                  </p>
+                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
+                    <p className="font-black">The premium trap</p>
+                    <p className="mt-2 font-mono text-xs leading-6">
+                      Clean purchase price: RWF 1,070,000<br />
+                      Principal returned at maturity: RWF 1,000,000<br />
+                      Premium lost at maturity: RWF 70,000
+                    </p>
+                  </div>
+                  <p>
+                    Compare listings by Yield to Maturity, not coupon alone.
+                    YTM combines the price you pay, every remaining coupon, and
+                    the principal returned at maturity.
+                  </p>
+                </Question>
+                <Question question="What is reinvestment risk, and how can it ruin long-term compounding?">
+                  <p>
+                    Imagine finding a wonderful 13% bond that matures in only
+                    two years. You enjoy that rate for 24 months, and then the
+                    Government returns your principal. Now you must find a new
+                    place for the money. If market rates have fallen to 8%, the
+                    high-rate part of your plan is over.
+                  </p>
+                  <p>
+                    A slightly lower 11.8% bond with 15 or 20 years remaining
+                    may be more useful for a long-term income plan because the
+                    rate stays attached to the principal for much longer. That
+                    does not make long bonds universally better: their market
+                    prices can move more, and they are unsuitable if you need
+                    the money soon.
+                  </p>
+                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
+                    <p className="font-black">The hidden question</p>
+                    <p className="mt-2">
+                      Do not ask only, “What rate do I get today?” Also ask,
+                      “How soon will I be forced to find another investment?”
+                    </p>
+                  </div>
+                </Question>
+              </BeginnerQuestions>
             </div>
           </section>
 
           <section id="alpha-deals" className="scroll-mt-36">
             <LessonHeader
-              eyebrow="Level 3 · Analyze like an investor"
-              title="Look for good value without mistaking cheap for safe."
-              introduction="This is the advanced level. It assumes you can distinguish face value from price, coupon from YTM, and clean price from total settlement cash. The goal is no longer merely to understand a listing. The goal is to compare several listings consistently, investigate why one looks unusually attractive, and reject apparent bargains that depend on stale or untradeable data."
+              eyebrow="Level 3 · Execute the deal"
+              title="Move from understanding a bond to placing an order."
+              introduction="You do not need to operate the market's professional systems yourself. Your job is to identify the bond, decide the face-value amount you want, understand the likely price and risks, and give clear instructions to a licensed intermediary. The broker or authorized bank channel handles the market and CSD workflow on your behalf."
             />
 
             <div className="mt-9 space-y-5">
               <LessonCard
+                icon={<ReceiptText size={20} />}
+                kicker="Level 3.1 · Your buying path"
+                title="From an RSE Listing to a Confirmed Purchase"
+              >
+                <p>
+                  Start by opening or confirming your investment and CSD account
+                  details with a licensed intermediary. CMA&apos;s public licensee
+                  list includes securities brokers and investment banks such as
+                  BK Capital. BNR auction notices explain that authorized bank
+                  treasurers and brokers use the CSD platform to submit bids for
+                  their clients.
+                </p>
+                <p>
+                  For a primary auction or reopening, ask for the official notice
+                  and prospectus. Decide how much face value you want, whether
+                  your instruction is competitive or non-competitive where
+                  applicable, and the deadline for making funds available. For a
+                  secondary-market purchase, ask for a current executable offer,
+                  the face value available, accrued interest, fees, settlement
+                  date, and total cash required.
+                </p>
+                <p>
+                  Do not fund a trade from a website screenshot alone. The RSE
+                  closing price is useful market information, but the broker must
+                  confirm whether a seller is currently available and the final
+                  all-in settlement amount. Keep the order email, prospectus,
+                  contract note, payment proof, and CSD record together.
+                </p>
+              </LessonCard>
+
+              <LessonCard
                 icon={<Search size={20} />}
-                kicker="Level 3.1 · Secondary market"
+                kicker="Level 3.2 · Secondary market"
                 title="Spotting Discount Sovereigns Below Par"
               >
                 <p>
@@ -974,7 +1189,7 @@ export function BondEducation() {
 
               <LessonCard
                 icon={<Landmark size={20} />}
-                kicker="Level 3.2 · Primary market"
+                kicker="Level 3.3 · Primary market"
                 title="How Re-opened BNR Issues Work"
               >
                 <p>
@@ -998,16 +1213,16 @@ export function BondEducation() {
                   return; the accepted dirty price and resulting yield do.
                 </p>
                 <p>
-                  Reopenings can improve the outstanding size and potential
-                  liquidity of a series. They also let an investor acquire
-                  institutional-style long-duration cash flows without waiting
-                  for a brand-new maturity. Through a broker such as BK Capital,
+                  Reopenings can make an existing bond series larger and easier
+                  to trade. They also let an investor buy long-dated cash flows
+                  without waiting for a brand-new maturity. Through a broker
+                  such as BK Capital,
                   the investor should obtain the official reopening prospectus,
                   auction timetable, bond code and ISIN, coupon dates, remaining
                   tenor, minimum denomination, bidding instructions, settlement
                   amount, and published auction result. The investor should
-                  verify that the new allocation is fungible with the existing
-                  series rather than assuming it solely from a similar name.
+                  verify that the new allocation is truly the same bond series
+                  rather than assuming it solely from a similar name.
                 </p>
                 <Equation title="Reopening decision">
                   <p>
@@ -1023,7 +1238,7 @@ export function BondEducation() {
 
               <LessonCard
                 icon={<Calculator size={20} />}
-                kicker="Level 3.3 · Full analysis"
+                kicker="Level 3.4 · Full analysis"
                 title="A Full RSE-to-Broker Evaluation Process"
               >
                 <ol className="space-y-6">
@@ -1107,6 +1322,50 @@ export function BondEducation() {
                   </p>
                 </article>
               </div>
+
+              <BeginnerQuestions>
+                <Question question="Can I buy these bonds myself electronically, or do I need an intermediary?">
+                  <p>
+                    As an individual, you normally give the order through an
+                    authorized market intermediary or bank channel rather than
+                    logging directly into the professional CSD bidding interface.
+                    BNR auction notices state that authorized commercial-bank
+                    treasurers and brokers submit CSD bids for their clients.
+                  </p>
+                  <p>
+                    BK Capital appears on CMA&apos;s licensee list as an investment
+                    bank. Other licensed intermediaries also exist, so verify the
+                    current CMA licensee list before sending money or identity
+                    documents. The intermediary can help open or reference your
+                    CSD account, clarify the order type, confirm settlement
+                    funding, and provide the trade confirmation.
+                  </p>
+                  <div className="rounded-xl border border-error/10 bg-error-container/10 p-4 text-on-error-container">
+                    <p className="font-black">Protect the order</p>
+                    <p className="mt-2">
+                      Use verified contact details from the institution or CMA
+                      licensee list. Do not send funds to an account supplied
+                      only through an unverified message.
+                    </p>
+                  </div>
+                </Question>
+                <Question question="What is the simplest way to start a trade by email with BK Capital?">
+                  <p>
+                    Send a clear instruction that identifies you, your CSD
+                    account, the exact security, the order type, and the desired
+                    face value. Ask the trading desk to confirm the price or
+                    auction terms, fees, accrued interest, settlement amount,
+                    deadline, funding method, and documents before execution.
+                  </p>
+                  <CopyOrderTemplate />
+                  <p>
+                    This is a communication template, not proof that an order has
+                    been accepted. Replace every placeholder, verify the ticker
+                    against the current official notice, and wait for BK Capital
+                    to confirm the instructions and settlement amount.
+                  </p>
+                </Question>
+              </BeginnerQuestions>
             </div>
           </section>
 
