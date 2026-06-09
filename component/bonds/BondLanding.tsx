@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   WalletCards,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import {
@@ -28,6 +29,7 @@ import { getRseMarketData } from "@/lib/bonds/rse";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 import { RseMarketErrorTable } from "./RseMarketErrorTable";
 import { RseRankedBondTable } from "./RseRankedBondTable";
+import { RseRefreshButton } from "./RseRefreshButton";
 
 const steps = [
   {
@@ -170,15 +172,10 @@ export async function BondLanding({
                 Current fixed-income market data
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-on-surface-variant">
-                Read directly from the official RSE market pages and cached for one
-                hour. Always open the source before making an investment decision.
+                Read directly from the official RSE market pages and cached for 15
+                minutes. Always open the source before making an investment decision.
               </p>
             </div>
-            <p className="text-[10px] font-bold text-outline">
-              {marketUpdated
-                ? `Fetched ${marketUpdated} CAT`
-                : "Live data temporarily unavailable"}
-            </p>
           </div>
 
           <article className="mt-7 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-6">
@@ -189,8 +186,14 @@ export async function BondLanding({
                   Primary Source of Truth
                 </span>
                 <div className="mt-5 flex items-start gap-4">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-[var(--md-sys-color-primary)]">
-                    <Landmark size={20} />
+                  <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-outline/10 bg-white p-1.5 shadow-sm">
+                    <Image
+                      src="/brands/bnr-logo.png"
+                      alt="National Bank of Rwanda logo"
+                      width={44}
+                      height={44}
+                      className="h-full w-full object-contain"
+                    />
                   </span>
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
@@ -214,7 +217,7 @@ export async function BondLanding({
                 href="https://www.bnr.rw/mminstruments"
                 target="_blank"
                 rel="noreferrer"
-                className="block rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-center font-bold text-on-primary transition-all hover:opacity-90 lg:min-w-72"
+                className="block rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-center font-bold text-[var(--md-sys-color-on-primary)] shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--md-sys-color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 lg:min-w-72"
               >
                 Go to Live BNR Instruments Board ↗
               </a>
@@ -298,6 +301,43 @@ export async function BondLanding({
                     </div>
                   ))}
                 </div>
+              ) : marketData.tradesStatus === "empty" ? (
+                <div className="p-5 md:p-6">
+                  <div className="rounded-2xl border border-outline/10 bg-surface-container-low/55 p-5">
+                    <div className="flex items-start gap-3">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                        <CalendarClock size={18} />
+                      </span>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-sm font-black text-on-surface">
+                            No latest bond trades published
+                          </h4>
+                          <span className="rounded-full bg-primary-container/30 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-[var(--md-sys-color-primary)]">
+                            Source reached
+                          </span>
+                        </div>
+                        <p className="mt-2 max-w-3xl text-xs leading-5 text-on-surface-variant">
+                          The Rwanda Stock Exchange has not published any recent
+                          bond transactions in this table yet. Refresh later or
+                          open the official RSE page to check for new activity.
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <RseRefreshButton />
+                          <a
+                            href="https://rse.rw/bond-market"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 rounded-xl border border-outline/15 bg-background px-4 py-2.5 text-xs font-black text-on-surface transition hover:border-primary/35 hover:text-primary"
+                          >
+                            Check the RSE page
+                            <ExternalLink size={14} />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <RseMarketErrorTable
                   columns={["Bond", "Closing", "Change", "Value"]}
@@ -308,16 +348,31 @@ export async function BondLanding({
             </article>
 
             <article className="overflow-hidden rounded-3xl border border-outline/10 bg-background/75">
-              <div className="flex items-center justify-between border-b border-outline/10 px-5 py-4">
+              <div className="flex flex-col gap-4 border-b border-outline/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
                     Treasury listings
                   </p>
                   <h3 className="mt-1 font-black">Fixed income board</h3>
                 </div>
-                <a href="https://rse.rw/fixed-income-board" target="_blank" rel="noreferrer" className="text-xs font-black text-primary">
-                  RSE <ExternalLink size={12} className="ml-1 inline" />
-                </a>
+                <div className="flex flex-col gap-2 sm:items-end">
+                  <p className="text-[10px] font-bold text-on-surface-variant">
+                    {marketUpdated
+                      ? `Last refreshed ${marketUpdated} CAT`
+                      : "Last refresh unavailable"}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <RseRefreshButton />
+                    <a
+                      href="https://rse.rw/fixed-income-board"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-xl border border-outline/15 bg-background px-3 py-2.5 text-xs font-black text-primary transition hover:border-primary/35"
+                    >
+                      Open RSE <ExternalLink size={12} />
+                    </a>
+                  </div>
+                </div>
               </div>
               {marketData.outstanding.length > 0 ? (
                 <RseRankedBondTable
