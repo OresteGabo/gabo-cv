@@ -1,4 +1,7 @@
 import "server-only";
+import type { RseOutstandingBond } from "@/lib/bonds/rse-types";
+
+export type { RseOutstandingBond } from "@/lib/bonds/rse-types";
 
 const RSE_BOND_MARKET_URL = "https://rse.rw/bond-market";
 const RSE_FIXED_INCOME_URL = "https://rse.rw/fixed-income-board";
@@ -11,25 +14,6 @@ export type RseMarketTrade = {
   change: string;
   volume: string;
   value: string;
-};
-
-export type RseOutstandingBond = {
-  bond: string;
-  code: string;
-  issueDate: string;
-  maturityDate: string;
-  couponRate: string;
-  yieldToMaturity: string;
-  closingPrice: number | null;
-  grossYield: number;
-  netAnnualizedYield: number;
-  yearsRemaining: number;
-  strategyScore: number;
-  yieldScore: number;
-  durationScore: number;
-  priceScore: number;
-  confidenceScore: number;
-  yieldSource: "closing-price estimate" | "RSE published YTM";
 };
 
 export type RseMarketData = {
@@ -159,6 +143,73 @@ function solveSemiannualYield({
     else high = midpoint;
   }
   return ((low + high) / 2) * 2;
+}
+
+function shiftUtcMonths(date: Date, months: number) {
+  const shifted = new Date(date);
+  const day = shifted.getUTCDate();
+  shifted.setUTCDate(1);
+  shifted.setUTCMonth(shifted.getUTCMonth() + months);
+  const lastDay = new Date(
+    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  shifted.setUTCDate(Math.min(day, lastDay));
+  return shifted;
+}
+
+function impliedCleanPrice({
+  annualCouponRate,
+  annualYield,
+  maturityDate,
+  valuationDate,
+}: {
+  annualCouponRate: number;
+  annualYield: number;
+  maturityDate: string;
+  valuationDate: Date;
+}) {
+  const maturity = parseRseDate(maturityDate);
+  if (
+    !maturity ||
+    maturity <= valuationDate ||
+    annualCouponRate < 0 ||
+    annualYield <= -1
+  ) {
+    return null;
+  }
+
+  const paymentDates = [maturity];
+  let paymentDate = maturity;
+  while (paymentDate > valuationDate && paymentDates.length < 100) {
+    paymentDate = shiftUtcMonths(paymentDate, -6);
+    if (paymentDate > valuationDate) paymentDates.unshift(paymentDate);
+  }
+
+  const nextPayment = paymentDates[0];
+  const previousPayment = shiftUtcMonths(nextPayment, -6);
+  const couponPeriodMs = nextPayment.getTime() - previousPayment.getTime();
+  const timeToNextPaymentMs =
+    nextPayment.getTime() - valuationDate.getTime();
+  if (couponPeriodMs <= 0 || timeToNextPaymentMs < 0) return null;
+
+  const firstPeriodFraction = timeToNextPaymentMs / couponPeriodMs;
+  const periodicYield = annualYield / 2;
+  const coupon = (100 * annualCouponRate) / 2;
+  let dirtyPrice = 0;
+
+  paymentDates.forEach((_, index) => {
+    const exponent = firstPeriodFraction + index;
+    dirtyPrice += coupon / (1 + periodicYield) ** exponent;
+    if (index === paymentDates.length - 1) {
+      dirtyPrice += 100 / (1 + periodicYield) ** exponent;
+    }
+  });
+
+  const accruedFraction = 1 - firstPeriodFraction;
+  const cleanPrice = dirtyPrice - coupon * accruedFraction;
+  return Number.isFinite(cleanPrice)
+    ? Math.round(cleanPrice * 1000) / 1000
+    : null;
 }
 
 function clampScore(value: number) {
@@ -299,6 +350,15 @@ export async function getRseMarketData(
           const annualCouponRate = percentage(couponRate);
           const yearsRemaining = yearsUntil(maturityDate, valuationDate);
           const publishedYield = percentage(yieldToMaturity);
+          const estimatedCleanPrice =
+            closingPrice === null
+              ? impliedCleanPrice({
+                  annualCouponRate,
+                  annualYield: publishedYield,
+                  maturityDate,
+                  valuationDate,
+                })
+              : null;
           const grossYield =
             closingPrice === null
               ? publishedYield
@@ -331,6 +391,7 @@ export async function getRseMarketData(
             couponRate,
             yieldToMaturity,
             closingPrice,
+            impliedCleanPrice: estimatedCleanPrice,
             grossYield,
             netAnnualizedYield,
             yearsRemaining,
