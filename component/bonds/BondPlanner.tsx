@@ -1305,7 +1305,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 </span>
               </div>
               <NumberControl label="Coupon reinvestment" value={Math.round(assumptions.reinvestmentRate * 100)} onChange={(value) => update("reinvestmentRate", value / 100)} min={0} max={100} step={5} suffix="%" />
-              <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={5_000_000} step={50_000} prefix="RWF " />
+              <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
             </div>
 
             <div className="mt-6 rounded-3xl border border-[var(--md-sys-color-tertiary)]/20 bg-[var(--md-sys-color-tertiary)]/[0.05] p-4">
