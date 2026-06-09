@@ -1,7 +1,4 @@
 import "server-only";
-import type { RseOutstandingBond } from "@/lib/bonds/rse-types";
-
-export type { RseOutstandingBond } from "@/lib/bonds/rse-types";
 
 const RSE_BOND_MARKET_URL = "https://rse.rw/bond-market";
 const RSE_FIXED_INCOME_URL = "https://rse.rw/fixed-income-board";
@@ -14,6 +11,26 @@ export type RseMarketTrade = {
   change: string;
   volume: string;
   value: string;
+};
+
+export type RseOutstandingBond = {
+  bond: string;
+  code: string;
+  issueDate: string;
+  maturityDate: string;
+  couponRate: string;
+  yieldToMaturity: string;
+  closingPrice: number | null;
+  impliedCleanPrice: number | null;
+  grossYield: number;
+  netAnnualizedYield: number;
+  yearsRemaining: number;
+  strategyScore: number;
+  yieldScore: number;
+  durationScore: number;
+  priceScore: number;
+  confidenceScore: number;
+  yieldSource: "closing-price estimate" | "RSE published YTM";
 };
 
 export type RseMarketData = {
@@ -226,8 +243,7 @@ function strategyScores({
   closingPrice: number | null;
 }) {
   const yieldScore = clampScore((netAnnualizedYield / 0.14) * 100);
-  const durationScore =
-    100 / (1 + Math.exp(-0.35 * (yearsRemaining - 10)));
+  const durationScore = clampScore((yearsRemaining / 12) * 100);
   const priceScore =
     closingPrice === null
       ? 50
@@ -236,10 +252,9 @@ function strategyScores({
         : Math.max(0, 100 - ((closingPrice - 100) / 100) * 500);
   const confidenceScore = closingPrice === null ? 60 : 100;
   const strategyScore =
-    yieldScore * 0.6 +
+    yieldScore * 0.7 +
     durationScore * 0.25 +
-    priceScore * 0.1 +
-    confidenceScore * 0.05;
+    priceScore * 0.05;
 
   return {
     strategyScore: Math.round(strategyScore * 10) / 10,
