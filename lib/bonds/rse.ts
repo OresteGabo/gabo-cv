@@ -34,11 +34,26 @@ export type RseOutstandingBond = {
 
 export type RseMarketData = {
   trades: RseMarketTrade[];
+  tradesStatus: "available" | "empty" | "error";
   outstanding: RseOutstandingBond[];
   fixedIncomePagesFetched: number;
   treasuryRowsAnalyzed: number;
   fetchedAt: string | null;
 };
+
+type RsePage = {
+  html: string;
+  fetchedAt: string;
+};
+
+function oldestFetchedAt(pages: RsePage[]) {
+  const timestamps = pages
+    .map((page) => new Date(page.fetchedAt).getTime())
+    .filter(Number.isFinite);
+  return timestamps.length > 0
+    ? new Date(Math.min(...timestamps)).toISOString()
+    : null;
+}
 
 function decodeHtml(value: string) {
   return value
@@ -192,15 +207,23 @@ async function rsePage(url: string, forceRefresh: boolean) {
     },
     ...(forceRefresh
       ? { cache: "no-store" as const }
-      : { next: { revalidate: 60 * 60 } }),
+      : { next: { revalidate: 15 * 60 } }),
   });
   if (!response.ok) throw new Error(`RSE returned ${response.status}.`);
-  return response.text();
+  const responseDate = response.headers.get("date");
+  const parsedResponseDate = responseDate ? new Date(responseDate) : null;
+  return {
+    html: await response.text(),
+    fetchedAt:
+      parsedResponseDate && !Number.isNaN(parsedResponseDate.getTime())
+        ? parsedResponseDate.toISOString()
+        : new Date().toISOString(),
+  };
 }
 
 async function fixedIncomePages(forceRefresh: boolean) {
   const firstPage = await rsePage(RSE_FIXED_INCOME_URL, forceRefresh);
-  const pageCount = fixedIncomePageCount(firstPage);
+  const pageCount = fixedIncomePageCount(firstPage.html);
   if (pageCount === 1) {
     return { pages: [firstPage], pageCount: 1 };
   }
@@ -227,15 +250,15 @@ export async function getRseMarketData(
   forceRefresh = false,
 ): Promise<RseMarketData> {
   try {
-    const [marketHtml, fixedIncomeResult] = await Promise.all([
-      rsePage(RSE_BOND_MARKET_URL, forceRefresh),
+    const [marketPage, fixedIncomeResult] = await Promise.all([
+      rsePage(RSE_BOND_MARKET_URL, forceRefresh).catch(() => null),
       fixedIncomePages(forceRefresh).catch(async () => ({
         pages: [await rsePage(RSE_OUTSTANDING_BONDS_URL, forceRefresh)],
         pageCount: 1,
       })),
     ]);
 
-    const trades = tableRows(marketHtml)
+    const trades = (marketPage ? tableRows(marketPage.html) : [])
       .filter((cells) => cells.length >= 6)
       .map(([bond, closing, previous, change, volume, value]) => ({
         bond: cleanBondName(bond),
@@ -252,7 +275,9 @@ export async function getRseMarketData(
       ]),
     );
     const valuationDate = new Date();
-    const fixedIncomeRows = fixedIncomeResult.pages.flatMap(tableRows);
+    const fixedIncomeRows = fixedIncomeResult.pages.flatMap((page) =>
+      tableRows(page.html),
+    );
     const treasuryRows = fixedIncomeRows.filter(
       (cells) => cells.length >= 6 && /TREASURY/i.test(cells[0]),
     );
@@ -326,14 +351,21 @@ export async function getRseMarketData(
 
     return {
       trades,
+      tradesStatus:
+        marketPage === null
+          ? "error"
+          : trades.length > 0
+            ? "available"
+            : "empty",
       outstanding,
       fixedIncomePagesFetched: fixedIncomeResult.pageCount,
       treasuryRowsAnalyzed: treasuryRows.length,
-      fetchedAt: new Date().toISOString(),
+      fetchedAt: oldestFetchedAt(fixedIncomeResult.pages),
     };
   } catch {
     return {
       trades: [],
+      tradesStatus: "error",
       outstanding: [],
       fixedIncomePagesFetched: 0,
       treasuryRowsAnalyzed: 0,
