@@ -5,6 +5,8 @@ import {
   ArrowUp,
   Award,
   Check,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   HelpCircle,
   Info,
@@ -73,6 +75,7 @@ export function RseRankedBondTable({
 }) {
   const [optimized, setOptimized] = useState(true);
   const [formulaOpen, setFormulaOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("strategyScore");
   const [direction, setDirection] = useState<"asc" | "desc">("desc");
 
@@ -128,8 +131,11 @@ export function RseRankedBondTable({
         }),
     [bonds, direction, optimized, sortKey],
   );
+  const visibleBonds = showAll ? ranked : ranked.slice(0, 5);
+  const hasMoreBonds = ranked.length > 5;
 
   function updateSort(key: SortKey) {
+    setShowAll(false);
     setOptimized(false);
     if (sortKey === key) {
       setDirection((current) => (current === "desc" ? "asc" : "desc"));
@@ -137,6 +143,11 @@ export function RseRankedBondTable({
       setSortKey(key);
       setDirection("desc");
     }
+  }
+
+  function toggleOptimization() {
+    setShowAll(false);
+    setOptimized((current) => !current);
   }
 
   return (
@@ -164,7 +175,7 @@ export function RseRankedBondTable({
             type="button"
             role="switch"
             aria-checked={optimized}
-            onClick={() => setOptimized((current) => !current)}
+            onClick={toggleOptimization}
             className="flex min-w-0 flex-1 items-center justify-between gap-4 rounded-2xl text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-4 focus-visible:ring-offset-background"
           >
             <span className="flex min-w-0 items-start gap-3">
@@ -251,8 +262,8 @@ export function RseRankedBondTable({
               <th className="w-[12%] px-3 py-3"><SortButton label="Score" sortKey="strategyScore" activeKey={sortKey} direction={direction} onSort={updateSort} /></th>
             </tr>
           </thead>
-          <tbody>
-            {ranked.map((bond, index) => {
+          <tbody id="fixed-income-ranked-bonds">
+            {visibleBonds.map((bond, index) => {
               const highlighted = optimized && index < 2;
               return (
                 <tr
@@ -317,6 +328,43 @@ export function RseRankedBondTable({
           </tbody>
         </table>
       </div>
+      {hasMoreBonds && (
+        <div className="flex flex-col gap-3 border-t border-outline/10 bg-surface-container-lowest/45 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-on-surface-variant">
+            {showAll ? (
+              <>
+                Showing all{" "}
+                <strong className="text-on-surface">{ranked.length}</strong>{" "}
+                ranked bonds.
+              </>
+            ) : (
+              <>
+                Showing the top{" "}
+                <strong className="text-on-surface">5</strong> of{" "}
+                <strong className="text-on-surface">{ranked.length}</strong>{" "}
+                ranked bonds.
+              </>
+            )}
+          </p>
+          <button
+            type="button"
+            aria-expanded={showAll}
+            aria-controls="fixed-income-ranked-bonds"
+            onClick={() => setShowAll((current) => !current)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-outline/15 bg-background px-4 py-2.5 text-xs font-black text-[var(--md-sys-color-primary)] transition hover:border-primary/40 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            {showAll ? (
+              <>
+                Show top 5 <ChevronUp size={15} />
+              </>
+            ) : (
+              <>
+                Show all {ranked.length} bonds <ChevronDown size={15} />
+              </>
+            )}
+          </button>
+        </div>
+      )}
       <div className="flex gap-2 border-t border-outline/10 bg-surface-container-low/40 px-5 py-4 text-[10px] leading-4 text-on-surface-variant">
         <Info size={14} className="mt-0.5 shrink-0 text-primary" />
         <p>
