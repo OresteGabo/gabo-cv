@@ -14,6 +14,10 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import type { RseOutstandingBond } from "@/lib/bonds/rse";
 
+type RankedBond = RseOutstandingBond & {
+  impliedCleanPrice?: number | null;
+};
+
 type OpportunitySignal = {
   label: string;
   explanation: string;
@@ -73,7 +77,7 @@ function bkBondCode(bondName: string) {
   return `${issue}/${match[2]}yr`;
 }
 
-function opportunitySignal(bond: RseOutstandingBond): OpportunitySignal {
+function opportunitySignal(bond: RankedBond): OpportunitySignal {
   const hasLivePrice = bond.closingPrice !== null;
   const price = bond.closingPrice ?? 0;
   const strongYield = bond.netAnnualizedYield >= 0.115;
@@ -144,7 +148,7 @@ export function RseRankedBondTable({
   pagesFetched,
   rowsAnalyzed,
 }: {
-  bonds: RseOutstandingBond[];
+  bonds: RankedBond[];
   pagesFetched: number;
   rowsAnalyzed: number;
 }) {
@@ -277,7 +281,7 @@ export function RseRankedBondTable({
               const opportunity = opportunitySignal(bond);
               const codeForBk = index < 3 ? bkBondCode(bond.bond) : null;
               const displayedPrice =
-                bond.closingPrice ?? bond.impliedCleanPrice;
+                bond.closingPrice ?? bond.impliedCleanPrice ?? null;
               const priceStatus = pricePosition(displayedPrice);
               return (
                 <tr
@@ -329,14 +333,14 @@ export function RseRankedBondTable({
                     <p className="font-black leading-5">
                       {bond.closingPrice !== null
                         ? bond.closingPrice.toFixed(2)
-                        : bond.impliedCleanPrice !== null
+                        : bond.impliedCleanPrice != null
                           ? `≈ ${bond.impliedCleanPrice.toFixed(2)}`
                           : "Unavailable"}
                     </p>
                     <p className="mt-1 text-[10px] font-medium leading-4 text-on-surface-variant">
                       {bond.closingPrice !== null
                         ? "RSE closing price"
-                        : bond.impliedCleanPrice !== null
+                        : bond.impliedCleanPrice != null
                           ? "Implied clean price"
                           : "Price not published"}
                     </p>
@@ -417,7 +421,8 @@ export function RseRankedBondTable({
           const highlighted = index < 2;
           const opportunity = opportunitySignal(bond);
           const codeForBk = index < 3 ? bkBondCode(bond.bond) : null;
-          const displayedPrice = bond.closingPrice ?? bond.impliedCleanPrice;
+          const displayedPrice =
+            bond.closingPrice ?? bond.impliedCleanPrice ?? null;
           const priceStatus = pricePosition(displayedPrice);
           return (
             <article
@@ -492,14 +497,14 @@ export function RseRankedBondTable({
                   <p className="mt-1 text-sm font-black text-on-surface">
                     {bond.closingPrice !== null
                       ? bond.closingPrice.toFixed(2)
-                      : bond.impliedCleanPrice !== null
+                      : bond.impliedCleanPrice != null
                         ? `≈ ${bond.impliedCleanPrice.toFixed(2)}`
                         : "Unavailable"}
                   </p>
                   <p className="mt-1 text-[10px] font-medium text-on-surface-variant">
                     {bond.closingPrice !== null
                       ? "RSE closing"
-                      : bond.impliedCleanPrice !== null
+                      : bond.impliedCleanPrice != null
                         ? "Implied clean price"
                         : "Not published"}
                   </p>
