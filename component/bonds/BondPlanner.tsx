@@ -1620,7 +1620,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                     {isExpanded && (
                       <tr className="border-t border-[var(--md-sys-color-primary)]/10 bg-[var(--md-sys-color-surface-container-lowest)]">
                         <td colSpan={6} className="p-0">
-                          <div className="overflow-x-auto px-4 py-4 md:px-6 lg:overflow-visible">
+                          <div className="px-4 py-4 md:px-6">
                             <table className="w-full min-w-[1120px] border-collapse text-left">
                               <thead className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] text-[9px] uppercase tracking-[0.14em] text-[var(--md-sys-color-outline)] shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">
                                 <tr>
