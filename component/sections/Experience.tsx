@@ -53,7 +53,7 @@ export const Experience = ({ lang }: ExperienceProps) => {
             fr: "Sécurité & Performance"
         },
         mainCompany: "CDAFAL / Mulhouse City / France",
-        mainPeriod: "2023 — 2025",
+        mainPeriod: "2023 — Current",
         mainBadge: { en: "Professional Career", fr: "Parcours Professionnel" },
         mainStack: ["Jetpack Compose", "SwiftUI", "LiveKit / WebRTC", "Spring Boot", "REST APIs", "JWT", "Performance"],
 
