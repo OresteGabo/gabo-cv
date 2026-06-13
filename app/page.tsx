@@ -6,6 +6,9 @@ import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { Hero } from '@/component/sections/Hero';
 import { Philosophy } from '@/component/shared/Philosophy';
 import { Experience } from '@/component/sections/Experience';
+import { Portfolio } from '@/component/sections/Portfolio';
+import { KotlinConf } from '@/component/sections/KotlinConf';
+import { Skills } from '@/component/sections/Skills';
 
 // Import the Locale type to keep TypeScript happy
 import { Locale } from "@/lib/constants";
@@ -31,7 +34,19 @@ export default function Home() {
             </SectionTransition>
 
             <SectionTransition>
+                <Skills lang={lang} />
+            </SectionTransition>
+
+            <SectionTransition>
                 <Experience lang={lang} />
+            </SectionTransition>
+
+            <SectionTransition>
+                <KotlinConf lang={lang} />
+            </SectionTransition>
+
+            <SectionTransition>
+                <Portfolio lang={lang} />
             </SectionTransition>
 
             <Footer lang={lang} />
