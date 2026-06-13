@@ -1,4 +1,5 @@
-import {Cpu, Binary, Smartphone, Code2, Terminal, Zap, Activity, ShieldAlert, Layers} from "lucide-react";
+import {Cpu, Binary, Smartphone, Code2, Zap, Activity, ShieldAlert, Layers} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 // --- Types for Architecture ---
 export type Locale = "en" | "fr";
@@ -11,7 +12,7 @@ export type Localized<T = string> = {
 export interface ServiceCard {
     title: Localized;
     text: Localized;
-    Icon: any;
+    Icon: LucideIcon;
     code: string;
 }
 
@@ -33,22 +34,22 @@ export const UI_STRINGS = {
 // --- Engineering Services ---
 export const ENGINEERING_CARDS: ServiceCard[] = [
     {
-        title: { en: "Mobile Product Engineering", fr: "Ingénierie Produit Mobile" },
+        title: { en: "End-to-End System Design", fr: "Conception Système de Bout en Bout" },
         text: {
-            en: "Building native mobile experiences that stay clear, reliable, and fast for users on everyday devices and imperfect networks.",
-            fr: "Conception d'expériences mobiles natives claires, fiables et rapides pour des utilisateurs sur appareils courants et réseaux imparfaits."
+            en: "Connecting mobile clients, backend services, data flows, and operational constraints into maintainable production systems.",
+            fr: "Relier clients mobiles, services backend, flux de données et contraintes opérationnelles dans des systèmes de production maintenables."
         },
         Icon: Binary,
-        code: "MOBILE-01"
+        code: "DESIGN-01"
     },
     {
-        title: { en: "Realtime Communication", fr: "Communication Temps Réel" },
+        title: { en: "Distributed & Realtime Systems", fr: "Systèmes Distribués & Temps Réel" },
         text: {
-            en: "Designing low-latency audio and video experiences with WebRTC and LiveKit for consultation, support, and collaboration use cases.",
-            fr: "Conception d'expériences audio et vidéo à faible latence avec WebRTC et LiveKit pour des usages de consultation, support et collaboration."
+            en: "Designing low-latency communication flows with WebRTC and LiveKit while accounting for unreliable networks and constrained devices.",
+            fr: "Conception de flux de communication à faible latence avec WebRTC et LiveKit, adaptés aux réseaux instables et appareils contraints."
         },
         Icon: Cpu,
-        code: "RTC-02"
+        code: "DIST-02"
     },
     {
         title: { en: "Secure Backend Systems", fr: "Systèmes Backend Sécurisés" },
@@ -60,13 +61,13 @@ export const ENGINEERING_CARDS: ServiceCard[] = [
         code: "API-03"
     },
     {
-        title: { en: "Data & System Delivery", fr: "Livraison Données & Systèmes" },
+        title: { en: "Architecture Communication", fr: "Communication d'Architecture" },
         text: {
-            en: "From ETL tooling to production features, I like turning fragmented workflows into maintainable digital systems with measurable impact.",
-            fr: "Des outils ETL aux fonctionnalités de production, j'aime transformer des workflows fragmentés en systèmes numériques maintenables et utiles."
+            en: "Making technical decisions reviewable through clear system boundaries, API contracts, diagrams, decision records, and implementation guidance.",
+            fr: "Rendre les décisions techniques vérifiables grâce à des frontières claires, contrats API, diagrammes, décisions documentées et guides d'implémentation."
         },
         Icon: Code2,
-        code: "DELIVERY-04"
+        code: "GOV-04"
     },
     {
         title: { en: "Performance for Real Networks", fr: "Performance sur Réseaux Réels" },
@@ -81,6 +82,36 @@ export const ENGINEERING_CARDS: ServiceCard[] = [
 
 // --- Projects ---
 export const PROJECTS = [
+    {
+        title: "Kaze Event Platform",
+        category: "Mobile" as ProjectCategory,
+        description: {
+            en: "Kotlin Multiplatform event operating system for conferences, weddings, and summits, combining public discovery, invitation entry, digital passes, schedules, access-aware venue maps, and event services across Android, iOS, and web clients.",
+            fr: "Système d'exploitation événementiel Kotlin Multiplatform pour conférences, mariages et sommets, réunissant découverte publique, invitations, pass numériques, programmes, plans avec contrôle d'accès et services sur Android, iOS et web."
+        },
+        patterns: [
+            "Kotlin Multiplatform",
+            "Clean Architecture",
+            "Repository & Use Cases",
+            "API-First Contracts",
+            "Secure Session Flow"
+        ],
+        impact: {
+            en: "One shared product architecture across Android, iOS, web, and a production-shaped Ktor backend",
+            fr: "Une architecture produit partagée entre Android, iOS, web et un backend Ktor conçu pour la production"
+        },
+        tech: [
+            "Kotlin 2.3",
+            "Compose Multiplatform",
+            "Ktor 3",
+            "PostgreSQL",
+            "JWT / OAuth2",
+            "OpenAPI",
+            "Docker",
+            "Cloud Run"
+        ],
+        link: "https://github.com/orestegabo/kaze"
+    },
     {
         title: "Gabo Ecosystem",
         category: "Web & Cloud" as ProjectCategory,
@@ -156,16 +187,16 @@ export const EXPERIENCE = [
 export const SITE_CONFIG = {
     name: "GABO",
     email: "orestegabo@icloud.com",
-    careerPageLink: "/resume.pdf",
+    careerPageLink: "/cv-gabo-systems-architect.pdf",
     github: "https://github.com/orestegabo",
     linkedin: "https://linkedin.com/in/orestemg",
     title: {
-        en: "Gabo Oreste | Software Engineer — Mobile & Realtime Systems",
-        fr: "Gabo Oreste | Ingénieur Logiciel — Mobile & Temps Réel"
+        en: "Gabo Oreste | Software & Systems Engineer",
+        fr: "Gabo Oreste | Ingénieur Logiciel & Systèmes"
     },
     description: {
-        en: "Software Engineer building secure mobile products, realtime communication systems, and backend services optimized for low-bandwidth conditions and real-world devices.",
-        fr: "Ingénieur Logiciel concevant des produits mobiles sécurisés, des systèmes de communication temps réel et des services backend optimisés pour des réseaux limités."
+        en: "Software and systems engineer designing secure mobile platforms, backend services, realtime communication flows, and maintainable end-to-end architectures.",
+        fr: "Ingénieur logiciel et systèmes concevant des plateformes mobiles sécurisées, services backend, flux temps réel et architectures maintenables de bout en bout."
     },
     keywords: [
         "Software Engineer",
@@ -175,6 +206,13 @@ export const SITE_CONFIG = {
         "WebRTC",
         "LiveKit",
         "Spring Boot",
+        "Kotlin",
+        "Java",
+        "PostgreSQL",
+        "Docker",
+        "REST API Architecture",
+        "Solution Architecture",
+        "Distributed Systems",
         "Realtime Communication",
         "Low Bandwidth Mobile",
         "Rwanda Tech"
@@ -196,12 +234,12 @@ export const PHILOSOPHIES = [
     },
     {
         title: {
-            en: "Reactive & Real-Time",
-            fr: "Réactif & Temps Réel"
+            en: "Observable & Supportable",
+            fr: "Observable & Maintenable"
         },
         text: {
-            en: "Using asynchronous patterns and WebRTC-based flows to build resilient realtime experiences without sacrificing clarity or stability.",
-            fr: "Usage de patterns asynchrones et de flux basés sur WebRTC pour construire des expériences temps réel résilientes sans sacrifier la stabilité."
+            en: "Designing clear failure boundaries, useful logs, release visibility, and documented recovery paths so teams can diagnose incidents and improve reliability.",
+            fr: "Concevoir des frontières d'échec claires, des logs utiles, une visibilité sur les versions et des procédures documentées pour diagnostiquer les incidents et améliorer la fiabilité."
         },
         icon: Activity
     },
