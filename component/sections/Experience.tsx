@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import {
     History,
@@ -16,19 +16,13 @@ import { Locale } from '@/lib/constants';
 interface ExperienceProps { lang: Locale; }
 
 export const Experience = ({ lang }: ExperienceProps) => {
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
     const t = {
         title: { en: "Engineering", fr: "Parcours" },
         subtitle: { en: "Experience.", fr: "Ingénieur." },
 
         mainRole: {
-            en: "Software Engineer — Mobile & Systems",
-            fr: "Ingénieur Logiciel — Systèmes & Mobile"
+            en: "Software Engineer — Digital Platforms & Systems",
+            fr: "Ingénieur Logiciel — Plateformes Numériques & Systèmes"
         },
         mainModernLabel: {
             en: "Production: Citizen Services & Realtime Mobile",
@@ -53,9 +47,9 @@ export const Experience = ({ lang }: ExperienceProps) => {
             fr: "Sécurité & Performance"
         },
         mainCompany: "CDAFAL / Mulhouse City / France",
-        mainPeriod: "2023 — Current",
+        mainPeriod: "Jun 2023 — Dec 2025",
         mainBadge: { en: "Professional Career", fr: "Parcours Professionnel" },
-        mainStack: ["Jetpack Compose", "SwiftUI", "LiveKit / WebRTC", "Spring Boot", "REST APIs", "JWT", "Performance"],
+        mainStack: ["Kotlin", "Java", "Jetpack Compose", "SwiftUI", "LiveKit / WebRTC", "Spring Boot", "REST APIs", "JWT"],
 
 
         internRole: {
@@ -109,8 +103,6 @@ export const Experience = ({ lang }: ExperienceProps) => {
             ]
         }
     };
-
-    if (!isMounted) return null;
 
     return (
         <section id="experience" className="py-32 px-8 max-w-7xl mx-auto border-t border-outline-variant relative">
