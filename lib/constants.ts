@@ -113,52 +113,79 @@ export const PROJECTS = [
         link: "https://github.com/orestegabo/kaze"
     },
     {
-        title: "Gabo Ecosystem",
-        category: "Web & Cloud" as ProjectCategory,
-        description: {
-            en: "Personal software platform that presents my work, positioning, and engineering story through a custom high-performance web experience.",
-            fr: "Plateforme personnelle qui présente mon travail, mon positionnement et mon parcours d'ingénierie via une expérience web sur mesure."
-        },
-        patterns: ["Atomic Design", "Observer", "Facade"],
-        impact: { en: "Sub-100ms Page Transitions", fr: "Transitions de page < 100ms" },
-        tech: ["Next.js 15", "TypeScript", "Tailwind CSS", "Framer Motion"],
-        link: "https://github.com/OresteGabo/gabo-web"
-    },
-    {
-        title: "Earthquake Prediction Engine",
-        category: "AI & ML" as ProjectCategory,
-        description: {
-            en: "Deep learning system for seismic time-series analysis utilizing hardware-accelerated tensors.",
-            fr: "Système de Deep Learning pour l'analyse sismique temporelle utilisant l'accélération matérielle."
-        },
-        patterns: ["Pipeline", "Strategy", "CNN-LSTM Hybrid"],
-        impact: { en: "76.98% Prediction Accuracy", fr: "76.98% de précision de prédiction" },
-        tech: ["PyTorch", "NumPy", "Metal (MPS)", "SciPy"],
-        link: "https://github.com/OresteGabo/deep-learning"
-    },
-    {
-        title: "SchoolBridge Full-Stack",
+        title: "SchoolBridge V2",
         category: "Mobile" as ProjectCategory,
         description: {
-            en: "Mobile-first education platform pairing native clients with secure backend services, role-based access, and realtime-friendly architecture.",
-            fr: "Plateforme éducative orientée mobile associant clients natifs, services backend sécurisés, accès par rôles et architecture prête pour le temps réel."
+            en: "Rwanda-focused education platform connecting schools, students, teachers, and parents through timetables, role-based workflows, safety alerts, and MQTT message threads.",
+            fr: "Plateforme éducative adaptée au Rwanda reliant écoles, élèves, enseignants et parents grâce aux emplois du temps, workflows par rôle, alertes de sécurité et messages MQTT."
         },
-        patterns: ["MVVM", "Repository", "Dependency Injection"],
-        impact: { en: "Full Role-Based Data Isolation", fr: "Isolation totale des données par rôle" },
-        tech: ["Spring Boot", "Kotlin", "PostgreSQL", "Docker", "Vue.js"],
-        link: "https://github.com/OresteGabo/SchoolBridgeApi"
+        patterns: ["MVVM", "Role-Based Workflows", "Event Messaging", "Multilingual Product"],
+        impact: {
+            en: "One mobile platform for academic visibility, school-family communication, and student-safety workflows",
+            fr: "Une plateforme mobile pour le suivi académique, la communication école-famille et la sécurité des élèves"
+        },
+        tech: ["Kotlin", "Jetpack Compose", "Spring Boot", "MQTT", "Coroutines", "Material 3"],
+        link: "https://github.com/OresteGabo/SchoolBridgeV2"
     },
     {
-        title: "ArchViz 3D Engine",
+        title: "KGL Express",
+        category: "Mobile" as ProjectCategory,
+        description: {
+            en: "Kigali-focused logistics and public-transport application with offline OpenStreetMap data, delivery workflows, GPS tracking, digital bus tickets, and role-specific mobile experiences.",
+            fr: "Application de logistique et transport public pensée pour Kigali, avec données OpenStreetMap hors ligne, livraisons, suivi GPS, billets de bus numériques et parcours mobiles par rôle."
+        },
+        patterns: ["Feature-First Modules", "Offline-First Maps", "Platform UI Factory", "Role-Based Journeys"],
+        impact: {
+            en: "Designed city mobility workflows to remain useful in low-data conditions without depending on proprietary map platforms",
+            fr: "Conception de parcours de mobilité urbaine utilisables avec peu de données et sans dépendance à une plateforme cartographique propriétaire"
+        },
+        tech: ["Flutter", "Dart", "OpenStreetMap", "SQLite", "GPS", "Offline Maps"],
+        link: "https://github.com/OresteGabo/kgl-express"
+    },
+    {
+        title: "SkyWatch Radar",
+        category: "Web & Cloud" as ProjectCategory,
+        description: {
+            en: "Educational real-time radar-processing prototype with a scheduled Java simulator and Spring Boot backend exchanging detection streams through MQTT while measuring latency and jitter.",
+            fr: "Prototype éducatif de traitement radar temps réel avec simulateur Java planifié et backend Spring Boot échangeant des détections via MQTT tout en mesurant latence et jitter."
+        },
+        patterns: ["Publish / Subscribe", "Scheduled Processing", "Latency Instrumentation", "Decoupled Components"],
+        impact: {
+            en: "Demonstrates deterministic scheduling, deadline-aware processing, and monitoring of distributed event streams",
+            fr: "Démontre la planification déterministe, le traitement sensible aux échéances et le suivi de flux distribués"
+        },
+        tech: ["Java", "Spring Boot", "MQTT", "Docker", "Gradle", "Realtime Systems"],
+        link: "https://github.com/OresteGabo/skywatch-radar"
+    },
+    {
+        title: "Connected Cars Simulation",
         category: "C++ & Graphics" as ProjectCategory,
         description: {
-            en: "Procedural 3D rendering engine specialized in voxel-to-mesh isosurface generation.",
-            fr: "Moteur de rendu 3D procédural spécialisé dans la génération d'isosurfaces voxel-vers-maillage."
+            en: "C++ and Qt urban simulation that parses OpenStreetMap data, models vehicle-to-vehicle connectivity, respects road speed metadata, and renders moving traffic efficiently.",
+            fr: "Simulation urbaine en C++ et Qt analysant les données OpenStreetMap, modélisant la connectivité véhicule-à-véhicule, les vitesses routières et le trafic en mouvement."
         },
-        patterns: ["Marching Cubes", "Buffer Management", "Flyweight"],
-        impact: { en: "Real-time Voxel-to-Mesh Generation", fr: "Génération maillage temps réel" },
-        tech: ["C++ 17", "OpenGL", "GLSL", "GLFW"],
-        link: "https://github.com/OresteGabo/GraphvizCPP"
+        patterns: ["Database-First Loading", "Scene Graph Rendering", "Concurrent Map Drawing", "Geospatial Projection"],
+        impact: {
+            en: "Replaced full-screen repainting with selective scene updates and parallel map loading for responsive simulation",
+            fr: "Remplacement du rafraîchissement complet par des mises à jour ciblées et un chargement parallèle de la carte"
+        },
+        tech: ["C++", "Qt 6", "OpenStreetMap", "MySQL", "CMake", "Multithreading"],
+        link: "https://github.com/OresteGabo/betterPjMap"
+    },
+    {
+        title: "Earthquake Detection",
+        category: "AI & ML" as ProjectCategory,
+        description: {
+            en: "Deep-learning study comparing MLP, 1D CNN, and LSTM architectures for classifying 512-hour seismic time-series windows with hardware-accelerated training.",
+            fr: "Étude deep learning comparant MLP, CNN 1D et LSTM pour classifier des fenêtres sismiques de 512 heures avec entraînement accéléré matériellement."
+        },
+        patterns: ["Model Benchmarking", "Training Pipeline", "Complexity Analysis", "Reproducible Evaluation"],
+        impact: {
+            en: "LSTM reached 76.98% accuracy with documented parameter counts and inference-time comparisons",
+            fr: "Le LSTM a atteint 76,98 % de précision avec comparaison documentée des paramètres et temps d'inférence"
+        },
+        tech: ["Python", "PyTorch", "LSTM", "CNN", "NumPy", "Metal (MPS)"],
+        link: "https://github.com/OresteGabo/deep-learning"
     }
 ];
 
