@@ -1030,7 +1030,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   }
 
   return (
-    <main className="bond-app relative min-h-screen overflow-x-hidden bg-background font-sans text-on-background">
+    <main className="bond-app relative min-h-screen overflow-x-clip bg-background font-sans text-on-background">
       <ImigongoBackground />
       <header className="sticky top-0 z-50 mx-auto w-full max-w-7xl border-b border-outline/5 bg-background/80 px-1 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
@@ -1552,14 +1552,14 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
 
         <div className="bond-scrollbar mt-5 max-h-[72vh] overflow-auto rounded-3xl border border-outline/10 lg:max-h-none lg:overflow-visible">
           <table className="w-full min-w-[940px] border-collapse text-left">
-            <thead className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] text-[10px] uppercase tracking-[0.15em] text-[var(--md-sys-color-on-surface-variant)] shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">
+            <thead className="text-[10px] uppercase tracking-[0.15em] text-[var(--md-sys-color-on-surface-variant)]">
               <tr>
-                <th className="px-5 py-4">Year</th>
-                <th className="px-5 py-4">Invested this year</th>
-                <th className="px-5 py-4">Coupons this year</th>
-                <th className="px-5 py-4">Account value</th>
-                <th className="px-5 py-4">Annual passive income</th>
-                <th className="w-16 px-5 py-4 text-right">Details</th>
+                <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Year</th>
+                <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Invested this year</th>
+                <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Coupons this year</th>
+                <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Account value</th>
+                <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Annual passive income</th>
+                <th className="sticky top-0 z-30 w-16 bg-[var(--md-sys-color-surface-container)] px-5 py-4 text-right shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Details</th>
               </tr>
             </thead>
             <tbody>
@@ -1622,18 +1622,18 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         <td colSpan={6} className="p-0">
                           <div className="px-4 py-4 md:px-6">
                             <table className="w-full min-w-[1120px] border-collapse text-left">
-                              <thead className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] text-[9px] uppercase tracking-[0.14em] text-[var(--md-sys-color-outline)] shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">
+                              <thead className="text-[9px] uppercase tracking-[0.14em] text-[var(--md-sys-color-outline)]">
                                 <tr>
-                                  <th className="px-3 py-2">Month</th>
-                                  <th className="px-3 py-2">Opening</th>
-                                  <th className="px-3 py-2">Monthly plan</th>
-                                  <th className="px-3 py-2">Extra cash</th>
-                                  <th className="px-3 py-2">Coupon paid</th>
-                                  <th className="px-3 py-2">Reinvested</th>
-                                  <th className="px-3 py-2">Bond purchase</th>
-                                  <th className="px-3 py-2">Cash balance</th>
-                                  <th className="px-3 py-2">Bond holdings</th>
-                                  <th className="px-3 py-2">Account value</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Month</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Opening</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Monthly plan</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Extra cash</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Coupon paid</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Reinvested</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Bond purchase</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Cash balance</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Bond holdings</th>
+                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Account value</th>
                                 </tr>
                               </thead>
                               <tbody>
