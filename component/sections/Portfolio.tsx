@@ -1,12 +1,21 @@
 "use client";
 
 import React, { useMemo, useEffect } from "react";
-// Ensure these paths match your structure
 import { PROJECTS, ProjectCategory, UI_STRINGS, Locale } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
-import { Github, Activity, Terminal, X, Code2, Layers, Cpu, Database } from "lucide-react";
+import {
+    Github,
+    Activity,
+    Terminal,
+    X,
+    Code2,
+    Layers,
+    Cpu,
+    Database,
+    ArrowUpRight,
+    Boxes,
+} from "lucide-react";
 import clsx from "clsx";
-import {StaggerContainer, StaggerItem} from "@/component/shared/StaggerContainer";
 import { TechIcon } from "@/component/shared/TechIcon";
 
 type Project = (typeof PROJECTS)[number];
@@ -142,43 +151,123 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: Project | 
     );
 };
 
-// --- Project Row Component ---
-const ProjectRow = ({ project, onOpen, lang }: { project: Project; onOpen: (project: Project) => void; lang: Locale }) => {
+const categoryStyles: Record<ProjectCategory, string> = {
+    "Mobile": "from-primary/18 via-primary/5 to-transparent",
+    "Web & Cloud": "from-tertiary/18 via-tertiary/5 to-transparent",
+    "AI & ML": "from-secondary/20 via-secondary/5 to-transparent",
+    "C++ & Graphics": "from-on-surface/12 via-on-surface/3 to-transparent",
+};
+
+const ProjectCard = ({
+    project,
+    featured,
+    onOpen,
+    lang,
+}: {
+    project: Project;
+    featured: boolean;
+    onOpen: (project: Project) => void;
+    lang: Locale;
+}) => {
+    const actionLabel = lang === "en" ? "Explore case study" : "Explorer le projet";
+
     return (
-        <div
+        <motion.button
+            layout
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.35 }}
+            type="button"
             onClick={() => onOpen(project)}
-            className="group flex flex-col md:flex-row md:items-center gap-6 p-6 rounded-2xl
-                       bg-surface-container-low/20 backdrop-blur-md border border-outline/5
-                       hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer"
+            aria-label={`${actionLabel}: ${project.title}`}
+            className={clsx(
+                "group relative overflow-hidden rounded-[2rem] border border-outline/10 bg-surface-container-low text-left",
+                "shadow-[0_18px_55px_rgba(0,0,0,0.06)] transition-all duration-300",
+                "hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_70px_rgba(0,0,0,0.12)]",
+                featured && "md:col-span-2"
+            )}
         >
-            <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-lg bg-surface-container-high/50 text-primary/60 group-hover:text-primary transition-colors">
-                <Terminal size={18} />
-            </div>
+            <div className={clsx("absolute inset-0 bg-gradient-to-br opacity-80", categoryStyles[project.category])} />
+            <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full border border-primary/10 bg-background/20 transition-transform duration-500 group-hover:scale-125" />
 
-            <div className="flex-grow min-w-0">
-                <h3 className="text-xl font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors truncate mb-1">
-                    {project.title}
-                </h3>
-                <p className="text-on-surface-variant/60 text-xs leading-relaxed truncate font-medium">
-                    {project.description[lang]}
-                </p>
-            </div>
+            <div className={clsx("relative p-7 md:p-8", featured && "md:grid md:grid-cols-[1.15fr_0.85fr] md:gap-12 md:p-10")}>
+                <div className="flex min-h-full flex-col">
+                    <div className="mb-8 flex items-center justify-between gap-4">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-outline/10 bg-background/55 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
+                            <Boxes size={13} className="text-primary" />
+                            {project.category}
+                        </span>
+                        {featured && (
+                            <span className="text-[9px] font-black uppercase tracking-[0.22em] text-primary">
+                                {lang === "en" ? "Featured system" : "Système phare"}
+                            </span>
+                        )}
+                    </div>
 
-            <div className="flex flex-wrap gap-3 md:justify-end shrink-0">
-                {project.tech.slice(0, 3).map((tech: string) => (
-                    <span key={tech} className="inline-flex items-center gap-1.5 text-[10px] font-mono font-medium text-on-surface-variant/50 uppercase tracking-widest">
-                        <TechIcon name={tech} size={13} />
-                        {tech}
-                    </span>
-                ))}
-            </div>
+                    <h3 className={clsx(
+                        "max-w-2xl font-black tracking-tighter text-on-surface transition-colors group-hover:text-primary",
+                        featured ? "text-4xl md:text-6xl" : "text-3xl md:text-4xl"
+                    )}>
+                        {project.title}
+                    </h3>
 
-            <div className="hidden lg:block w-32 text-right border-l border-outline/10 pl-4">
-                <span className="text-[9px] font-black px-2 py-1 rounded bg-surface-container-high text-on-surface-variant/40 uppercase tracking-widest">
-                    {project.category}
-                </span>
+                    <p className={clsx(
+                        "mt-5 max-w-2xl font-medium leading-relaxed text-on-surface-variant",
+                        featured ? "text-base md:text-lg" : "text-sm"
+                    )}>
+                        {project.description[lang]}
+                    </p>
+
+                    <div className="mt-7 flex flex-wrap gap-2">
+                        {project.tech.slice(0, featured ? 5 : 4).map((tech: string) => (
+                            <span
+                                key={tech}
+                                className="inline-flex items-center gap-2 rounded-xl border border-outline/10 bg-background/55 px-3 py-2 text-[9px] font-black uppercase tracking-wide text-on-surface"
+                            >
+                                <TechIcon name={tech} size={14} className="text-primary" />
+                                {tech}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                <div className={clsx(
+                    "mt-9 flex flex-col justify-between border-t border-outline/10 pt-7",
+                    featured && "md:mt-0 md:border-l md:border-t-0 md:pl-10 md:pt-0"
+                )}>
+                    <div>
+                        <p className="mb-4 text-[9px] font-black uppercase tracking-[0.25em] text-primary">
+                            {lang === "en" ? "Architecture signals" : "Signaux d'architecture"}
+                        </p>
+                        <div className="space-y-3">
+                            {project.patterns.slice(0, 3).map((pattern) => (
+                                <div key={pattern} className="flex items-center gap-3">
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                                    <span className="text-sm font-bold text-on-surface">{pattern}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="mt-8 rounded-2xl border border-primary/15 bg-primary/8 p-5">
+                        <p className="mb-2 text-[9px] font-black uppercase tracking-[0.22em] text-primary">
+                            {lang === "en" ? "Engineering outcome" : "Résultat technique"}
+                        </p>
+                        <p className="text-sm font-bold leading-relaxed text-on-surface">
+                            {project.impact[lang]}
+                        </p>
+                    </div>
+
+                    <div className="mt-7 flex items-center justify-between border-t border-outline/10 pt-5 text-primary">
+                        <span className="text-[10px] font-black uppercase tracking-[0.18em]">{actionLabel}</span>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary transition-transform duration-300 group-hover:rotate-45">
+                            <ArrowUpRight size={18} />
+                        </span>
+                    </div>
+                </div>
             </div>
-        </div>
+        </motion.button>
     );
 };
 
@@ -232,19 +321,17 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <AnimatePresence mode="popLayout">
-                    <StaggerContainer key={activeTab}> {/* Key here re-triggers animation on tab change */}
-                        {filteredProjects.map((project) => (
-                            <StaggerItem key={project.title}>
-                                <ProjectRow
-                                    project={project}
-                                    onOpen={setSelectedProject}
-                                    lang={lang}
-                                />
-                            </StaggerItem>
-                        ))}
-                    </StaggerContainer>
+                    {filteredProjects.map((project, index) => (
+                        <ProjectCard
+                            key={project.title}
+                            project={project}
+                            featured={activeTab === "All" && index === 0}
+                            onOpen={setSelectedProject}
+                            lang={lang}
+                        />
+                    ))}
                 </AnimatePresence>
             </div>
 
@@ -255,8 +342,9 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
                 lang={lang}
             />
 
-            <div className="mt-12 px-6 text-[10px] font-mono text-on-surface-variant/30 uppercase tracking-[0.3em]">
-                Registry Version 3.2.0 // {lang === "en" ? "Active Deployments" : "Déploiements Actifs"}: {filteredProjects.length}
+            <div className="mt-12 flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.22em] text-on-surface-variant/45">
+                <span>{filteredProjects.length} {lang === "en" ? "selected systems" : "systèmes sélectionnés"}</span>
+                <span className="h-px flex-1 bg-outline/10" />
             </div>
         </section>
     );
