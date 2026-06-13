@@ -18,15 +18,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "Gabo Oreste | Ingénieur Fullstack & DevOps",
-    description: "Audit de systèmes legacy et déploiement d'architectures modernes V2. Expertise en Fullstack, DevOps et infrastructures numériques.",
+    title: "Gabo Oreste | Software & Systems Engineer",
+    description: "Software and systems engineer designing secure digital platforms, observable backend services, realtime systems, and maintainable end-to-end architectures.",
     metadataBase: new URL('https://orestegabo.dev'),
 
     // 1. FACEBOOK & LINKEDIN
     openGraph: {
-        title: "Gabo Oreste | Systems Architect Portfolio",
-        // Légèrement rallongé pour le SEO
-        description: "Transformation d'infrastructures obsolètes en systèmes performants, sécurisés et automatisés. Découvrez mon expertise en architecture V2.",
+        title: "Gabo Oreste | Software & Systems Engineering",
+        description: "Secure digital platforms, observable backend services, realtime communication, and end-to-end system design for real operating conditions.",
         url: 'https://orestegabo.dev',
         siteName: 'Gabo Portfolio',
         images: [
@@ -37,16 +36,15 @@ export const metadata: Metadata = {
                 alt: 'Gabo Oreste - Engineering Experience Architecture Preview',
             },
         ],
-        locale: 'fr_FR',
+        locale: 'en_US',
         type: 'website',
     },
 
     // 2. TWITTER / X
     twitter: {
         card: 'summary_large_image',
-        title: "Oreste MUHIRWA GABO | Ingénieur Fullstack & DevOps",
-        // CORRECTION : Description > 55 caractères pour supprimer l'avertissement Twitter
-        description: "Audit de systèmes et déploiement d'architectures modernes haute performance. Expertise Fullstack et DevOps pour infrastructures numériques.",
+        title: "Oreste MUHIRWA GABO | Software & Systems Engineer",
+        description: "Designing secure mobile platforms, observable backend services, realtime communication flows, and maintainable end-to-end systems.",
         images: ['https://orestegabo.dev/opengraph-image'],
     },
 
@@ -77,14 +75,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         "@context": "https://schema.org",
         "@type": "Person",
         "name": "Oreste MUHIRWA GABO",
-        "jobTitle": "Fullstack & DevOps Engineer",
+        "jobTitle": "Software & Systems Engineer",
         "url": "https://orestegabo.dev",
         "image": "https://orestegabo.dev/opengraph-image",
-        "description": "Ingénieur spécialisé en Architecture V2, Fullstack et DevOps."
+        "description": "Software and systems engineer focused on secure digital platforms, distributed communication, and end-to-end system design."
     };
 
     return (
-        <html lang="fr" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+        <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
         {/* IMPORTANT: Pas de balise <head> manuelle ici.
                Next.js injecte automatiquement le <title> et les metas.
             */}
