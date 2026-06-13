@@ -131,14 +131,6 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
                         ))}
                     </div>
                     <a
-                        href={SITE_CONFIG.careerPageLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hidden sm:block px-4 py-2 rounded-xl bg-primary text-on-primary text-[9px] font-black uppercase tracking-widest shadow-lg shadow-primary/15"
-                    >
-                        {lang === "en" ? "Download CV" : "Télécharger CV"}
-                    </a>
-                    <a
                         href={SITE_CONFIG.linkedin}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -181,15 +173,6 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
                                 {item.label}
                             </a>
                         ))}
-                        <a
-                            href={SITE_CONFIG.careerPageLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-2 rounded-xl bg-primary px-4 py-3 text-center text-[10px] font-black uppercase tracking-widest text-on-primary"
-                            onClick={() => setMenuOpen(false)}
-                        >
-                            {lang === "en" ? "Download CV" : "Télécharger CV"}
-                        </a>
                     </motion.div>
                 )}
             </AnimatePresence>
