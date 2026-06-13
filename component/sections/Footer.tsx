@@ -11,8 +11,8 @@ interface FooterProps {
 export const Footer = ({ lang }: FooterProps) => {
     const t = {
         description: {
-            en: "Software Engineer & Systems Specialist. Architecting inclusive mobile platforms, real-time communication systems, and high-performance simulation engines.",
-            fr: "Ingénieur Logiciel & Spécialiste Systèmes. Architecture de plateformes mobiles inclusives, systèmes de communication temps réel et moteurs de simulation haute performance."
+            en: "Software and systems engineer building secure digital platforms across mobile, backend, realtime communication, and data workflows.",
+            fr: "Ingénieur logiciel et systèmes construisant des plateformes numériques sécurisées couvrant mobile, backend, communication temps réel et flux de données."
         },
         ctaLabel: { en: "Get in touch", fr: "Contactez-moi" },
         builtWith: { en: "BUILT WITH NEXT.JS & FRAMER MOTION", fr: "DÉVELOPPÉ AVEC NEXT.JS & FRAMER MOTION" },
