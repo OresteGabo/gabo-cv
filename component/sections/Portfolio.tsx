@@ -1,24 +1,18 @@
 "use client";
 
-import React, { useMemo, useEffect, useRef } from "react";
+import React, { useMemo, useEffect } from "react";
 // Ensure these paths match your structure
 import { PROJECTS, ProjectCategory, UI_STRINGS, Locale } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { Github, Activity, Terminal, X, Code2, Layers, Cpu, Database } from "lucide-react";
 import clsx from "clsx";
 import {StaggerContainer, StaggerItem} from "@/component/shared/StaggerContainer";
+import { TechIcon } from "@/component/shared/TechIcon";
 
-// --- Custom Hook: System Mounting ---
-function useHasMounted() {
-    const [hasMounted, setHasMounted] = React.useState(false);
-    useEffect(() => {
-        setHasMounted(true);
-    }, []);
-    return hasMounted;
-}
+type Project = (typeof PROJECTS)[number];
 
 // --- Detail Drawer Component ---
-const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: any; isOpen: boolean; onClose: () => void; lang: Locale }) => {
+const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: Project | null; isOpen: boolean; onClose: () => void; lang: Locale }) => {
     useEffect(() => {
         if (!isOpen) return;
         const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -84,8 +78,9 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: any; isOpe
 
                             <div className="flex flex-wrap gap-2 mb-12">
                                 {project.tech.map((tech: string) => (
-                                    <span key={tech} className="px-3 py-1.5 rounded-lg bg-background border border-outline/10 text-[10px] font-mono font-bold uppercase text-primary tracking-tighter">
-                                        #{tech}
+                                    <span key={tech} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background border border-outline/10 text-[10px] font-mono font-bold uppercase text-primary tracking-tighter">
+                                        <TechIcon name={tech} size={14} />
+                                        {tech}
                                     </span>
                                 ))}
                             </div>
@@ -148,7 +143,7 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: any; isOpe
 };
 
 // --- Project Row Component ---
-const ProjectRow = ({ project, idx, onOpen, lang }: { project: any; idx: number; onOpen: (p: any) => void; lang: Locale }) => {
+const ProjectRow = ({ project, onOpen, lang }: { project: Project; onOpen: (project: Project) => void; lang: Locale }) => {
     return (
         <div
             onClick={() => onOpen(project)}
@@ -171,7 +166,8 @@ const ProjectRow = ({ project, idx, onOpen, lang }: { project: any; idx: number;
 
             <div className="flex flex-wrap gap-3 md:justify-end shrink-0">
                 {project.tech.slice(0, 3).map((tech: string) => (
-                    <span key={tech} className="text-[10px] font-mono font-medium text-on-surface-variant/40 uppercase tracking-widest">
+                    <span key={tech} className="inline-flex items-center gap-1.5 text-[10px] font-mono font-medium text-on-surface-variant/50 uppercase tracking-widest">
+                        <TechIcon name={tech} size={13} />
                         {tech}
                     </span>
                 ))}
@@ -188,9 +184,8 @@ const ProjectRow = ({ project, idx, onOpen, lang }: { project: any; idx: number;
 
 // Update: Accepting 'lang' as a prop from page.tsx
 export const Portfolio = ({ lang }: { lang: Locale }) => {
-    const hasMounted = useHasMounted();
     const [activeTab, setActiveTab] = React.useState<(ProjectCategory | "All")>("All");
-    const [selectedProject, setSelectedProject] = React.useState<any>(null);
+    const [selectedProject, setSelectedProject] = React.useState<Project | null>(null);
 
     const categories: (ProjectCategory | "All")[] = ["All", "AI & ML", "Web & Cloud", "Mobile", "C++ & Graphics"];
 
@@ -199,8 +194,6 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
     }, [activeTab]);
 
     const t = UI_STRINGS;
-
-    if (!hasMounted) return <section id="projects" className="py-24 min-h-screen" />;
 
     return (
         <section id="projects" className="py-24 px-6 md:px-8 max-w-7xl mx-auto relative">
@@ -242,11 +235,10 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
             <div className="flex flex-col gap-4">
                 <AnimatePresence mode="popLayout">
                     <StaggerContainer key={activeTab}> {/* Key here re-triggers animation on tab change */}
-                        {filteredProjects.map((project, idx) => (
+                        {filteredProjects.map((project) => (
                             <StaggerItem key={project.title}>
                                 <ProjectRow
                                     project={project}
-                                    idx={idx}
                                     onOpen={setSelectedProject}
                                     lang={lang}
                                 />
