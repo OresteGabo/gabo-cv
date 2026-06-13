@@ -117,7 +117,10 @@ const gallery = [
             en: "Oreste Gabo with the Kodee mascot at KotlinConf 2026",
             fr: "Oreste Gabo avec la mascotte Kodee à KotlinConf 2026",
         },
-        caption: "KotlinConf community, Munich",
+        caption: {
+            en: "With Kodee, the Kotlin mascot",
+            fr: "Avec Kodee, la mascotte de Kotlin",
+        },
     },
 ];
 
@@ -272,7 +275,7 @@ export const KotlinConf = ({ lang }: KotlinConfProps) => {
                                 />
                             </div>
                             <figcaption className="mt-3 px-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-                                {photo.caption}
+                                {typeof photo.caption === "string" ? photo.caption : photo.caption[lang]}
                             </figcaption>
                         </figure>
                     ))}
