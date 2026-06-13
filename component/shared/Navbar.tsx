@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { SITE_CONFIG, Locale } from "@/lib/constants";
 import { Sun, Moon } from "lucide-react";
@@ -19,7 +20,8 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
     useEffect(() => {
         const savedTheme = window.localStorage.getItem("theme");
         if (savedTheme === "dark" || savedTheme === "light") {
-            setTheme(savedTheme);
+            const timer = window.setTimeout(() => setTheme(savedTheme), 0);
+            return () => window.clearTimeout(timer);
         }
     }, []);
 
@@ -62,7 +64,10 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
 
     // Localized Navigation Items
     const navItems = [
+        { label: lang === "en" ? "Skills" : "Compétences", href: "#skills" },
         { label: lang === "en" ? "Experience" : "Expérience", href: "#experience" },
+        { label: "KotlinConf", href: "#kotlinconf" },
+        { label: lang === "en" ? "Projects" : "Projets", href: "#projects" },
         { label: lang === "en" ? "Contact" : "Contact", href: "#contact" },
     ];
 
@@ -71,16 +76,20 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
             <div className="flex justify-between items-center">
                 <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
                     {/* Full Logo - Visible on tablet (sm) and up */}
-                    <img
+                    <Image
                         src="/logo-full.svg"
                         alt={`${SITE_CONFIG.name} Logo`}
+                        width={132}
+                        height={32}
                         className="hidden sm:block h-8 w-auto"
                     />
 
                     {/* Small Icon - Visible only on mobile */}
-                    <img
+                    <Image
                         src="/icon.svg"
                         alt={SITE_CONFIG.name}
+                        width={32}
+                        height={32}
                         className="block sm:hidden h-8 w-auto"
                     />
                 </Link>
@@ -121,6 +130,14 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
                             </button>
                         ))}
                     </div>
+                    <a
+                        href={SITE_CONFIG.careerPageLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hidden sm:block px-4 py-2 rounded-xl bg-primary text-on-primary text-[9px] font-black uppercase tracking-widest shadow-lg shadow-primary/15"
+                    >
+                        {lang === "en" ? "Download CV" : "Télécharger CV"}
+                    </a>
                     <a
                         href={SITE_CONFIG.linkedin}
                         target="_blank"
@@ -164,6 +181,15 @@ export const Navbar = ({ lang, setLang }: NavbarProps) => {
                                 {item.label}
                             </a>
                         ))}
+                        <a
+                            href={SITE_CONFIG.careerPageLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 rounded-xl bg-primary px-4 py-3 text-center text-[10px] font-black uppercase tracking-widest text-on-primary"
+                            onClick={() => setMenuOpen(false)}
+                        >
+                            {lang === "en" ? "Download CV" : "Télécharger CV"}
+                        </a>
                     </motion.div>
                 )}
             </AnimatePresence>
