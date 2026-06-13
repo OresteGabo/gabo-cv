@@ -26,34 +26,34 @@ export const EngineeringCore = ({ lang }: EngineeringCoreProps) => {
 
     const t = {
         label: {
-            en: "Current Focus",
-            fr: "Focus Actuel"
+            en: "Architecture Focus",
+            fr: "Focus Architecture"
         },
         summary: {
-            en: "Building mobile-first systems that stay dependable when the network, device, or context is not ideal.",
-            fr: "Conception de systèmes mobile-first qui restent fiables même quand le réseau, l'appareil ou le contexte ne sont pas idéaux."
+            en: "Designing secure, explainable systems from user channel to backend service, data flow, and production operation.",
+            fr: "Concevoir des systèmes sécurisés et explicables, du canal utilisateur au service backend, aux données et à l'exploitation."
         },
         board: {
-            en: "Field priorities",
-            fr: "Priorités terrain"
+            en: "System capabilities",
+            fr: "Capacités système"
         },
         metrics: {
             en: [
-                { icon: Smartphone, value: "Native UI", label: "Android + iOS" },
-                { icon: RadioTower, value: "Realtime", label: "Video + audio" },
-                { icon: ShieldCheck, value: "Secure", label: "APIs + JWT" },
-                { icon: Activity, value: "Low-bandwidth", label: "Performance first" }
+                { icon: Smartphone, value: "Channels", label: "Android + iOS + web" },
+                { icon: RadioTower, value: "Distributed", label: "Realtime communication" },
+                { icon: ShieldCheck, value: "Security", label: "API boundaries + JWT" },
+                { icon: Activity, value: "Reliability", label: "Constrained networks" }
             ],
             fr: [
-                { icon: Smartphone, value: "UI Natif", label: "Android + iOS" },
-                { icon: RadioTower, value: "Temps Réel", label: "Vidéo + audio" },
-                { icon: ShieldCheck, value: "Sécurisé", label: "API + JWT" },
-                { icon: Activity, value: "Faible Débit", label: "Performance d'abord" }
+                { icon: Smartphone, value: "Canaux", label: "Android + iOS + web" },
+                { icon: RadioTower, value: "Distribué", label: "Communication temps réel" },
+                { icon: ShieldCheck, value: "Sécurité", label: "Frontières API + JWT" },
+                { icon: Activity, value: "Fiabilité", label: "Réseaux contraints" }
             ]
         },
         ready: {
-            en: "Ready to build",
-            fr: "Prêt à construire"
+            en: "Design to delivery",
+            fr: "De la conception à la livraison"
         }
     };
 
