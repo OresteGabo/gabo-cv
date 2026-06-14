@@ -47,7 +47,10 @@ export const Experience = ({ lang }: ExperienceProps) => {
             fr: "Sécurité & Performance"
         },
         mainCompany: "CDAFAL / Mulhouse City / France",
-        mainPeriod: "Jun 2023 — Dec 2025",
+        mainPeriod: {
+            en: "Jun 2023 — Present",
+            fr: "Juin 2023 — Aujourd’hui"
+        },
         mainBadge: { en: "Professional Career", fr: "Parcours Professionnel" },
         mainStack: ["Kotlin", "Java", "Jetpack Compose", "SwiftUI", "LiveKit / WebRTC", "Spring Boot", "REST APIs", "JWT"],
 
@@ -141,7 +144,7 @@ export const Experience = ({ lang }: ExperienceProps) => {
                         <div className="flex flex-wrap items-center gap-4 mb-8">
                             <p className="text-primary font-bold text-lg uppercase tracking-wider">{t.mainCompany}</p>
                             <span className="hidden md:block w-2 h-2 rounded-full bg-tertiary/40" />
-                            <p className="text-on-surface-variant font-mono text-sm uppercase">{t.mainPeriod}</p>
+                            <p className="text-on-surface-variant font-mono text-sm uppercase">{t.mainPeriod[lang]}</p>
                         </div>
 
                         {/* Combined Tech Stack */}
@@ -232,11 +235,15 @@ export const Experience = ({ lang }: ExperienceProps) => {
                 </motion.div>
             </div>
 
-            {/* Final Footer Status */}
+            {/* Engineering focus */}
             <div className="mt-10 flex items-center gap-4 px-6 opacity-30">
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-on-background">System Architect Status: Production Ready</span>
+                    <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-on-background">
+                        {lang === "en"
+                            ? "Engineering focus: secure, reliable digital systems"
+                            : "Priorité : systèmes numériques sécurisés et fiables"}
+                    </span>
                 </div>
                 <div className="flex-grow h-px bg-outline-variant" />
             </div>
