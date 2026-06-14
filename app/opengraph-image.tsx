@@ -58,7 +58,7 @@ export default async function Image() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <div style={{ fontSize: 12, color: colors.textSecondary, opacity: 0.5, fontWeight: 900 }}>VERSION</div>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>v2026.03.14</div>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>v2026.06</div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <div style={{ fontSize: 12, color: colors.textSecondary, opacity: 0.5, fontWeight: 900 }}>REGION</div>
@@ -78,7 +78,7 @@ export default async function Image() {
                     position: 'relative'
                 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: colors.textSecondary, letterSpacing: '0.45em', marginBottom: 14 }}>SENIOR</div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: colors.textSecondary, letterSpacing: '0.35em', marginBottom: 14 }}>SOFTWARE &</div>
                         <h1 style={{
                             fontSize: 92,
                             fontWeight: 900,
@@ -89,7 +89,7 @@ export default async function Image() {
                             flexDirection: 'column'
                         }}>
                             <span style={{ color: colors.textPrimary }}>SYSTEMS</span>
-                            <span style={{ color: colors.textSecondary }}>ARCHITECT</span>
+                            <span style={{ color: colors.textSecondary }}>ENGINEER</span>
                         </h1>
                     </div>
 
