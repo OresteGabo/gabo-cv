@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Navbar } from '@/component/shared/Navbar';
 import { Footer } from '@/component/sections/Footer';
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
@@ -18,6 +18,10 @@ import { SectionTransition } from "@/component/shared/SectionTransition";
 
 export default function Home() {
     const [lang, setLang] = useState<Locale>("en");
+
+    useEffect(() => {
+        document.documentElement.lang = lang;
+    }, [lang]);
 
     return (
         <main className="font-sans min-h-screen bg-background text-on-background selection:bg-primary/30 overflow-x-hidden relative">
