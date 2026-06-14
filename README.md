@@ -1,4 +1,4 @@
-# Oreste Gabo — Systems Architecture Portfolio (2026)
+# Oreste Gabo — Software & Systems Engineering Portfolio (2026)
 
 [![Deployment: Vercel](https://img.shields.io/badge/Deployment-Vercel-black?logo=vercel)](https://vercel.com/)
 [![Framework: Next.js 15](https://img.shields.io/badge/Framework-Next.js%2015-black?logo=next.js)](https://nextjs.org/)
@@ -238,7 +238,7 @@ Optimized for:
 ## Contact
 
 Oreste Gabo  
-Systems Architect — Logic | Performance | Clean Design
+Software & Systems Engineer — Logic | Performance | Clean Design
 
 GitHub: https://github.com/orestegabo 
 LinkedIn: https://linkedin.com/in/orestemg 
@@ -255,4 +255,3 @@ Every architectural decision is deliberate.
 This is not a résumé.
 
 It is a system.
-
