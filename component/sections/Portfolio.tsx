@@ -50,10 +50,14 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: Project | 
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
+                        aria-hidden="true"
                         className="fixed inset-0 bg-background/95 backdrop-blur-xl z-[9998] cursor-zoom-out"
                     />
 
                     <motion.div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="project-detail-title"
                         initial={{ x: "100%" }}
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
@@ -81,7 +85,7 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: Project | 
                                 <span className="text-[10px] font-bold uppercase tracking-[0.2em]">{project.category}</span>
                             </div>
 
-                            <h2 className="text-4xl md:text-6xl font-black uppercase mb-10 leading-[1.1] tracking-tight text-on-surface">
+                            <h2 id="project-detail-title" className="text-4xl md:text-6xl font-black uppercase mb-10 leading-[1.1] tracking-tight text-on-surface">
                                 {project.title}
                             </h2>
 
