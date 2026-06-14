@@ -93,7 +93,10 @@ const gallery = [
             en: "Oreste Gabo with Kotlin developer advocate Marton Braun at KotlinConf 2026",
             fr: "Oreste Gabo avec Marton Braun à KotlinConf 2026",
         },
-        caption: "KMP architecture discussion with Márton Braun",
+        caption: {
+            en: "KMP architecture discussion with Márton Braun",
+            fr: "Échange sur l'architecture KMP avec Márton Braun",
+        },
     },
     {
         src: "/events/kotlinconf-2026/oreste-gabo-josh-long-spring-boot.jpg",
@@ -101,7 +104,10 @@ const gallery = [
             en: "Oreste Gabo with Spring developer advocate Josh Long at KotlinConf 2026",
             fr: "Oreste Gabo avec Josh Long à KotlinConf 2026",
         },
-        caption: "Spring ecosystem exchange with Josh Long",
+        caption: {
+            en: "Spring ecosystem exchange with Josh Long",
+            fr: "Échange sur l'écosystème Spring avec Josh Long",
+        },
     },
     {
         src: "/events/kotlinconf-2026/oreste-gabo-philipp-lackner-kotlin.jpg",
@@ -109,7 +115,10 @@ const gallery = [
             en: "Oreste Gabo with Kotlin educator Philipp Lackner at KotlinConf 2026",
             fr: "Oreste Gabo avec Philipp Lackner à KotlinConf 2026",
         },
-        caption: "Kotlin community with Philipp Lackner",
+        caption: {
+            en: "Kotlin community with Philipp Lackner",
+            fr: "Communauté Kotlin avec Philipp Lackner",
+        },
     },
     {
         src: "/events/kotlinconf-2026/oreste-gabo-kodee-kotlinconf.jpg",
@@ -275,7 +284,7 @@ export const KotlinConf = ({ lang }: KotlinConfProps) => {
                                 />
                             </div>
                             <figcaption className="mt-3 px-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-                                {typeof photo.caption === "string" ? photo.caption : photo.caption[lang]}
+                                {photo.caption[lang]}
                             </figcaption>
                         </figure>
                     ))}
