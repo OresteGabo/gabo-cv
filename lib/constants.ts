@@ -194,7 +194,7 @@ export const EXPERIENCE = [
     {
         company: "CDAFAL / Mulhouse City / France",
         role: { en: "Software Engineer", fr: "Ingénieur Logiciel" },
-        period: "JUN 2023 - DEC 2025",
+        period: "JUN 2023 — PRESENT",
         tasks: {
             en: [
                 "Built citizen-facing mobile products with Jetpack Compose and SwiftUI",
@@ -214,7 +214,6 @@ export const EXPERIENCE = [
 export const SITE_CONFIG = {
     name: "GABO",
     email: "orestegabo@icloud.com",
-    careerPageLink: "/cv-gabo-systems-architect.pdf",
     github: "https://github.com/orestegabo",
     linkedin: "https://linkedin.com/in/orestemg",
     title: {
