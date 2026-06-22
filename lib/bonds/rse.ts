@@ -1,5 +1,11 @@
 import "server-only";
 
+import {
+  listRecentTradeObservations,
+  normalizeObservedBondName,
+  recordRseTradeObservations,
+} from "./market-observations";
+
 const RSE_BOND_MARKET_URL = "https://rse.rw/bond-market";
 const RSE_FIXED_INCOME_URL = "https://rse.rw/fixed-income-board";
 const RSE_OUTSTANDING_BONDS_URL = "https://rse.rw/outstanding-bonds";
@@ -31,6 +37,12 @@ export type RseOutstandingBond = {
   priceScore: number;
   confidenceScore: number;
   yieldSource: "closing-price estimate" | "RSE published YTM";
+  recentTradeCount: number;
+  lastTradedAt: string | null;
+  lastTradedPrice: number | null;
+  lastTradeChange: string;
+  lastTradeVolume: string;
+  lastTradeValue: string;
 };
 
 export type RseMarketData = {
@@ -340,6 +352,12 @@ export async function getRseMarketData(
         price(trade.closing),
       ]),
     );
+    const tradeDetails = new Map(
+      trades.map((trade) => [
+        normalizedBondName(trade.bond),
+        trade,
+      ]),
+    );
     const valuationDate = new Date();
     const fixedIncomeRows = fixedIncomeResult.pages.flatMap((page) =>
       tableRows(page.html),
@@ -348,8 +366,12 @@ export async function getRseMarketData(
       (cells) => cells.length >= 6 && /TREASURY/i.test(cells[0]),
     );
 
-    const seen = new Set<string>();
-    const outstanding = treasuryRows
+    await recordRseTradeObservations({
+      trades,
+      fetchedAt: marketPage?.fetchedAt ?? null,
+    }).catch(() => undefined);
+
+    const baseOutstanding = treasuryRows
       .map(
         ([
           bond,
@@ -360,6 +382,7 @@ export async function getRseMarketData(
           yieldToMaturity,
         ]) => {
           const cleanedBond = cleanBondName(bond);
+          const tradeDetail = tradeDetails.get(normalizedBondName(cleanedBond));
           const closingPrice =
             tradePrices.get(normalizedBondName(cleanedBond)) ?? null;
           const annualCouponRate = percentage(couponRate);
@@ -415,9 +438,42 @@ export async function getRseMarketData(
               closingPrice === null
                 ? ("RSE published YTM" as const)
                 : ("closing-price estimate" as const),
+            recentTradeCount: closingPrice === null ? 0 : 1,
+            lastTradedAt: closingPrice === null ? null : marketPage?.fetchedAt ?? null,
+            lastTradedPrice: closingPrice,
+            lastTradeChange: tradeDetail?.change ?? "",
+            lastTradeVolume: tradeDetail?.volume ?? "",
+            lastTradeValue: tradeDetail?.value ?? "",
           };
         },
       )
+      .filter((bond) => bond.yearsRemaining > 0);
+
+    const recentObservations = await listRecentTradeObservations({
+      bondNames: baseOutstanding.map((bond) => bond.bond),
+    }).catch(() => new Map());
+
+    const seen = new Set<string>();
+    const outstanding = baseOutstanding
+      .map((bond) => {
+        const observation = recentObservations.get(
+          normalizeObservedBondName(bond.bond),
+        );
+        if (!observation) return bond;
+
+        return {
+          ...bond,
+          recentTradeCount: Math.max(
+            bond.recentTradeCount,
+            observation.tradeCount,
+          ),
+          lastTradedAt: observation.lastObservedAt,
+          lastTradedPrice: observation.lastClosingPrice,
+          lastTradeChange: observation.lastChange,
+          lastTradeVolume: observation.lastVolume,
+          lastTradeValue: observation.lastValue,
+        };
+      })
       .filter((bond) => {
         const key = `${bond.code}-${bond.yieldToMaturity}`;
         if (seen.has(key)) return false;
