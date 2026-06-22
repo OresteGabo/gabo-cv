@@ -81,3 +81,51 @@ CREATE INDEX IF NOT EXISTS bond_purchases_maturity_date_idx
 
 CREATE INDEX IF NOT EXISTS bond_purchases_purchase_date_idx
   ON bond_purchases (purchase_date DESC);
+
+CREATE TABLE IF NOT EXISTS bond_market_observations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  observed_date DATE NOT NULL,
+  observed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  source_url TEXT NOT NULL CHECK (char_length(source_url) <= 1000),
+  bond_name TEXT NOT NULL CHECK (char_length(bond_name) BETWEEN 1 AND 160),
+  normalized_bond_name TEXT NOT NULL CHECK (char_length(normalized_bond_name) BETWEEN 1 AND 160),
+  closing_price NUMERIC(10, 6),
+  previous_price NUMERIC(10, 6),
+  change_text TEXT NOT NULL DEFAULT '' CHECK (char_length(change_text) <= 80),
+  volume_text TEXT NOT NULL DEFAULT '' CHECK (char_length(volume_text) <= 80),
+  value_text TEXT NOT NULL DEFAULT '' CHECK (char_length(value_text) <= 80),
+  raw_row JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (closing_price IS NULL OR closing_price > 0),
+  CHECK (previous_price IS NULL OR previous_price > 0)
+);
+
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS observed_date DATE;
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS observed_at TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS source_url TEXT NOT NULL DEFAULT '';
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS bond_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS normalized_bond_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS closing_price NUMERIC(10, 6);
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS previous_price NUMERIC(10, 6);
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS change_text TEXT NOT NULL DEFAULT '';
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS volume_text TEXT NOT NULL DEFAULT '';
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS value_text TEXT NOT NULL DEFAULT '';
+ALTER TABLE bond_market_observations ADD COLUMN IF NOT EXISTS raw_row JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+UPDATE bond_market_observations
+SET observed_date = COALESCE(observed_date, observed_at::date)
+WHERE observed_date IS NULL;
+
+ALTER TABLE bond_market_observations ALTER COLUMN observed_date SET NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS bond_market_observations_daily_trade_idx
+  ON bond_market_observations (
+    observed_date,
+    normalized_bond_name,
+    COALESCE(closing_price, -1),
+    volume_text,
+    value_text
+  );
+
+CREATE INDEX IF NOT EXISTS bond_market_observations_recent_idx
+  ON bond_market_observations (normalized_bond_name, observed_date DESC, observed_at DESC);
