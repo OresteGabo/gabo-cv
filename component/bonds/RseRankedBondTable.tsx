@@ -8,7 +8,9 @@ import {
   ExternalLink,
   HelpCircle,
   Info,
+  RadioTower,
   Sparkles,
+  TrendingUp,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -143,6 +145,24 @@ function opportunitySignal(bond: RankedBond): OpportunitySignal {
   };
 }
 
+function tradeRecencyLabel(value: string | null) {
+  if (!value) return null;
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    timeZone: "Africa/Kigali",
+  }).format(new Date(value));
+}
+
+function tradeRecencyDateTime(value: string | null) {
+  if (!value) return "Unknown";
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Africa/Kigali",
+  }).format(new Date(value));
+}
+
 export function RseRankedBondTable({
   bonds,
   pagesFetched,
@@ -153,16 +173,20 @@ export function RseRankedBondTable({
   rowsAnalyzed: number;
 }) {
   const [formulaOpen, setFormulaOpen] = useState(false);
+  const [tradeDetailsOpen, setTradeDetailsOpen] = useState<RankedBond | null>(
+    null,
+  );
   const [showAll, setShowAll] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!formulaOpen) return;
+    if (!formulaOpen && !tradeDetailsOpen) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setFormulaOpen(false);
+      if (event.key === "Escape") setTradeDetailsOpen(null);
     };
     window.addEventListener("keydown", closeOnEscape);
 
@@ -170,7 +194,7 @@ export function RseRankedBondTable({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [formulaOpen]);
+  }, [formulaOpen, tradeDetailsOpen]);
 
   const ranked = useMemo(
     () =>
@@ -211,7 +235,7 @@ export function RseRankedBondTable({
   return (
     <>
       <div className="border-b border-primary/25 bg-primary/10 px-5 py-4">
-        <div className="mb-4 flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-[0.14em] text-on-surface-variant">
+        <div className="flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-[0.14em] text-on-surface-variant">
           <span className="rounded-full border border-outline/15 bg-background/70 px-2.5 py-1">
             {pagesFetched} RSE {pagesFetched === 1 ? "page" : "pages"} fetched
           </span>
@@ -224,30 +248,13 @@ export function RseRankedBondTable({
           <span className="rounded-full border border-primary/20 bg-primary-container/35 px-2.5 py-1 text-[var(--md-sys-color-on-primary-container)]">
             {ranked.length} long-term candidates
           </span>
-        </div>
-        <div className="flex items-start gap-3">
-          <div className="flex min-w-0 flex-1 items-start gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-primary/30 bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]">
-              <Sparkles size={18} />
-            </span>
-            <span>
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="block text-xs font-black text-on-surface">
-                  Optimized for Long-Term Compounding
-                </span>
-                <span className="rounded-full bg-[var(--md-sys-color-primary)] px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-[var(--md-sys-color-on-primary)]">
-                  Always on
-                </span>
-              </span>
-            </span>
-          </div>
           <button
             type="button"
             aria-label="How the strategy score is calculated"
             onClick={() => setFormulaOpen(true)}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-outline/15 bg-surface-container-lowest/70 text-[var(--md-sys-color-primary)] shadow-sm transition hover:border-primary/35 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            className="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-outline/15 bg-surface-container-lowest/70 text-[var(--md-sys-color-primary)] shadow-sm transition hover:border-primary/35 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           >
-            <HelpCircle size={19} />
+            <HelpCircle size={16} />
           </button>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-primary/15 pt-4 text-[9px] font-black uppercase tracking-[0.11em]">
@@ -320,13 +327,26 @@ export function RseRankedBondTable({
                       {bond.code}
                     </p>
                     {highlighted && (
-                      <span
-                        title={opportunity.explanation}
-                        className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] ${opportunity.classes}`}
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <span
+                          title={opportunity.explanation}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] ${opportunity.classes}`}
+                        >
+                          <Sparkles size={11} strokeWidth={2.5} />
+                          {opportunity.label}
+                        </span>
+                      </div>
+                    )}
+                    {index < 5 && bond.recentTradeCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setTradeDetailsOpen(bond)}
+                        title="This bond appeared in recent RSE bond-market transactions, which can indicate secondary-market activity to verify with a broker."
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-container/45 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] text-[var(--md-sys-color-on-primary-container)] transition hover:border-primary/50 hover:bg-primary-container/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                       >
-                        <Sparkles size={11} strokeWidth={2.5} />
-                        {opportunity.label}
-                      </span>
+                        <RadioTower size={11} strokeWidth={2.5} />
+                        Recently traded
+                      </button>
                     )}
                   </td>
                   <td className="px-3 py-5">
@@ -383,6 +403,12 @@ export function RseRankedBondTable({
                     <p className="mt-1.5 text-[9px] font-semibold text-on-surface-variant">
                       {bond.yieldSource}
                     </p>
+                    {bond.recentTradeCount > 0 && (
+                      <p className="mt-1.5 text-[9px] font-bold text-primary">
+                        Seen {bond.recentTradeCount}x recently · last{" "}
+                        {tradeRecencyLabel(bond.lastTradedAt) ?? "recently"}
+                      </p>
+                    )}
                   </td>
                   <td className="px-3 py-5">
                     <div className="flex items-baseline gap-1.5">
@@ -473,13 +499,26 @@ export function RseRankedBondTable({
               </div>
 
               {highlighted && (
-                <span
-                  title={opportunity.explanation}
-                  className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] ${opportunity.classes}`}
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  <span
+                    title={opportunity.explanation}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] ${opportunity.classes}`}
+                  >
+                    <Sparkles size={11} strokeWidth={2.5} />
+                    {opportunity.label}
+                  </span>
+                </div>
+              )}
+              {index < 5 && bond.recentTradeCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setTradeDetailsOpen(bond)}
+                  title="This bond appeared in recent RSE bond-market transactions, which can indicate secondary-market activity to verify with a broker."
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-container/45 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] text-[var(--md-sys-color-on-primary-container)] transition hover:border-primary/50 hover:bg-primary-container/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 >
-                  <Sparkles size={11} strokeWidth={2.5} />
-                  {opportunity.label}
-                </span>
+                  <RadioTower size={11} strokeWidth={2.5} />
+                  Recently traded
+                </button>
               )}
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/60 p-3">
@@ -538,6 +577,12 @@ export function RseRankedBondTable({
                   <p className="mt-1 text-[10px] font-medium text-on-surface-variant">
                     {bond.yieldSource}
                   </p>
+                  {bond.recentTradeCount > 0 && (
+                    <p className="mt-1 text-[10px] font-bold text-primary">
+                      Seen {bond.recentTradeCount}x recently · last{" "}
+                      {tradeRecencyLabel(bond.lastTradedAt) ?? "recently"}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -602,7 +647,10 @@ export function RseRankedBondTable({
           Strategy score = 70% net yield + 25% long-term runway + 5% price
           value. Twelve years remaining receives the full duration score, which
           places active 15-year and 20-year issues in the same long-term tier.
-          Data confidence affects the label, not attractiveness.
+          Data confidence affects the label, not attractiveness. Recently
+          traded means the bond appeared in saved RSE bond-market observations;
+          it is a liquidity clue to verify, not a guarantee that a seller is
+          still available.
         </p>
       </div>
 
@@ -768,6 +816,133 @@ export function RseRankedBondTable({
               </a>
             </footer>
           </section>
+        </div>
+      )}
+
+      {tradeDetailsOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex justify-end bg-background/75 backdrop-blur-md"
+          onMouseDown={() => setTradeDetailsOpen(null)}
+        >
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="recent-trade-title"
+            onMouseDown={(event) => event.stopPropagation()}
+            className="bond-scrollbar h-full w-full max-w-md overflow-y-auto border-l border-outline/10 bg-surface-container-lowest shadow-2xl"
+          >
+            <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-outline/10 bg-surface-container-lowest/95 px-5 py-5 backdrop-blur">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-primary">
+                  RSE trade observation
+                </p>
+                <h2 id="recent-trade-title" className="mt-1 text-xl font-black text-on-surface">
+                  {tradeDetailsOpen.bond}
+                </h2>
+                <p className="mt-1 font-mono text-[10px] font-semibold text-on-surface-variant">
+                  {tradeDetailsOpen.code}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close recent trade details"
+                onClick={() => setTradeDetailsOpen(null)}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-outline/10 bg-surface-container-low text-on-surface-variant hover:text-primary"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="space-y-5 p-5">
+              <div className="rounded-2xl border border-primary/15 bg-primary/[0.07] p-4">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-on-primary">
+                    <TrendingUp size={18} />
+                  </span>
+                  <div>
+                    <p className="text-sm font-black text-on-surface">
+                      Appeared in recent RSE bond-market transactions
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-on-surface-variant">
+                      This can indicate secondary-market activity, but it does
+                      not prove a seller is still available. Treat it as a
+                      broker-verification signal.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <dl className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-outline/10 bg-surface-container-low p-4">
+                  <dt className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
+                    Recent sightings
+                  </dt>
+                  <dd className="mt-2 text-2xl font-black text-primary">
+                    {tradeDetailsOpen.recentTradeCount}
+                  </dd>
+                </div>
+                <div className="rounded-2xl border border-outline/10 bg-surface-container-low p-4">
+                  <dt className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
+                    Last price / 100
+                  </dt>
+                  <dd className="mt-2 text-2xl font-black text-primary">
+                    {tradeDetailsOpen.lastTradedPrice !== null
+                      ? tradeDetailsOpen.lastTradedPrice.toFixed(2)
+                      : "N/A"}
+                  </dd>
+                </div>
+                <div className="rounded-2xl border border-outline/10 bg-surface-container-low p-4">
+                  <dt className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
+                    Volume
+                  </dt>
+                  <dd className="mt-2 text-sm font-black text-on-surface">
+                    {tradeDetailsOpen.lastTradeVolume || "Not published"}
+                  </dd>
+                </div>
+                <div className="rounded-2xl border border-outline/10 bg-surface-container-low p-4">
+                  <dt className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
+                    Value
+                  </dt>
+                  <dd className="mt-2 text-sm font-black text-on-surface">
+                    {tradeDetailsOpen.lastTradeValue || "Not published"}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="rounded-2xl border border-outline/10 bg-surface-container-low p-4">
+                <p className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
+                  Last observed
+                </p>
+                <p className="mt-2 text-sm font-black text-on-surface">
+                  {tradeRecencyDateTime(tradeDetailsOpen.lastTradedAt)}
+                </p>
+                {tradeDetailsOpen.lastTradeChange && (
+                  <p className="mt-2 text-xs font-bold text-on-surface-variant">
+                    RSE change: {tradeDetailsOpen.lastTradeChange}
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-outline/10 bg-surface-container-low p-4 text-xs leading-5 text-on-surface-variant">
+                <p className="font-black text-on-surface">How to use this</p>
+                <p className="mt-2">
+                  Prioritize it as an availability clue only when the bond also
+                  clears your yield, price, and maturity screen. Then ask BK
+                  Capital or your broker whether this bond can still be sourced
+                  near the observed price.
+                </p>
+              </div>
+
+              <a
+                href="https://rse.rw/bond-market"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:-translate-y-0.5"
+              >
+                Open RSE bond market <ExternalLink size={15} />
+              </a>
+            </div>
+          </aside>
         </div>
       )}
     </>
