@@ -12,6 +12,8 @@ leaving `orestegabo.dev` unchanged.
 - Annual and monthly schedules
 - CSV projection export
 - Private Neon-backed real purchase log
+- Saved RSE bond-market observations for recent secondary-market activity
+- Protected market snapshot endpoint for scheduled RSE captures
 - Signed, HTTP-only owner session
 - Responsive layout suitable for installation from a phone browser
 
@@ -23,10 +25,12 @@ leaving `orestegabo.dev` unchanged.
 4. Add the same values in Vercel Project Settings > Environment Variables.
 
 Run `db/bonds-schema.sql` again when upgrading an existing installation. The
-file contains additive migrations for the real transaction ledger.
+file contains additive migrations for the real transaction ledger and saved RSE
+market observations.
 
 Use a separate Neon role for this application when possible. Grant it only
-`SELECT`, `INSERT`, `UPDATE`, and `DELETE` on `bond_purchases`.
+`SELECT`, `INSERT`, `UPDATE`, and `DELETE` on `bond_purchases` and
+`bond_market_observations`.
 
 ## Owner password
 
@@ -38,6 +42,17 @@ node scripts/hash-bonds-password.mjs 'your-long-unique-password'
 
 Store the output as `BONDS_ADMIN_PASSWORD_HASH`. Never commit the password,
 hash, session secret, or database URL.
+
+## RSE market snapshots
+
+The public `/bonds` page still caches official RSE fetches for 15 minutes. To
+keep a durable record when the RSE bond-market page resets, schedule
+`/api/bonds/rse/snapshot` at least once per trading day and set
+`BONDS_MARKET_SNAPSHOT_SECRET`.
+
+The endpoint accepts either an `Authorization: Bearer <secret>` header or a
+`?secret=<secret>` query parameter, forces a fresh RSE fetch, and stores any
+observed bond-market rows in `bond_market_observations`.
 
 ## Domain
 
