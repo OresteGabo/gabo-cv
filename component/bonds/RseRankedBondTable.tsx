@@ -13,7 +13,7 @@ import {
   TrendingUp,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import type { RseOutstandingBond } from "@/lib/bonds/rse";
 
 type RankedBond = RseOutstandingBond & {
@@ -161,6 +161,38 @@ function tradeRecencyDateTime(value: string | null) {
     timeStyle: "short",
     timeZone: "Africa/Kigali",
   }).format(new Date(value));
+}
+
+function StrategyMathFormula({
+  label,
+  children,
+  compact = false,
+}: {
+  label: string;
+  children: ReactNode;
+  compact?: boolean;
+}) {
+  return (
+    <figure
+      role="math"
+      aria-label={label}
+      className={`bond-strategy-math-card mt-4 rounded-2xl border border-primary/15 bg-surface-container px-4 py-4 ${
+        compact ? "md:px-3" : "md:px-4"
+      }`}
+    >
+      <div className="bond-strategy-math-frame">
+        <math
+          aria-hidden="true"
+          display="block"
+          className={`bond-strategy-math mx-auto ${
+            compact ? "bond-strategy-math--compact" : ""
+          }`}
+        >
+          {children}
+        </math>
+      </div>
+    </figure>
+  );
 }
 
 export function RseRankedBondTable({
@@ -656,7 +688,7 @@ export function RseRankedBondTable({
 
       {formulaOpen && (
         <div
-          className="fixed inset-0 z-[100] grid place-items-center bg-background/80 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[100] grid place-items-center bg-background/95 p-3 backdrop-blur-lg md:p-6"
           onMouseDown={() => setFormulaOpen(false)}
         >
           <section
@@ -664,17 +696,17 @@ export function RseRankedBondTable({
             aria-modal="true"
             aria-labelledby="strategy-formula-title"
             onMouseDown={(event) => event.stopPropagation()}
-            className="bond-scrollbar max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-outline/10 bg-surface-container-lowest/95 shadow-2xl"
+            className="bond-scrollbar max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-2xl border border-outline/10 bg-surface-container-lowest shadow-2xl"
           >
-            <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-outline/10 bg-surface-container-lowest/95 px-6 py-5 backdrop-blur">
+            <header className="sticky top-0 z-20 flex items-start justify-between gap-4 border-b border-outline/15 bg-[var(--md-sys-color-surface-container-lowest)] px-5 py-5 shadow-[0_10px_24px_rgba(0,0,0,0.08)] md:px-7">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[var(--md-sys-color-primary)]">
                   Ranking methodology
                 </p>
-                <h2 id="strategy-formula-title" className="mt-1 text-xl font-black text-on-surface">
+                <h2 id="strategy-formula-title" className="mt-1 text-2xl font-black tracking-tight text-on-surface">
                   Long-Term Compounding Strategy Score
                 </h2>
-                <p className="mt-2 max-w-2xl text-xs leading-5 text-on-surface-variant">
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-on-surface-variant">
                   A 0–100 strategy-fit score that balances after-tax return,
                   sufficient long-term runway, and purchase price. Data freshness
                   is shown separately so certainty cannot make a weaker return
@@ -691,27 +723,73 @@ export function RseRankedBondTable({
               </button>
             </header>
 
-            <div className="space-y-5 p-6 text-sm text-on-surface-variant">
-              <blockquote className="rounded-3xl border border-primary/15 bg-primary/[0.06] p-5">
-                <p className="font-black text-on-surface">Final allocation</p>
-                <p className="mt-2 font-mono text-xs leading-6 text-[var(--md-sys-color-primary)]">
-                  Score = (Net Yield × 70%) + (Duration × 25%) + (Price × 5%)
-                </p>
+            <div className="space-y-5 p-5 text-sm text-on-surface-variant md:p-7">
+              <blockquote className="rounded-2xl border border-primary/15 bg-surface-container-low p-5 md:grid md:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] md:items-center md:gap-6">
+                <div>
+                  <p className="font-black text-on-surface">Final allocation</p>
+                  <p className="mt-2 text-xs leading-5 text-on-surface-variant">
+                    The strategy score weights modeled return most heavily, then
+                    rewards enough maturity runway and a fair entry price.
+                  </p>
+                </div>
+                <StrategyMathFormula label="Score equals net yield score times seventy percent plus duration score times twenty five percent plus price score times five percent">
+                  <mrow>
+                    <mi>S</mi>
+                    <mo>=</mo>
+                    <mn>0.70</mn>
+                    <mo>×</mo>
+                    <msub>
+                      <mi>Y</mi>
+                      <mtext>net</mtext>
+                    </msub>
+                    <mo>+</mo>
+                    <mn>0.25</mn>
+                    <mo>×</mo>
+                    <mi>D</mi>
+                    <mo>+</mo>
+                    <mn>0.05</mn>
+                    <mo>×</mo>
+                    <mi>P</mi>
+                  </mrow>
+                </StrategyMathFormula>
               </blockquote>
 
               <ol className="grid gap-4 md:grid-cols-2">
-                <li className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
+                <li className="rounded-2xl border border-outline/10 bg-surface-container-low p-5">
                   <p className="font-black text-on-surface">1. Net Yield Score · 70%</p>
                   <p className="mt-2 text-xs leading-5">
                     With a recent closing price, the model solves YTM from
                     semiannual after-tax coupon cash flows. Without a price, it
                     approximates net yield as published RSE YTM × 95%.
                   </p>
-                  <p className="mt-3 font-mono text-[11px] text-[var(--md-sys-color-primary)]">
-                    min(100, Net Yield ÷ 14% × 100)
-                  </p>
+                  <StrategyMathFormula
+                    compact
+                    label="Net yield score equals the minimum of one hundred and net annualized yield divided by fourteen percent times one hundred"
+                  >
+                    <mrow>
+                      <msub>
+                        <mi>Y</mi>
+                        <mtext>score</mtext>
+                      </msub>
+                      <mo>=</mo>
+                      <mi>min</mi>
+                      <mo>(</mo>
+                      <mn>100</mn>
+                      <mo>,</mo>
+                      <mfrac>
+                        <msub>
+                          <mi>Y</mi>
+                          <mtext>net</mtext>
+                        </msub>
+                        <mn>14%</mn>
+                      </mfrac>
+                      <mo>×</mo>
+                      <mn>100</mn>
+                      <mo>)</mo>
+                    </mrow>
+                  </StrategyMathFormula>
                 </li>
-                <li className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
+                <li className="rounded-2xl border border-outline/10 bg-surface-container-low p-5">
                   <p className="font-black text-on-surface">2. Duration Score · 25%</p>
                   <p className="mt-2 text-xs leading-5">
                     Runway earns points proportionally until 12 years remaining.
@@ -719,51 +797,160 @@ export function RseRankedBondTable({
                     long-term strategy. This prevents a recently issued 15-year
                     bond from losing to a 20-year bond solely because of tenor.
                   </p>
-                  <p className="mt-3 font-mono text-[11px] text-[var(--md-sys-color-primary)]">
-                    min(100, Years Remaining ÷ 12 × 100)
-                  </p>
+                  <StrategyMathFormula
+                    compact
+                    label="Duration score equals the minimum of one hundred and years remaining divided by twelve times one hundred"
+                  >
+                    <mrow>
+                      <msub>
+                        <mi>D</mi>
+                        <mtext>score</mtext>
+                      </msub>
+                      <mo>=</mo>
+                      <mi>min</mi>
+                      <mo>(</mo>
+                      <mn>100</mn>
+                      <mo>,</mo>
+                      <mfrac>
+                        <msub>
+                          <mi>Y</mi>
+                          <mtext>remaining</mtext>
+                        </msub>
+                        <mn>12</mn>
+                      </mfrac>
+                      <mo>×</mo>
+                      <mn>100</mn>
+                      <mo>)</mo>
+                    </mrow>
+                  </StrategyMathFormula>
                 </li>
-                <li className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
-                  <p className="font-black text-on-surface">3. Price Score · 5%</p>
-                  <p className="mt-2 text-xs leading-5">
-                    Prices at or below par score 100. A premium above 100 creates
-                    a proportional penalty. Missing live prices receive a
-                    neutral 50.
-                  </p>
-                  <p className="mt-3 font-mono text-[11px] leading-5 text-[var(--md-sys-color-primary)]">
-                    Price ≤ 100: 100<br />
-                    Price &gt; 100: max(0, 100 - ((Price - 100) ÷ 100) × 500)
-                  </p>
+                <li className="rounded-2xl border border-outline/10 bg-surface-container-low p-5 md:col-span-2 md:grid md:grid-cols-[minmax(0,0.62fr)_minmax(0,1.38fr)] md:items-start md:gap-6">
+                  <div>
+                    <p className="font-black text-on-surface">3. Price Score · 5%</p>
+                    <p className="mt-2 text-xs leading-5">
+                      Prices at or below par score 100. A premium above 100
+                      creates a proportional penalty. Missing live prices receive
+                      a neutral 50.
+                    </p>
+                  </div>
+                  <StrategyMathFormula
+                    compact
+                    label="Price score is one hundred when price is less than or equal to one hundred; otherwise it is the maximum of zero and one hundred minus price premium divided by one hundred times five hundred"
+                  >
+                    <mrow>
+                      <msub>
+                        <mi>P</mi>
+                        <mtext>score</mtext>
+                      </msub>
+                      <mo>=</mo>
+                      <mrow>
+                        <mo>{`{`}</mo>
+                        <mtable>
+                          <mtr>
+                            <mtd>
+                              <mn>100</mn>
+                            </mtd>
+                            <mtd>
+                              <mtext>if </mtext>
+                              <mi>P</mi>
+                              <mo>≤</mo>
+                              <mn>100</mn>
+                            </mtd>
+                          </mtr>
+                          <mtr>
+                            <mtd>
+                              <mi>max</mi>
+                              <mo>(</mo>
+                              <mn>0</mn>
+                              <mo>,</mo>
+                              <mn>100</mn>
+                              <mo>−</mo>
+                              <mfrac>
+                                <mrow>
+                                  <mi>P</mi>
+                                  <mo>−</mo>
+                                  <mn>100</mn>
+                                </mrow>
+                                <mn>100</mn>
+                              </mfrac>
+                              <mo>×</mo>
+                              <mn>500</mn>
+                              <mo>)</mo>
+                            </mtd>
+                            <mtd>
+                              <mtext>if </mtext>
+                              <mi>P</mi>
+                              <mo>&gt;</mo>
+                              <mn>100</mn>
+                            </mtd>
+                          </mtr>
+                        </mtable>
+                      </mrow>
+                    </mrow>
+                  </StrategyMathFormula>
                 </li>
-                <li className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
-                  <p className="font-black text-on-surface">4. Data Confidence · diagnostic</p>
-                  <p className="mt-2 text-xs leading-5">
-                    A recent market closing price scores 100. A row relying only
-                    on RSE-published YTM scores 60. Confidence is displayed and
-                    changes the opportunity label, but it is deliberately excluded
-                    from the strategy score.
-                  </p>
-                  <p className="mt-3 font-mono text-[11px] text-[var(--md-sys-color-primary)]">
-                    Recent price: 100 · Published YTM only: 60
-                  </p>
+                <li className="rounded-2xl border border-outline/10 bg-surface-container-low p-5 md:col-span-2 md:grid md:grid-cols-[minmax(0,0.62fr)_minmax(0,1.38fr)] md:items-start md:gap-6">
+                  <div>
+                    <p className="font-black text-on-surface">4. Data Confidence · diagnostic</p>
+                    <p className="mt-2 text-xs leading-5">
+                      A recent market closing price scores 100. A row relying
+                      only on RSE-published YTM scores 60. Confidence is
+                      displayed and changes the opportunity label, but it is
+                      deliberately excluded from the strategy score.
+                    </p>
+                  </div>
+                  <StrategyMathFormula
+                    compact
+                    label="Confidence score equals one hundred with recent price data and sixty with published yield only"
+                  >
+                    <mrow>
+                      <msub>
+                        <mi>C</mi>
+                        <mtext>score</mtext>
+                      </msub>
+                      <mo>=</mo>
+                      <mrow>
+                        <mo>{`{`}</mo>
+                        <mtable>
+                          <mtr>
+                            <mtd>
+                              <mn>100</mn>
+                            </mtd>
+                            <mtd>
+                              <mtext>recent price</mtext>
+                            </mtd>
+                          </mtr>
+                          <mtr>
+                            <mtd>
+                              <mn>60</mn>
+                            </mtd>
+                            <mtd>
+                              <mtext>published YTM only</mtext>
+                            </mtd>
+                          </mtr>
+                        </mtable>
+                      </mrow>
+                    </mrow>
+                  </StrategyMathFormula>
                 </li>
               </ol>
 
-              <p className="rounded-2xl border border-primary/15 bg-primary/[0.06] px-4 py-3 text-[11px] leading-5">
-                When RSE has no recent closing trade, the table reconstructs an
-                approximate clean price from the published YTM, coupon, maturity,
-                today&apos;s date, and semiannual cash flows. The ≈ symbol marks
-                this as an implied value, not a live broker quote. It does not
-                receive live-price confidence in the strategy score.
-              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <p className="rounded-2xl border border-primary/15 bg-surface-container-low px-4 py-3 text-[11px] leading-5">
+                  When RSE has no recent closing trade, the table reconstructs
+                  an approximate clean price from the published YTM, coupon,
+                  maturity, today&apos;s date, and semiannual cash flows. The ≈
+                  symbol marks this as an implied value, not a live broker quote.
+                </p>
 
-              <p className="rounded-2xl border border-outline/10 bg-surface-container-low px-4 py-3 text-[11px] leading-5">
-                Listings with fewer than three years remaining are always
-                excluded. The score is a comparative research tool, not a
-                guarantee of return or personalized investment advice.
-              </p>
+                <p className="rounded-2xl border border-outline/10 bg-surface-container-low px-4 py-3 text-[11px] leading-5">
+                  Listings with fewer than three years remaining are always
+                  excluded. The score is a comparative research tool, not a
+                  guarantee of return or personalized investment advice.
+                </p>
+              </div>
 
-              <div className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
+              <div className="rounded-2xl border border-outline/10 bg-surface-container-low p-5">
                 <p className="font-black text-on-surface">
                   Opportunity labels are independent from rank
                 </p>
