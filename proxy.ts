@@ -7,18 +7,17 @@ const PORTFOLIO_HOSTS = new Set(["orestegabo.dev", "www.orestegabo.dev"]);
 export function proxy(request: NextRequest) {
   const hostname = request.headers.get("host")?.split(":")[0];
   const { pathname } = request.nextUrl;
+  const isLocalPortfolioHost = hostname === "localhost";
 
   if (
     hostname &&
-    PORTFOLIO_HOSTS.has(hostname) &&
+    (PORTFOLIO_HOSTS.has(hostname) || isLocalPortfolioHost) &&
     (pathname === "/bonds" || pathname.startsWith("/bonds/"))
   ) {
-    const destination = new URL(
-      pathname.slice("/bonds".length) || "/",
-      `https://${BONDS_HOST}`,
-    );
-    destination.search = request.nextUrl.search;
-    return NextResponse.redirect(destination, 308);
+    const destination = request.nextUrl.clone();
+    destination.hostname = isLocalPortfolioHost ? BONDS_LOCAL_HOST : BONDS_HOST;
+    destination.pathname = pathname.slice("/bonds".length) || "/";
+    return NextResponse.redirect(destination, isLocalPortfolioHost ? 307 : 308);
   }
 
   if (hostname !== BONDS_HOST && hostname !== BONDS_LOCAL_HOST) {
