@@ -16,6 +16,8 @@ export const DEFAULT_ASSUMPTIONS: BondAssumptions = {
   annualCouponRate: 0.12,
   couponPaymentsPerYear: 2,
   reinvestmentRate: 1,
+  auctionFillRate: 0.67,
+  agukaAnnualRate: 0.1,
   startingPortfolio: 0,
   purchaseMinimum: 100_000,
 };
@@ -33,6 +35,9 @@ export function calculateProjection(
   const totalMonths = Math.max(1, Math.round(assumptions.horizonYears * 12));
   const paymentsPerYear = Math.max(1, assumptions.couponPaymentsPerYear);
   const paymentInterval = 12 / paymentsPerYear;
+  const auctionFillRate = Math.max(0, Math.min(1, assumptions.auctionFillRate));
+  const agukaAnnualRate = Math.max(0, assumptions.agukaAnnualRate);
+  const agukaMonthlyRate = (1 + agukaAnnualRate) ** (1 / 12) - 1;
   const annualCouponRate = Math.min(
     MAX_ANNUAL_COUPON_RATE,
     Math.max(MIN_ANNUAL_COUPON_RATE, assumptions.annualCouponRate),
@@ -79,6 +84,7 @@ export function calculateProjection(
   let totalContributions = 0;
   let totalCoupons = 0;
   let totalReinvested = 0;
+  let totalAgukaInterest = 0;
 
   return Array.from({ length: totalMonths }, (_, index) => {
     const month = index + 1;
@@ -92,6 +98,10 @@ export function calculateProjection(
       0,
     );
     const openingCashBalance = cashBalance;
+    const agukaInterest =
+      Math.round(openingCashBalance * agukaMonthlyRate * 100) / 100;
+    const agukaDistribution =
+      month % 6 === 0 ? agukaInterest : 0;
     const personalContribution = assumptions.monthlyContribution;
     const monthlyInjections = cashInjections.filter(
       (injection) => injection.month === month,
@@ -135,15 +145,23 @@ export function calculateProjection(
     const availableCash =
       Math.round(
         (openingCashBalance +
+          agukaInterest +
           personalContribution +
           cashInjection +
           reinvestedCoupon +
           maturedPrincipal) *
           100,
       ) / 100;
-    const newBondPurchase =
+    const intendedBondBid =
       Math.floor((availableCash + 0.001) / assumptions.purchaseMinimum) *
       assumptions.purchaseMinimum;
+    const filledBondPurchase =
+      Math.floor(
+        (intendedBondBid * auctionFillRate + 0.001) /
+          assumptions.purchaseMinimum,
+      ) * assumptions.purchaseMinimum;
+    const newBondPurchase = Math.min(intendedBondBid, filledBondPurchase);
+    const unfilledBondBid = intendedBondBid - newBondPurchase;
 
     const newBondPurchaseLot =
       newBondPurchase > 0
@@ -159,6 +177,12 @@ export function calculateProjection(
     totalContributions += personalContribution + cashInjection;
     totalCoupons += couponPayment;
     totalReinvested += reinvestedCoupon;
+    totalAgukaInterest += agukaInterest;
+    const annualBondPassiveIncome = activeLots.reduce(
+      (total, lot) => total + lot.amount * lot.netAnnualCouponRate,
+      0,
+    );
+    const annualAgukaIncome = cashBalance * agukaAnnualRate;
 
     return {
       month,
@@ -174,8 +198,12 @@ export function calculateProjection(
       couponPayment,
       couponPayments,
       reinvestedCoupon,
+      agukaInterest,
+      agukaDistribution,
       maturedPrincipal,
       availableCash,
+      intendedBondBid,
+      unfilledBondBid,
       newBondPurchase,
       newBondPurchaseLot,
       activeBondCount: activeLots.length,
@@ -185,15 +213,11 @@ export function calculateProjection(
       totalContributions,
       totalCoupons,
       totalReinvested,
-      annualPassiveIncome: activeLots.reduce(
-        (total, lot) => total + lot.amount * lot.netAnnualCouponRate,
-        0,
-      ),
-      monthlyPassiveIncome:
-        activeLots.reduce(
-          (total, lot) => total + lot.amount * lot.netAnnualCouponRate,
-          0,
-        ) / 12,
+      totalAgukaInterest,
+      annualBondPassiveIncome,
+      annualAgukaIncome,
+      annualPassiveIncome: annualBondPassiveIncome + annualAgukaIncome,
+      monthlyPassiveIncome: (annualBondPassiveIncome + annualAgukaIncome) / 12,
     };
   });
 }
@@ -219,6 +243,9 @@ export function summarizeProjection(
     totalContributions: final?.totalContributions ?? 0,
     totalCoupons: final?.totalCoupons ?? 0,
     totalReinvested: final?.totalReinvested ?? 0,
+    totalAgukaInterest: final?.totalAgukaInterest ?? 0,
+    annualBondPassiveIncome: final?.annualBondPassiveIncome ?? 0,
+    annualAgukaIncome: final?.annualAgukaIncome ?? 0,
     annualPassiveIncome: final?.annualPassiveIncome ?? 0,
     monthlyPassiveIncome: final?.monthlyPassiveIncome ?? 0,
     milestone50m: firstMonthAt(50_000_000),
