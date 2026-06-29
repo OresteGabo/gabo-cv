@@ -26,6 +26,11 @@ export function GET() {
           url: "/bonds/education",
         },
         {
+          name: "BNR issuance calendar",
+          short_name: "Calendar",
+          url: "/bonds/calendar",
+        },
+        {
           name: "Bond simulator",
           short_name: "Simulator",
           url: "/bonds/simulator",
