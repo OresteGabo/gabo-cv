@@ -1,13 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const BONDS_HOST = "bonds.orestegabo.dev";
+const BONDS_LOCAL_HOST = "bonds.localhost";
+const PORTFOLIO_HOSTS = new Set(["orestegabo.dev", "www.orestegabo.dev"]);
 
 export function proxy(request: NextRequest) {
   const hostname = request.headers.get("host")?.split(":")[0];
   const { pathname } = request.nextUrl;
 
-  if (hostname !== BONDS_HOST) {
+  if (
+    hostname &&
+    PORTFOLIO_HOSTS.has(hostname) &&
+    (pathname === "/bonds" || pathname.startsWith("/bonds/"))
+  ) {
+    const destination = new URL(
+      pathname.slice("/bonds".length) || "/",
+      `https://${BONDS_HOST}`,
+    );
+    destination.search = request.nextUrl.search;
+    return NextResponse.redirect(destination, 308);
+  }
+
+  if (hostname !== BONDS_HOST && hostname !== BONDS_LOCAL_HOST) {
     return NextResponse.next();
+  }
+
+  const bondPublicFiles: Record<string, string> = {
+    "/manifest.webmanifest": "/bonds/manifest.webmanifest",
+    "/robots.txt": "/bonds/robots.txt",
+    "/sitemap.xml": "/bonds/sitemap.xml",
+  };
+  const internalPublicFile = bondPublicFiles[pathname];
+  if (internalPublicFile) {
+    return NextResponse.rewrite(new URL(internalPublicFile, request.url));
+  }
+
+  const isBondRouteWithLegacyPrefix =
+    (pathname === "/bonds" || pathname.startsWith("/bonds/")) &&
+    !/\.[a-z0-9]+$/i.test(pathname);
+  if (isBondRouteWithLegacyPrefix) {
+    const cleanPathname = pathname.slice("/bonds".length) || "/";
+    return NextResponse.redirect(new URL(cleanPathname, request.url), 308);
   }
 
   const shouldRewrite =
