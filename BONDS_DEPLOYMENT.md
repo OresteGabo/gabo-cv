@@ -1,8 +1,11 @@
 # Rwanda Treasury Bond Planner
 
 The bond application is available locally at `/bonds`. In production,
-`proxy.ts` rewrites requests from `bonds.orestegabo.dev` to that route while
-leaving `orestegabo.dev` unchanged.
+`proxy.ts` rewrites clean requests such as `bonds.orestegabo.dev/simulator` to
+the internal `/bonds/simulator` route while leaving `orestegabo.dev` unchanged.
+Legacy `/bonds/...` links on the subdomain redirect to their clean equivalent.
+Requests to `orestegabo.dev/bonds/...` permanently redirect to the matching
+subdomain URL, preserving bookmarks while keeping one public bond-site address.
 
 ## Features
 
@@ -45,7 +48,7 @@ hash, session secret, or database URL.
 
 ## RSE market snapshots
 
-The public `/bonds` page still caches official RSE fetches for 15 minutes. To
+The public bond page requests fresh official RSE data on every page load. To
 keep a durable record when the RSE bond-market page resets, schedule
 `/api/bonds/rse/snapshot` at least once per trading day and set
 `BONDS_MARKET_SNAPSHOT_SECRET`.
@@ -56,9 +59,14 @@ observed bond-market rows in `bond_market_observations`.
 
 ## Domain
 
-Add `bonds.orestegabo.dev` in the Vercel project's Domains settings. Vercel
-will display the exact DNS record required. For a subdomain this is normally a
-CNAME record at your DNS provider.
+1. Add `bonds.orestegabo.dev` in the Vercel project's Domains settings.
+2. Copy the exact CNAME target shown by Vercel.
+3. In Cloudflare DNS, create a CNAME with name `bonds`, the Vercel target, and
+   Proxy status set to **DNS only**.
+4. Wait for Vercel to mark the domain as valid and provision HTTPS.
+
+The existing `orestegabo.dev` domain remains assigned to the same Vercel
+project and continues serving the portfolio website.
 
 ## Security boundary
 
