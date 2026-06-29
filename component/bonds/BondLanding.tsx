@@ -29,7 +29,6 @@ import { getRseMarketData } from "@/lib/bonds/rse";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 import { RseMarketErrorTable } from "./RseMarketErrorTable";
 import { RseRankedBondTable } from "./RseRankedBondTable";
-import { RseRefreshButton } from "./RseRefreshButton";
 
 const steps = [
   {
@@ -105,6 +104,9 @@ export async function BondLanding({
             </span>
           </div>
           <nav className="flex items-center gap-2">
+            <Link href="/bonds/calendar" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container md:block">
+              Calendar
+            </Link>
             <Link href="/bonds/education" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container md:block">
               Education
             </Link>
@@ -141,6 +143,9 @@ export async function BondLanding({
               <Link href="/bonds/portfolio" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
                 Open my portfolio <LockKeyhole size={16} />
               </Link>
+              <Link href="/bonds/calendar" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
+                View BNR calendar <CalendarClock size={16} />
+              </Link>
               <Link href="/bonds/education" className="inline-flex items-center gap-2 rounded-2xl px-3 py-3.5 text-sm font-black text-primary transition hover:bg-primary/10">
                 Learn bond mechanics <BookOpenText size={16} />
               </Link>
@@ -172,8 +177,8 @@ export async function BondLanding({
                 Current fixed-income market data
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-on-surface-variant">
-                Read directly from the official RSE market pages and cached for 15
-                minutes. Always open the source before making an investment decision.
+                Read directly from the official RSE market pages on every page load.
+                Always open the source before making an investment decision.
               </p>
             </div>
           </div>
@@ -270,37 +275,12 @@ export async function BondLanding({
 
 
             <article className="overflow-hidden rounded-3xl border border-outline/10 bg-background/75">
-              <div className="flex flex-col gap-4 border-b border-outline/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
-                    Treasury listings
-                  </p>
-                  <h3 className="mt-1 font-black">Fixed income board</h3>
-                </div>
-                <div className="flex flex-col gap-2 sm:items-end">
-                  <p className="text-[10px] font-bold text-on-surface-variant">
-                    {marketUpdated
-                      ? `Last refreshed ${marketUpdated} CAT`
-                      : "Last refresh unavailable"}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <RseRefreshButton />
-                    <a
-                      href="https://rse.rw/fixed-income-board"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 rounded-xl border border-outline/15 bg-background px-3 py-2.5 text-xs font-black text-primary transition hover:border-primary/35"
-                    >
-                      Open RSE <ExternalLink size={12} />
-                    </a>
-                  </div>
-                </div>
-              </div>
               {marketData.outstanding.length > 0 ? (
                 <RseRankedBondTable
                   bonds={marketData.outstanding}
                   pagesFetched={marketData.fixedIncomePagesFetched}
                   rowsAnalyzed={marketData.treasuryRowsAnalyzed}
+                  marketUpdated={marketUpdated}
                 />
               ) : (
                 <RseMarketErrorTable
