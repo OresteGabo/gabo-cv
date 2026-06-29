@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description:
     "Learn how Rwanda Treasury Bonds work, model long-term strategies, and privately track real purchases.",
   metadataBase: new URL("https://bonds.orestegabo.dev"),
-  manifest: "/bonds/manifest.webmanifest",
+  manifest: "/manifest.webmanifest",
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   openGraph: {
