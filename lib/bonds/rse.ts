@@ -59,6 +59,23 @@ type RsePage = {
   fetchedAt: string;
 };
 
+async function withTimeout<T>(promise: Promise<T>, milliseconds: number) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race<T>([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("Optional market history timed out.")),
+          milliseconds,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 function oldestFetchedAt(pages: RsePage[]) {
   const timestamps = pages
     .map((page) => new Date(page.fetchedAt).getTime())
@@ -277,15 +294,14 @@ function strategyScores({
   };
 }
 
-async function rsePage(url: string, forceRefresh: boolean) {
+async function rsePage(url: string) {
   const response = await fetch(url, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(12_000),
     headers: {
       Accept: "text/html",
       "User-Agent": "orestegabo.dev bond market reader",
     },
-    ...(forceRefresh
-      ? { cache: "no-store" as const }
-      : { next: { revalidate: 15 * 60 } }),
   });
   if (!response.ok) throw new Error(`RSE returned ${response.status}.`);
   const responseDate = response.headers.get("date");
@@ -299,8 +315,8 @@ async function rsePage(url: string, forceRefresh: boolean) {
   };
 }
 
-async function fixedIncomePages(forceRefresh: boolean) {
-  const firstPage = await rsePage(RSE_FIXED_INCOME_URL, forceRefresh);
+async function fixedIncomePages() {
+  const firstPage = await rsePage(RSE_FIXED_INCOME_URL);
   const pageCount = fixedIncomePageCount(firstPage.html);
   if (pageCount === 1) {
     return { pages: [firstPage], pageCount: 1 };
@@ -312,7 +328,7 @@ async function fixedIncomePages(forceRefresh: boolean) {
       const url = new URL(RSE_FIXED_INCOME_URL);
       url.searchParams.set("page_bonds-trades", String(page));
       url.searchParams.set("category", "TREASURY");
-      return rsePage(url.toString(), forceRefresh);
+      return rsePage(url.toString());
     }),
   );
   const pages = [
@@ -327,11 +343,12 @@ async function fixedIncomePages(forceRefresh: boolean) {
 export async function getRseMarketData(
   forceRefresh = false,
 ): Promise<RseMarketData> {
+  void forceRefresh;
   try {
     const [marketPage, fixedIncomeResult] = await Promise.all([
-      rsePage(RSE_BOND_MARKET_URL, forceRefresh).catch(() => null),
-      fixedIncomePages(forceRefresh).catch(async () => ({
-        pages: [await rsePage(RSE_OUTSTANDING_BONDS_URL, forceRefresh)],
+      rsePage(RSE_BOND_MARKET_URL).catch(() => null),
+      fixedIncomePages().catch(async () => ({
+        pages: [await rsePage(RSE_OUTSTANDING_BONDS_URL)],
         pageCount: 1,
       })),
     ]);
@@ -366,10 +383,13 @@ export async function getRseMarketData(
       (cells) => cells.length >= 6 && /TREASURY/i.test(cells[0]),
     );
 
-    await recordRseTradeObservations({
-      trades,
-      fetchedAt: marketPage?.fetchedAt ?? null,
-    }).catch(() => undefined);
+    await withTimeout(
+      recordRseTradeObservations({
+        trades,
+        fetchedAt: marketPage?.fetchedAt ?? null,
+      }),
+      5_000,
+    ).catch(() => undefined);
 
     const baseOutstanding = treasuryRows
       .map(
@@ -449,9 +469,12 @@ export async function getRseMarketData(
       )
       .filter((bond) => bond.yearsRemaining > 0);
 
-    const recentObservations = await listRecentTradeObservations({
-      bondNames: baseOutstanding.map((bond) => bond.bond),
-    }).catch(() => new Map());
+    const recentObservations = await withTimeout(
+      listRecentTradeObservations({
+        bondNames: baseOutstanding.map((bond) => bond.bond),
+      }),
+      5_000,
+    ).catch(() => new Map());
 
     const seen = new Set<string>();
     const outstanding = baseOutstanding
