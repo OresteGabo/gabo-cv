@@ -7,8 +7,8 @@ export function GET() {
       short_name: "Bond Lab",
       description:
         "Learn, simulate, and privately track Rwanda Treasury Bonds.",
-      start_url: "/bonds",
-      scope: "/bonds",
+      start_url: "/",
+      scope: "/",
       display: "standalone",
       background_color: "#fff9ee",
       theme_color: "#6d5e0f",
@@ -23,22 +23,22 @@ export function GET() {
         {
           name: "Bond education",
           short_name: "Education",
-          url: "/bonds/education",
+          url: "/education",
         },
         {
           name: "BNR issuance calendar",
           short_name: "Calendar",
-          url: "/bonds/calendar",
+          url: "/calendar",
         },
         {
           name: "Bond simulator",
           short_name: "Simulator",
-          url: "/bonds/simulator",
+          url: "/simulator",
         },
         {
           name: "Private portfolio",
           short_name: "Portfolio",
-          url: "/bonds/portfolio",
+          url: "/portfolio",
         },
       ],
     },
