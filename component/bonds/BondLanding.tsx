@@ -278,8 +278,6 @@ export async function BondLanding({
               {marketData.outstanding.length > 0 ? (
                 <RseRankedBondTable
                   bonds={marketData.outstanding}
-                  pagesFetched={marketData.fixedIncomePagesFetched}
-                  rowsAnalyzed={marketData.treasuryRowsAnalyzed}
                   marketUpdated={marketUpdated}
                 />
               ) : (
