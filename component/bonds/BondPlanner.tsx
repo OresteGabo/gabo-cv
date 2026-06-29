@@ -4,6 +4,7 @@ import {
   ArrowDownToLine,
   BarChart3,
   BookOpenText,
+  CalendarClock,
   CalendarDays,
   ChevronDown,
   ChevronRight,
@@ -44,6 +45,13 @@ import {
   TREASURY_BOND_TENORS,
   WITHHOLDING_TAX_RATE,
 } from "@/lib/bonds/calculations";
+import {
+  BNR_TREASURY_BOND_ISSUANCE_CALENDAR,
+  formatCalendarDate,
+  getIssuanceAlert,
+  getIssuanceStatus,
+  getNextIssuanceEvent,
+} from "@/lib/bonds/issuance-calendar";
 import type {
   BondAssumptions,
   CashInjection,
@@ -156,6 +164,32 @@ function Metric({
   );
 }
 
+function DetailPanel({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-outline/10 bg-[var(--md-sys-color-surface-container-lowest)]/85 p-4 shadow-sm">
+      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[var(--md-sys-color-outline)]">
+        {title}
+      </p>
+      <div className="mt-2 space-y-1.5">{children}</div>
+    </div>
+  );
+}
+
+function DetailLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-[11px]">
+      <span className="text-on-surface-variant">{label}</span>
+      <strong className="text-right text-on-surface">{value}</strong>
+    </div>
+  );
+}
+
 function InfoTip({ label, children }: { label: string; children: ReactNode }) {
   return (
     <span className="group relative inline-flex">
@@ -176,165 +210,6 @@ function InfoTip({ label, children }: { label: string; children: ReactNode }) {
       >
         {children}
       </span>
-    </span>
-  );
-}
-
-function PurchaseLotTip({
-  id,
-  open,
-  onOpen,
-  onClose,
-  onCancelClose,
-  label,
-  amount,
-  calendarMonth,
-  calendarYear,
-  tenorYears,
-  annualCouponRate,
-  tone = "blue",
-  placement = "below",
-  modeledPurchaseAmount,
-  fundingBreakdown,
-  strategyNote,
-  detailHref,
-}: {
-  id: string;
-  open: boolean;
-  onOpen: (id: string) => void;
-  onClose: () => void;
-  onCancelClose: () => void;
-  label: string;
-  amount: number;
-  calendarMonth: number;
-  calendarYear: number;
-  tenorYears: number;
-  annualCouponRate: number;
-  tone?: "blue" | "gold";
-  placement?: "above" | "below";
-  modeledPurchaseAmount?: number;
-  fundingBreakdown?: { label: string; amount: number }[];
-  strategyNote?: string;
-  detailHref?: string;
-}) {
-  const purchaseDate = new Date(calendarYear, calendarMonth - 1, 5);
-  const maturityDate = new Date(
-    calendarYear + tenorYears,
-    calendarMonth - 1,
-    5,
-  );
-  const netRate = annualCouponRate * (1 - WITHHOLDING_TAX_RATE);
-  const purchaseAmount = modeledPurchaseAmount ?? amount;
-  const couponPerPayment = purchaseAmount * netRate / 2;
-  const color =
-    tone === "gold"
-      ? "text-[var(--md-sys-color-tertiary)] decoration-[var(--md-sys-color-tertiary)]/35"
-      : "text-[var(--md-sys-color-primary)] decoration-[var(--md-sys-color-primary)]/35";
-
-  return (
-    <span
-      className="relative block w-fit"
-      data-purchase-lot
-      onMouseEnter={() => {
-        onCancelClose();
-        onOpen(id);
-      }}
-      onMouseLeave={onClose}
-      onFocus={() => {
-        onCancelClose();
-        onOpen(id);
-      }}
-      onBlur={onClose}
-    >
-      <button
-        type="button"
-        className={`cursor-help font-bold underline decoration-dotted underline-offset-4 ${color}`}
-        aria-label={`View modeled details for ${label}`}
-        aria-expanded={open}
-        onClick={() => (open ? onClose() : onOpen(id))}
-      >
-        {formatRwf(amount)}
-      </button>
-      <div
-        role="tooltip"
-        className={`absolute left-0 z-40 w-72 rounded-2xl border border-outline/10 bg-surface-container-lowest p-4 text-left text-[11px] font-medium leading-5 text-on-surface-variant shadow-xl transition ${
-          placement === "above" ? "bottom-7" : "top-7"
-        } ${open ? "visible opacity-100" : "pointer-events-none invisible opacity-0"}`}
-        style={{
-          backgroundColor:
-            "var(--md-sys-color-surface-container-lowest)",
-        }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="font-black text-on-surface">{label}</p>
-            <p className="text-[10px] text-on-surface-variant">Modeled purchase lot</p>
-          </div>
-          <span className="rounded-lg bg-surface-container px-2 py-1 text-[10px] font-black text-on-surface">
-            {tenorYears}Y
-          </span>
-        </div>
-        <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5">
-          <dt className="font-black text-on-surface">Purchase amount</dt>
-          <dd className="font-black text-on-surface">
-            {formatRwf(purchaseAmount)}
-          </dd>
-          {fundingBreakdown?.map((item) => (
-            <Fragment key={item.label}>
-              <dt>{item.label}</dt>
-              <dd className="font-bold text-on-surface">
-                {formatRwf(item.amount)}
-              </dd>
-            </Fragment>
-          ))}
-          <dt>Suggested purchase</dt>
-          <dd className="font-bold text-on-surface">
-            {purchaseDate.toLocaleDateString("en", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </dd>
-          <dt>Gross coupon rate</dt>
-          <dd className="font-bold text-on-surface">
-            {formatPercent(annualCouponRate, 2)}
-          </dd>
-          <dt>Net coupon rate</dt>
-          <dd className="font-bold text-on-surface">
-            {formatPercent(netRate, 2)}
-          </dd>
-          <dt>Est. semiannual coupon</dt>
-          <dd className="font-bold text-[var(--md-sys-color-tertiary)]">
-            {formatRwf(couponPerPayment)}
-          </dd>
-          <dt>Modeled maturity</dt>
-          <dd className="font-bold text-on-surface">
-            {maturityDate.toLocaleDateString("en", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </dd>
-        </dl>
-        {strategyNote && (
-          <p className="mt-3 rounded-lg bg-[var(--md-sys-color-primary)]/[0.06] px-3 py-2 text-[10px] leading-4 text-[var(--md-sys-color-primary)]">
-            {strategyNote}
-          </p>
-        )}
-        <p className="mt-3 border-t border-outline/10 pt-3 text-[10px] leading-4 text-on-surface-variant">
-          Uses the simulator&apos;s current tenor and coupon rate. Actual purchases
-          can have different terms and should be recorded separately in Portfolio.
-        </p>
-        {detailHref && (
-          <Link
-            href={detailHref}
-            className="mt-3 flex items-center justify-between rounded-xl bg-primary px-3 py-2.5 text-xs font-black text-on-primary transition hover:opacity-90"
-          >
-            View full details
-            <ChevronRight size={15} />
-          </Link>
-        )}
-      </div>
     </span>
   );
 }
@@ -401,10 +276,19 @@ function GrowthChart({
     contributions: number;
   }[];
 }) {
+  const [activeMonth, setActiveMonth] = useState<number | null>(null);
   const width = 760;
   const height = 300;
   const pad = 28;
   const max = Math.max(...values.flatMap((value) => [value.portfolio, value.contributions]), 1);
+  const activeIndex =
+    activeMonth === null
+      ? Math.max(0, values.length - 1)
+      : Math.max(
+          0,
+          values.findIndex((value) => value.month === activeMonth),
+        );
+  const activeValue = values[activeIndex];
   const point = (value: number, index: number) => {
     const x = pad + (index / Math.max(1, values.length - 1)) * (width - pad * 2);
     const y = height - pad - (value / max) * (height - pad * 2);
@@ -429,6 +313,21 @@ function GrowthChart({
     ? portfolioPath.slice(portfolioPath.indexOf(" H"))
     : "";
   const areaPath = `M ${firstPortfolioPoint.x} ${height - pad} L ${firstPortfolioPoint.x} ${firstPortfolioPoint.y}${portfolioSteps} L ${lastPortfolioPoint.x} ${height - pad} Z`;
+  const activePortfolioPoint = activeValue
+    ? point(activeValue.portfolio, activeIndex)
+    : null;
+  const activeContributionPoint = activeValue
+    ? point(activeValue.contributions, activeIndex)
+    : null;
+  const activeMonthLabel = activeValue
+    ? `${MONTH_NAMES[activeValue.calendarMonth - 1]} ${activeValue.calendarYear}`
+    : "";
+  const tooltipX = activePortfolioPoint
+    ? Math.min(Math.max(activePortfolioPoint.x - 88, 36), width - 214)
+    : 0;
+  const tooltipY = activePortfolioPoint
+    ? Math.max(34, Math.min(activePortfolioPoint.y - 92, height - 112))
+    : 0;
 
   return (
     <div className="overflow-hidden rounded-3xl border border-outline/10 bg-[var(--md-sys-color-surface-container-lowest)] p-4 md:p-6">
@@ -493,6 +392,91 @@ function GrowthChart({
           strokeLinejoin="miter"
           shapeRendering="geometricPrecision"
         />
+        {activeValue && activePortfolioPoint && activeContributionPoint && (
+          <g pointerEvents="none">
+            <line
+              x1={activePortfolioPoint.x}
+              x2={activePortfolioPoint.x}
+              y1={pad}
+              y2={height - pad}
+              stroke="var(--md-sys-color-outline)"
+              strokeDasharray="4 5"
+              opacity="0.45"
+            />
+            <circle
+              cx={activeContributionPoint.x}
+              cy={activeContributionPoint.y}
+              r="5"
+              fill="var(--md-sys-color-tertiary)"
+              stroke="var(--md-sys-color-surface-container-lowest)"
+              strokeWidth="3"
+            />
+            <circle
+              cx={activePortfolioPoint.x}
+              cy={activePortfolioPoint.y}
+              r="6"
+              fill="var(--md-sys-color-primary)"
+              stroke="var(--md-sys-color-surface-container-lowest)"
+              strokeWidth="3"
+            />
+            <g transform={`translate(${tooltipX} ${tooltipY})`}>
+              <rect
+                width="178"
+                height="82"
+                rx="14"
+                fill="var(--md-sys-color-surface-container-lowest)"
+                stroke="rgba(100,116,139,0.18)"
+              />
+              <text
+                x="14"
+                y="22"
+                fill="var(--md-sys-color-on-surface)"
+                fontSize="11"
+                fontWeight="800"
+              >
+                {activeMonthLabel}
+              </text>
+              <text
+                x="14"
+                y="43"
+                fill="var(--md-sys-color-primary)"
+                fontSize="11"
+                fontWeight="800"
+              >
+                Portfolio {formatRwf(activeValue.portfolio, true)}
+              </text>
+              <text
+                x="14"
+                y="64"
+                fill="var(--md-sys-color-tertiary)"
+                fontSize="11"
+                fontWeight="800"
+              >
+                Contributions {formatRwf(activeValue.contributions, true)}
+              </text>
+            </g>
+          </g>
+        )}
+        {values.map((value, index) => {
+          const portfolioPoint = point(value.portfolio, index);
+          const xStep =
+            values.length > 1 ? (width - pad * 2) / (values.length - 1) : 18;
+          return (
+            <rect
+              key={value.month}
+              x={portfolioPoint.x - Math.max(8, xStep / 2)}
+              y={pad}
+              width={Math.max(16, xStep)}
+              height={height - pad * 2}
+              fill="transparent"
+              tabIndex={0}
+              role="button"
+              aria-label={`${MONTH_NAMES[value.calendarMonth - 1]} ${value.calendarYear}: portfolio ${formatRwf(value.portfolio)}, contributions ${formatRwf(value.contributions)}`}
+              onMouseEnter={() => setActiveMonth(value.month)}
+              onFocus={() => setActiveMonth(value.month)}
+            />
+          );
+        })}
       </svg>
       <div className="mt-2 flex justify-between text-[10px] font-bold text-[var(--md-sys-color-outline)]">
         <span>
@@ -548,6 +532,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   const [expandedYears, setExpandedYears] = useState<Set<number>>(
     () => new Set([1]),
   );
+  const [expandedMonths, setExpandedMonths] = useState<Set<number>>(
+    () => new Set(),
+  );
   const [authenticated, setAuthenticated] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [purchases, setPurchases] = useState<BondPurchase[]>([]);
@@ -557,54 +544,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     null,
   );
   const [savingPurchase, setSavingPurchase] = useState(false);
-  const [openPurchaseLot, setOpenPurchaseLot] = useState<string | null>(null);
   const assumptionsHydrated = useRef(false);
-  const purchaseLotCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-
-  function cancelPurchaseLotClose() {
-    if (!purchaseLotCloseTimer.current) return;
-    clearTimeout(purchaseLotCloseTimer.current);
-    purchaseLotCloseTimer.current = null;
-  }
-
-  function openPurchaseLotDetails(id: string) {
-    cancelPurchaseLotClose();
-    setOpenPurchaseLot(id);
-  }
-
-  function schedulePurchaseLotClose(delay = 350) {
-    cancelPurchaseLotClose();
-    purchaseLotCloseTimer.current = setTimeout(() => {
-      setOpenPurchaseLot(null);
-      purchaseLotCloseTimer.current = null;
-    }, delay);
-  }
-
-  useEffect(() => {
-    function dismissPurchaseLot(event: PointerEvent) {
-      if (!(event.target instanceof Element)) return;
-      if (!event.target.closest("[data-purchase-lot]")) {
-        cancelPurchaseLotClose();
-        setOpenPurchaseLot(null);
-      }
-    }
-
-    function dismissPurchaseLotWithKeyboard(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      cancelPurchaseLotClose();
-      setOpenPurchaseLot(null);
-    }
-
-    document.addEventListener("pointerdown", dismissPurchaseLot);
-    document.addEventListener("keydown", dismissPurchaseLotWithKeyboard);
-    return () => {
-      document.removeEventListener("pointerdown", dismissPurchaseLot);
-      document.removeEventListener("keydown", dismissPurchaseLotWithKeyboard);
-      cancelPurchaseLotClose();
-    };
-  }, []);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -702,6 +642,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
             portfolio: row.totalAccountValue,
             bondHoldings: row.closingPortfolio,
             cashBalance: row.closingCashBalance,
+            agukaInterest: row.totalAgukaInterest,
             contributions: row.totalContributions,
             annualContributions:
               row.totalContributions -
@@ -710,7 +651,12 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
             annualCoupons:
               row.totalCoupons -
               (index > 0 ? projection[index * 12 - 1].totalCoupons : 0),
+            annualAgukaInterest:
+              row.totalAgukaInterest -
+              (index > 0 ? projection[index * 12 - 1].totalAgukaInterest : 0),
             passiveIncome: row.annualPassiveIncome,
+            bondPassiveIncome: row.annualBondPassiveIncome,
+            agukaPassiveIncome: row.annualAgukaIncome,
           };
         }),
     [projection],
@@ -747,6 +693,15 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   const injectionFinalImpact =
     summary.finalAccountValue - baselineSummary.finalAccountValue;
   const simulationEnd = projection.at(-1);
+  const nextIssuance = getNextIssuanceEvent(
+    BNR_TREASURY_BOND_ISSUANCE_CALENDAR,
+  );
+  const nextIssuanceStatus = nextIssuance
+    ? getIssuanceStatus(nextIssuance)
+    : null;
+  const nextIssuanceAlert = nextIssuance
+    ? getIssuanceAlert(nextIssuance)
+    : null;
   const actualAnnualIncome = purchases.reduce(
     (total, item) =>
       total +
@@ -776,7 +731,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   const draftInjectionAmount = Math.max(0, injectionDraft.amount);
   const additionalBondPurchase =
     Math.floor(
-      (waitingCash + draftInjectionAmount + 0.001) /
+      ((waitingCash + draftInjectionAmount) *
+        Math.max(0, Math.min(1, assumptions.auctionFillRate)) +
+        0.001) /
         assumptions.purchaseMinimum,
     ) * assumptions.purchaseMinimum;
   const combinedBondPurchase =
@@ -805,6 +762,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       monthInYear: 1,
     });
     setExpandedYears(new Set([1]));
+    setExpandedMonths(new Set());
     window.localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify(DEFAULT_ASSUMPTIONS),
@@ -826,6 +784,15 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       const next = new Set(current);
       if (next.has(year)) next.delete(year);
       else next.add(year);
+      return next;
+    });
+  }
+
+  function toggleMonth(month: number) {
+    setExpandedMonths((current) => {
+      const next = new Set(current);
+      if (next.has(month)) next.delete(month);
+      else next.add(month);
       return next;
     });
   }
@@ -980,17 +947,22 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       "Personal Contribution",
       "Extra Cash Injection",
       "Coupon Payment",
+      "Aguka Interest",
+      "Aguka Distribution",
       "Matured Principal",
       "Reinvested Coupon",
       "Available Cash",
+      "Intended Bond Bid",
+      "Unfilled Bond Bid",
       "New Bond Purchase",
       "Modeled Purchase Lot",
       "Active Bond Lots",
-      "Closing Cash Balance",
+      "Closing Aguka Balance",
       "Closing Portfolio",
       "Total Account Value",
       "Total Contributions",
       "Total Coupons",
+      "Total Aguka Interest",
       "Annual Passive Income",
       "Monthly Passive Income",
     ];
@@ -1004,9 +976,13 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       row.personalContribution,
       row.cashInjection,
       row.couponPayment,
+      row.agukaInterest,
+      row.agukaDistribution,
       row.maturedPrincipal,
       row.reinvestedCoupon,
       row.availableCash,
+      row.intendedBondBid,
+      row.unfilledBondBid,
       row.newBondPurchase,
       row.newBondPurchaseLot?.id ?? "",
       row.activeBondCount,
@@ -1015,6 +991,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       row.totalAccountValue,
       row.totalContributions,
       row.totalCoupons,
+      row.totalAgukaInterest,
       row.annualPassiveIncome,
       row.monthlyPassiveIncome,
     ]);
@@ -1046,6 +1023,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
           <nav className="hidden items-center gap-1 lg:flex">
             <NavLink active={false} href="/bonds" icon={<ShieldCheck size={15} />}>
               Market
+            </NavLink>
+            <NavLink active={false} href="/bonds/calendar" icon={<CalendarClock size={15} />}>
+              Calendar
             </NavLink>
             <NavLink active={false} href="/bonds/education" icon={<BookOpenText size={15} />}>
               Education
@@ -1080,6 +1060,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
         {menuOpen && (
           <nav className="grid grid-cols-2 gap-2 border-t border-outline/10 p-3 lg:hidden">
             <NavLink active={false} href="/bonds" icon={<ShieldCheck size={15} />}>Market</NavLink>
+            <NavLink active={false} href="/bonds/calendar" icon={<CalendarClock size={15} />}>Calendar</NavLink>
             <NavLink active={false} href="/bonds/education" icon={<BookOpenText size={15} />}>Education</NavLink>
             <NavLink active={view === "simulator"} href="/bonds/simulator" icon={<Sparkles size={15} />}>Simulator</NavLink>
             <NavLink active={view === "portfolio"} href="/bonds/portfolio" icon={<WalletCards size={15} />}>Portfolio</NavLink>
@@ -1143,7 +1124,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 Starting {MONTH_NAMES[assumptions.startMonth - 1]}{" "}
                 {assumptions.startYear}, at a {formatPercent(modeledCouponRate)} annual
                 coupon rate with {formatPercent(assumptions.reinvestmentRate)} of net
-                coupons reinvested.
+                coupons reinvested, {formatPercent(assumptions.auctionFillRate)} expected
+                auction fill, and idle cash earning {formatPercent(assumptions.agukaAnnualRate)} p.a.
               </p>
             </div>
 
@@ -1169,7 +1151,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 </p>
                 <p className="mt-1 text-xs text-[var(--md-sys-color-outline)]">
                   {simulationEnd
-                    ? `${formatRwf(summary.finalPortfolio, true)} in bonds + ${formatRwf(summary.finalCashBalance, true)} cash by ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
+                    ? `${formatRwf(summary.finalPortfolio, true)} in bonds + ${formatRwf(summary.finalCashBalance, true)} in Aguka by ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
                     : "At the end of the plan"}
                 </p>
               </div>
@@ -1198,18 +1180,25 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
 
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[var(--md-sys-color-outline)]">
           <span>Net coupon rate: {formatPercent(netAnnualRate, 2)}</span>
+          <span>Expected auction fill: {formatPercent(assumptions.auctionFillRate, 0)}</span>
+          <span>Aguka idle return: {formatPercent(assumptions.agukaAnnualRate, 1)} tax-exempt p.a.</span>
           <span>Government withholding tax: {formatPercent(WITHHOLDING_TAX_RATE, 0)}</span>
           <span>Projection, not a guaranteed return</span>
         </div>
       </section>
 
       <section id="simulator" className="scroll-mt-24 border-y border-outline/10 bg-[var(--md-sys-color-surface-container-low)]/72">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 md:px-8 md:py-20 lg:grid-cols-[390px_1fr]">
-          <aside>
+        <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
+          <div>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--md-sys-color-primary)]">Assumptions</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight">Tune the model</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">
+                  Set the core strategy once, then use extra cash separately
+                  when gifts, bonuses, coupons, or idle Aguka balances change
+                  your next bid.
+                </p>
               </div>
               <button
                 type="button"
@@ -1221,7 +1210,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 Reset all
               </button>
             </div>
-            <div className="mt-7 space-y-3">
+            <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               <NumberControl label="Monthly contribution" value={assumptions.monthlyContribution} onChange={(value) => update("monthlyContribution", value)} min={0} max={2_000_000} step={50_000} prefix="RWF " />
               <NumberControl
                 label="Investment horizon"
@@ -1295,16 +1284,39 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 suffix="% p.a."
                 hint={`BK Capital range: ${formatPercent(MIN_ANNUAL_COUPON_RATE, 2)}–${formatPercent(MAX_ANNUAL_COUPON_RATE, 2)}. Use the rate published for the specific NBR issuance.`}
               />
-              <div className="flex items-center justify-between gap-4 rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
-                <div>
-                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Withholding tax</p>
-                  <p className="mt-1 text-[11px] text-[var(--md-sys-color-outline)]">Fixed government rate</p>
-                </div>
-                <span className="rounded-lg bg-surface-container px-2.5 py-1 font-mono text-xs font-bold text-[var(--md-sys-color-primary)]">
-                  {formatPercent(WITHHOLDING_TAX_RATE)}
+              <p className="flex items-center justify-between gap-3 rounded-xl bg-surface-container/55 px-4 py-3 text-xs text-on-surface-variant xl:col-span-3">
+                <span>
+                  Withholding tax is fixed in this model at{" "}
+                  <strong className="text-on-surface">
+                    {formatPercent(WITHHOLDING_TAX_RATE)}
+                  </strong>{" "}
+                  on coupon interest.
                 </span>
-              </div>
+                <span className="hidden text-[10px] font-black uppercase tracking-[0.16em] text-[var(--md-sys-color-outline)] sm:inline">
+                  Reference
+                </span>
+              </p>
               <NumberControl label="Coupon reinvestment" value={Math.round(assumptions.reinvestmentRate * 100)} onChange={(value) => update("reinvestmentRate", value / 100)} min={0} max={100} step={5} suffix="%" />
+              <NumberControl
+                label="Expected auction fill"
+                value={Math.round(assumptions.auctionFillRate * 100)}
+                onChange={(value) => update("auctionFillRate", value / 100)}
+                min={0}
+                max={100}
+                step={5}
+                suffix="%"
+                help="Estimated share of your intended Treasury bond bid that actually gets allocated. BNR history since 2008 implies roughly 67% market-wide sold/applied, while recent periods can be lower."
+              />
+              <NumberControl
+                label="Aguka idle cash return"
+                value={Math.round(assumptions.agukaAnnualRate * 10_000) / 100}
+                onChange={(value) => update("agukaAnnualRate", value / 100)}
+                min={0}
+                max={15}
+                step={0.25}
+                suffix="% p.a."
+                help="Tax-exempt annual return assumption for unallocated cash parked in Aguka between bond bids. Update this when BK Capital changes the quoted rate."
+              />
               <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
             </div>
 
@@ -1321,7 +1333,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               <p className="mt-2 text-[11px] leading-5 text-[var(--md-sys-color-on-surface-variant)]">
                 Model gifts, bonuses, or other occasional money separately from your monthly plan.
               </p>
-              <form onSubmit={addCashInjection} className="mt-4 grid gap-3">
+              <form onSubmit={addCashInjection} className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr_0.9fr_1.15fr_auto] lg:items-end">
                 <input
                   aria-label="Extra cash source"
                   placeholder="Source, e.g. Gift from a friend"
@@ -1341,7 +1353,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                     className="mt-1.5 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm text-on-surface outline-none focus:border-[var(--md-sys-color-tertiary)]/50"
                   />
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 lg:contents">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-outline)]">
                     Simulation year
                     <input
@@ -1375,9 +1387,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                     </select>
                   </label>
                 </div>
-                <div className="rounded-xl border border-[var(--md-sys-color-tertiary)]/15 bg-surface-container-lowest p-3 text-[10px] leading-4 text-on-surface-variant">
+                <div className="rounded-xl border border-[var(--md-sys-color-tertiary)]/15 bg-surface-container-lowest p-3 text-[10px] leading-4 text-on-surface-variant lg:col-span-4">
                   <div className="flex items-center justify-between gap-3">
-                    <span>Cash already waiting</span>
+                    <span>Aguka balance already waiting</span>
                     <strong className="text-on-surface">
                       {formatRwf(waitingCash)}
                     </strong>
@@ -1405,7 +1417,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       </strong>
                     </span>
                     <span>
-                      Cash remaining
+                      Aguka after draft
                       <strong className="mt-0.5 block text-on-surface">
                         {formatRwf(cashAfterDraftInjection)}
                       </strong>
@@ -1413,10 +1425,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                   </div>
                   <p className="mt-2">
                     Deposits can be any positive amount. Only the resulting
-                    bond purchase must be in RWF 100,000 multiples.
+                    bond purchase is constrained by the auction-fill assumption;
+                    unallocated money remains in Aguka.
                   </p>
                 </div>
-                <button className="flex items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-tertiary)] px-4 py-3 text-xs font-black text-[var(--md-sys-color-on-primary)] hover:bg-[var(--md-sys-color-primary)]">
+                <button className="flex h-full min-h-12 items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-tertiary)] px-4 py-3 text-xs font-black text-[var(--md-sys-color-on-primary)] hover:bg-[var(--md-sys-color-primary)]">
                   <Plus size={15} /> Add to scenario
                 </button>
               </form>
@@ -1460,11 +1473,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 </div>
               )}
             </div>
-          </aside>
+          </div>
 
-          <div className="min-w-0">
+          <div className="mt-8 min-w-0">
             <GrowthChart values={chartProjection} />
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
               <Metric label="Total cash invested" value={formatRwf(summary.totalContributions)} detail="Monthly plan plus one-time injections" />
               <Metric
                 label="Modeled bond purchases"
@@ -1475,6 +1488,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               />
               <Metric label="Net coupons earned" value={formatRwf(summary.totalCoupons)} detail={`${formatPercent(netAnnualRate)} net annual rate`} />
               <Metric label="Coupons reinvested" value={formatRwf(summary.totalReinvested)} detail={`${formatPercent(assumptions.reinvestmentRate)} reinvested`} />
+              <Metric label="Aguka interest earned" value={formatRwf(summary.totalAgukaInterest)} detail={`${formatPercent(assumptions.agukaAnnualRate, 1)} tax-exempt p.a. on idle cash`} />
               <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - assumptions.startingPortfolio)} accent />
             </div>
             {cashInjections.length > 0 && (
@@ -1550,13 +1564,67 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
           </div>
         </div>
 
+        {nextIssuance && (
+          <div className="mt-4 rounded-2xl border border-[var(--md-sys-color-tertiary)]/20 bg-[var(--md-sys-color-tertiary)]/[0.07] px-4 py-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--md-sys-color-tertiary)]/12 text-[var(--md-sys-color-tertiary)]">
+                  <CalendarClock size={18} />
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--md-sys-color-tertiary)]">
+                      Next BNR auction
+                    </p>
+                    {nextIssuanceStatus && (
+                      <span className="rounded-full bg-surface-container px-2 py-1 text-[9px] font-black uppercase text-on-surface-variant">
+                        {nextIssuanceStatus.label}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-sm font-black text-on-surface">
+                    {nextIssuance.title} · {nextIssuance.tenorYears}Y
+                  </p>
+                  <p className="mt-1 text-[11px] leading-5 text-on-surface-variant">
+                    Book opens {formatCalendarDate(nextIssuance.openBookDate)},
+                    closes {formatCalendarDate(nextIssuance.closingBookDate)},
+                    settles {formatCalendarDate(nextIssuance.settlementDate)}.
+                  </p>
+                  {nextIssuanceAlert && (
+                    <div
+                      className={`mt-3 rounded-xl border px-3 py-2 text-[11px] leading-5 ${
+                        nextIssuanceAlert.level === "urgent"
+                          ? "border-error/25 bg-error-container/35 text-on-error-container"
+                          : nextIssuanceAlert.level === "warning"
+                            ? "border-[var(--md-sys-color-tertiary)]/30 bg-[var(--md-sys-color-tertiary)]/10 text-on-surface"
+                            : "border-[var(--md-sys-color-primary)]/20 bg-[var(--md-sys-color-primary)]/10 text-on-surface"
+                      }`}
+                    >
+                      <p className="font-black">{nextIssuanceAlert.title}</p>
+                      <p className="mt-0.5 opacity-80">
+                        {nextIssuanceAlert.message}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Link
+                href="/bonds/calendar"
+                className="inline-flex w-fit items-center gap-2 rounded-xl border border-outline/10 bg-surface-container-lowest px-3 py-2 text-xs font-black text-on-surface transition hover:border-[var(--md-sys-color-tertiary)]/40 hover:text-[var(--md-sys-color-tertiary)]"
+              >
+                Full calendar <ChevronRight size={15} />
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className="bond-scrollbar mt-5 max-h-[72vh] overflow-auto rounded-3xl border border-outline/10 lg:max-h-none lg:overflow-visible">
           <table className="w-full min-w-[940px] border-collapse text-left">
             <thead className="text-[10px] uppercase tracking-[0.15em] text-[var(--md-sys-color-on-surface-variant)]">
               <tr>
                 <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Year</th>
                 <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Invested this year</th>
-                <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Coupons this year</th>
+                <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Income this year</th>
                 <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Account value</th>
                 <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Annual passive income</th>
                 <th className="sticky top-0 z-30 w-16 bg-[var(--md-sys-color-surface-container)] px-5 py-4 text-right shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Details</th>
@@ -1589,7 +1657,15 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         )}
                       </td>
                       <td className="px-5 py-4">{formatRwf(row.annualContributions)}</td>
-                      <td className="px-5 py-4 text-[var(--md-sys-color-on-surface-variant)]">{formatRwf(row.annualCoupons)}</td>
+                      <td className="px-5 py-4 text-[var(--md-sys-color-on-surface-variant)]">
+                        {formatRwf(row.annualCoupons + row.annualAgukaInterest)}
+                        {row.annualAgukaInterest > 0 && (
+                          <span className="mt-1 block text-[9px] text-on-surface-variant">
+                            {formatRwf(row.annualCoupons)} coupons ·{" "}
+                            {formatRwf(row.annualAgukaInterest)} Aguka
+                          </span>
+                        )}
+                      </td>
                       <td className="px-5 py-4">
                         <span className="block font-bold">
                           {formatRwf(row.portfolio)}
@@ -1597,11 +1673,19 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         {row.cashBalance > 0 && (
                           <span className="mt-1 block text-[9px] text-on-surface-variant">
                             {formatRwf(row.bondHoldings)} bonds ·{" "}
-                            {formatRwf(row.cashBalance)} cash
+                            {formatRwf(row.cashBalance)} Aguka
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-[var(--md-sys-color-tertiary)]">{formatRwf(row.passiveIncome)}</td>
+                      <td className="px-5 py-4 text-[var(--md-sys-color-tertiary)]">
+                        {formatRwf(row.passiveIncome)}
+                        {row.agukaPassiveIncome > 0 && (
+                          <span className="mt-1 block text-[9px] text-on-surface-variant">
+                            {formatRwf(row.bondPassiveIncome)} bonds ·{" "}
+                            {formatRwf(row.agukaPassiveIncome)} Aguka
+                          </span>
+                        )}
+                      </td>
                       <td className="px-5 py-4 text-right">
                         <button
                           type="button"
@@ -1621,391 +1705,253 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       <tr className="border-t border-[var(--md-sys-color-primary)]/10 bg-[var(--md-sys-color-surface-container-lowest)]">
                         <td colSpan={6} className="p-0">
                           <div className="px-4 py-4 md:px-6">
-                            <table className="w-full min-w-[1120px] border-collapse text-left">
+                            <div className="contents">
+                            <table className="w-full min-w-[780px] border-collapse text-left">
                               <thead className="text-[9px] uppercase tracking-[0.14em] text-[var(--md-sys-color-outline)]">
                                 <tr>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Month</th>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Opening</th>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Monthly plan</th>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Extra cash</th>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Coupon paid</th>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Reinvested</th>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Bond purchase</th>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Cash balance</th>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Bond holdings</th>
-                                  <th className="sticky top-[49px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[122px]">Account value</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Month</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Bid result</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Bond purchase</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Aguka balance</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Account value</th>
+                                  <th className="sticky top-[53px] z-20 w-14 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 text-right shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">More</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {months.map((month) => (
-                                  <tr
-                                    key={month.month}
-                                    className={`border-t border-outline/10 text-xs ${month.couponPayment > 0 ? "bg-[var(--md-sys-color-primary)]/[0.05]" : ""}`}
-                                  >
-                                    <td className="px-3 py-3 font-bold">
-                                      {new Intl.DateTimeFormat("en", {
-                                        month: "short",
-                                        year: "numeric",
-                                      }).format(
-                                        new Date(
-                                          month.calendarYear,
-                                          month.calendarMonth - 1,
-                                          1,
-                                        ),
-                                      )}
-                                      {month.couponPayment > 0 && (
-                                        <span className="ml-2 inline-block rounded-full bg-[var(--md-sys-color-primary)]/10 px-2 py-1 text-[9px] font-black uppercase text-[var(--md-sys-color-primary)]">
-                                          {month.couponPayments.length}{" "}
-                                          {month.couponPayments.length === 1
-                                            ? "lot pays"
-                                            : "lots pay"}
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td className="px-3 py-3 text-[var(--md-sys-color-outline)]">{formatRwf(month.openingPortfolio)}</td>
-                                    <td className="px-3 py-3">
-                                      <PurchaseLotTip
-                                        id={`monthly-${month.month}`}
-                                        open={openPurchaseLot === `monthly-${month.month}`}
-                                        onOpen={openPurchaseLotDetails}
-                                        onClose={schedulePurchaseLotClose}
-                                        onCancelClose={cancelPurchaseLotClose}
-                                        label="Monthly plan"
-                                        amount={month.personalContribution}
-                                        calendarMonth={month.calendarMonth}
-                                        calendarYear={month.calendarYear}
-                                        tenorYears={assumptions.tenorYears}
-                                        annualCouponRate={modeledCouponRate}
-                                        modeledPurchaseAmount={month.newBondPurchase}
-                                        fundingBreakdown={[
-                                          ...(month.openingCashBalance > 0
-                                            ? [
-                                                {
-                                                  label: "Cash carried in",
-                                                  amount:
-                                                    month.openingCashBalance,
-                                                },
-                                              ]
-                                            : []),
-                                          {
-                                            label: "Monthly contribution",
-                                            amount: month.personalContribution,
-                                          },
-                                          ...(month.cashInjection > 0
-                                            ? [
-                                                {
-                                                  label: "Extra cash",
-                                                  amount: month.cashInjection,
-                                                },
-                                              ]
-                                            : []),
-                                          ...(month.reinvestedCoupon > 0
-                                            ? [
-                                                {
-                                                  label: "Reinvested coupon",
-                                                  amount:
-                                                    month.reinvestedCoupon,
-                                                },
-                                              ]
-                                            : []),
-                                          ...(month.maturedPrincipal > 0
-                                            ? [
-                                                {
-                                                  label: "Matured principal",
-                                                  amount:
-                                                    month.maturedPrincipal,
-                                                },
-                                              ]
-                                            : []),
-                                          {
-                                            label: "Unallocated cash remainder",
-                                            amount: month.closingCashBalance,
-                                          },
-                                        ]}
-                                        strategyNote="All available funding is pooled. Bonds are purchased only in RWF 100K multiples, and the remaining cash carries into the next month."
-                                        placement={month.monthInYear > 7 ? "above" : "below"}
-                                        detailHref={
-                                          month.newBondPurchase >=
-                                          assumptions.purchaseMinimum
-                                            ? `/bonds/modeled-purchase?${new URLSearchParams({
-                                                label: "Pooled monthly purchase",
-                                                amount: String(month.newBondPurchase),
-                                                date: `${month.calendarYear}-${String(month.calendarMonth).padStart(2, "0")}-05`,
+                                {months.map((month, monthIndex) => {
+                                  const isMonthExpanded = expandedMonths.has(
+                                    month.month,
+                                  );
+                                  const monthLabel = new Intl.DateTimeFormat(
+                                    "en",
+                                    {
+                                      month: "short",
+                                      year: "numeric",
+                                    },
+                                  ).format(
+                                    new Date(
+                                      month.calendarYear,
+                                      month.calendarMonth - 1,
+                                      1,
+                                    ),
+                                  );
+
+                                  return (
+                                    <Fragment key={month.month}>
+                                      <tr
+                                        className={`text-xs transition hover:bg-surface-container-low ${
+                                          month.couponPayment > 0
+                                            ? "bg-[var(--md-sys-color-primary)]/[0.06]"
+                                            : monthIndex % 2 === 0
+                                              ? "bg-[var(--md-sys-color-surface-container-lowest)]"
+                                              : "bg-[var(--md-sys-color-surface-container)]/35"
+                                        }`}
+                                      >
+                                        <td className="px-3 py-3 font-bold">
+                                          {monthLabel}
+                                          {month.couponPayment > 0 && (
+                                            <span className="ml-2 inline-block rounded-full bg-[var(--md-sys-color-primary)]/10 px-2 py-1 text-[9px] font-black uppercase text-[var(--md-sys-color-primary)]">
+                                              coupon
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-3 text-on-surface-variant">
+                                          {formatRwf(month.intendedBondBid)}
+                                          {month.unfilledBondBid > 0 && (
+                                            <span className="mt-1 block text-[9px] font-bold text-[var(--md-sys-color-tertiary)]">
+                                              {formatRwf(month.unfilledBondBid)}{" "}
+                                              unfilled
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-3 font-black text-primary">
+                                          {month.newBondPurchaseLot ? (
+                                            <Link
+                                              href={`/bonds/modeled-purchase?${new URLSearchParams({
+                                                label: `Pooled purchase lot ${String(month.month).padStart(3, "0")}`,
+                                                amount: String(
+                                                  month.newBondPurchaseLot
+                                                    .amount,
+                                                ),
+                                                date:
+                                                  month.newBondPurchaseLot
+                                                    .purchaseDate,
                                                 tenor: String(
-                                                  assumptions.tenorYears,
+                                                  month.newBondPurchaseLot
+                                                    .tenorYears,
                                                 ),
                                                 rate: String(
-                                                  modeledCouponRate,
+                                                  month.newBondPurchaseLot
+                                                    .annualCouponRate,
                                                 ),
                                                 lot:
-                                                  month.newBondPurchaseLot?.id ??
-                                                  "",
-                                              })}`
-                                            : undefined
-                                        }
-                                      />
-                                    </td>
-                                    <td className="px-3 py-3">
-                                      {month.cashInjection > 0 ? (
-                                        <>
-                                          <PurchaseLotTip
-                                            id={`extra-${month.month}`}
-                                            open={openPurchaseLot === `extra-${month.month}`}
-                                            onOpen={openPurchaseLotDetails}
-                                            onClose={schedulePurchaseLotClose}
-                                            onCancelClose={cancelPurchaseLotClose}
-                                            label={
-                                              month.cashInjectionLabels.join(", ") ||
-                                              "Extra cash"
-                                            }
-                                            amount={month.cashInjection}
-                                            calendarMonth={month.calendarMonth}
-                                            calendarYear={month.calendarYear}
-                                            tenorYears={assumptions.tenorYears}
-                                            annualCouponRate={modeledCouponRate}
-                                            modeledPurchaseAmount={
-                                              month.newBondPurchase
-                                            }
-                                            fundingBreakdown={[
-                                              ...(month.openingCashBalance > 0
-                                                ? [
-                                                    {
-                                                      label:
-                                                        "Cash carried in",
-                                                      amount:
-                                                        month.openingCashBalance,
-                                                    },
-                                                  ]
-                                                : []),
-                                              {
-                                                label:
-                                                  "Monthly contribution",
-                                                amount:
-                                                  month.personalContribution,
-                                              },
-                                              {
-                                                label: "Extra cash",
-                                                amount: month.cashInjection,
-                                              },
-                                              ...(month.reinvestedCoupon > 0
-                                                ? [
-                                                    {
-                                                      label:
-                                                        "Reinvested coupon",
-                                                      amount:
-                                                        month.reinvestedCoupon,
-                                                    },
-                                                  ]
-                                                : []),
-                                              ...(month.maturedPrincipal > 0
-                                                ? [
-                                                    {
-                                                      label:
-                                                        "Matured principal",
-                                                      amount:
-                                                        month.maturedPrincipal,
-                                                    },
-                                                  ]
-                                                : []),
-                                              {
-                                                label:
-                                                  "Unallocated cash remainder",
-                                                amount:
-                                                  month.closingCashBalance,
-                                              },
-                                            ]}
-                                            strategyNote="All available funding is pooled. Bonds are purchased only in RWF 100K multiples, and the remaining cash carries into the next month."
-                                            tone="gold"
-                                            placement={month.monthInYear > 7 ? "above" : "below"}
-                                            detailHref={
-                                              month.newBondPurchase >=
-                                              assumptions.purchaseMinimum
-                                                ? `/bonds/modeled-purchase?${new URLSearchParams({
-                                              label: "Pooled monthly purchase",
-                                              amount: String(month.newBondPurchase),
-                                              date: `${month.calendarYear}-${String(month.calendarMonth).padStart(2, "0")}-05`,
-                                              tenor: String(
-                                                assumptions.tenorYears,
-                                              ),
-                                              rate: String(modeledCouponRate),
-                                              lot:
-                                                month.newBondPurchaseLot?.id ??
-                                                "",
-                                            })}`
-                                                : undefined
-                                            }
-                                          />
-                                          <span className="mt-1 block max-w-36 truncate text-[9px] text-[var(--md-sys-color-on-secondary-container)]">
-                                            {month.cashInjectionLabels.join(", ")}
+                                                  month.newBondPurchaseLot.id,
+                                              })}`}
+                                              className="underline decoration-dotted underline-offset-4"
+                                            >
+                                              {formatRwf(month.newBondPurchase)}
+                                              <span className="mt-1 block text-[9px] font-bold text-on-surface-variant">
+                                                Lot{" "}
+                                                {String(month.month).padStart(
+                                                  3,
+                                                  "0",
+                                                )}
+                                              </span>
+                                            </Link>
+                                          ) : (
+                                            formatRwf(0)
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-3 text-on-surface-variant">
+                                          {formatRwf(month.closingCashBalance)}
+                                        </td>
+                                        <td className="px-3 py-3 font-black">
+                                          {formatRwf(month.totalAccountValue)}
+                                          <span className="mt-1 block text-[9px] font-medium text-on-surface-variant">
+                                            {formatRwf(month.closingPortfolio)}{" "}
+                                            bonds
                                           </span>
-                                        </>
-                                      ) : (
-                                        <span className="text-[var(--md-sys-color-outline)]">—</span>
-                                      )}
-                                    </td>
-                                    <td className="px-3 py-3 text-[var(--md-sys-color-primary)]">
-                                      {formatRwf(month.couponPayment)}
-                                      {month.couponPayments.length > 0 && (
-                                        <span className="mt-1 block text-[9px] text-on-surface-variant">
-                                          From {month.couponPayments.length}{" "}
-                                          independent{" "}
-                                          {month.couponPayments.length === 1
-                                            ? "lot"
-                                            : "lots"}
-                                        </span>
-                                      )}
-                                      {month.maturedPrincipal > 0 && (
-                                        <span className="mt-1 block text-[9px] font-bold text-[var(--md-sys-color-tertiary)]">
-                                          {formatRwf(month.maturedPrincipal)}{" "}
-                                          principal matured
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td className="px-3 py-3">
-                                      {month.reinvestedCoupon > 0 ? (
-                                        <PurchaseLotTip
-                                          id={`reinvested-${month.month}`}
-                                          open={
-                                            openPurchaseLot ===
-                                            `reinvested-${month.month}`
-                                          }
-                                          onOpen={openPurchaseLotDetails}
-                                          onClose={schedulePurchaseLotClose}
-                                          onCancelClose={cancelPurchaseLotClose}
-                                          label="Reinvested coupon funding"
-                                          amount={month.reinvestedCoupon}
-                                          calendarMonth={month.calendarMonth}
-                                          calendarYear={month.calendarYear}
-                                          tenorYears={assumptions.tenorYears}
-                                          annualCouponRate={modeledCouponRate}
-                                          modeledPurchaseAmount={month.newBondPurchase}
-                                          fundingBreakdown={[
-                                            ...(month.openingCashBalance > 0
-                                              ? [
-                                                  {
-                                                    label: "Cash carried in",
-                                                    amount:
-                                                      month.openingCashBalance,
-                                                  },
-                                                ]
-                                              : []),
-                                            {
-                                              label: "Monthly contribution",
-                                              amount: month.personalContribution,
-                                            },
-                                            ...(month.cashInjection > 0
-                                              ? [
-                                                  {
-                                                    label: "Extra cash",
-                                                    amount: month.cashInjection,
-                                                  },
-                                                ]
-                                              : []),
-                                            {
-                                              label: "Reinvested coupon",
-                                              amount: month.reinvestedCoupon,
-                                            },
-                                            ...(month.maturedPrincipal > 0
-                                              ? [
-                                                  {
-                                                    label:
-                                                      "Matured principal",
-                                                    amount:
-                                                      month.maturedPrincipal,
-                                                  },
-                                                ]
-                                              : []),
-                                            {
-                                              label: "Unallocated cash remainder",
-                                              amount: month.closingCashBalance,
-                                            },
-                                          ]}
-                                          strategyNote="The coupon stays as cash and is pooled with other funding. Bonds are purchased only in RWF 100K multiples; any remainder carries forward."
-                                          tone="gold"
-                                          detailHref={
-                                            month.newBondPurchase >=
-                                            assumptions.purchaseMinimum
-                                              ? `/bonds/modeled-purchase?${new URLSearchParams({
-                                            label:
-                                              "Pooled reinvestment purchase",
-                                            amount: String(month.newBondPurchase),
-                                            date: `${month.calendarYear}-${String(month.calendarMonth).padStart(2, "0")}-05`,
-                                            tenor: String(
-                                              assumptions.tenorYears,
-                                            ),
-                                            rate: String(modeledCouponRate),
-                                            lot:
-                                              month.newBondPurchaseLot?.id ??
-                                              "",
-                                          })}`
-                                              : undefined
-                                          }
-                                          placement={
-                                            month.monthInYear > 7
-                                              ? "above"
-                                              : "below"
-                                          }
-                                        />
-                                      ) : (
-                                        <span className="text-[var(--md-sys-color-outline)]">—</span>
-                                      )}
-                                    </td>
-                                    <td className="px-3 py-3 font-black text-primary">
-                                      {month.newBondPurchaseLot ? (
-                                        <Link
-                                          href={`/bonds/modeled-purchase?${new URLSearchParams({
-                                            label: `Pooled purchase lot ${String(month.month).padStart(3, "0")}`,
-                                            amount: String(
-                                              month.newBondPurchaseLot.amount,
-                                            ),
-                                            date:
-                                              month.newBondPurchaseLot
-                                                .purchaseDate,
-                                            tenor: String(
-                                              month.newBondPurchaseLot
-                                                .tenorYears,
-                                            ),
-                                            rate: String(
-                                              month.newBondPurchaseLot
-                                                .annualCouponRate,
-                                            ),
-                                            lot:
-                                              month.newBondPurchaseLot.id,
-                                          })}`}
-                                          className="underline decoration-dotted underline-offset-4"
-                                        >
-                                          {formatRwf(month.newBondPurchase)}
-                                          <span className="mt-1 block text-[9px] font-bold text-on-surface-variant">
-                                            Lot{" "}
-                                            {String(month.month).padStart(
-                                              3,
-                                              "0",
+                                        </td>
+                                        <td className="px-3 py-3 text-right">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              toggleMonth(month.month)
+                                            }
+                                            aria-expanded={isMonthExpanded}
+                                            aria-label={`${isMonthExpanded ? "Collapse" : "Expand"} ${monthLabel}`}
+                                            className="inline-grid h-8 w-8 place-items-center rounded-lg border border-outline/10 text-[var(--md-sys-color-on-surface-variant)] transition hover:border-[var(--md-sys-color-primary)]/40 hover:text-[var(--md-sys-color-primary)]"
+                                          >
+                                            <ChevronDown
+                                              size={15}
+                                              className={`transition-transform ${isMonthExpanded ? "rotate-180" : ""}`}
+                                            />
+                                          </button>
+                                        </td>
+                                      </tr>
+                                      {isMonthExpanded && (
+                                        <tr className="bg-surface-container-low text-xs">
+                                          <td colSpan={6} className="px-4 py-4">
+                                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                              <DetailPanel title="Funding">
+                                                <DetailLine
+                                                  label="Monthly contribution"
+                                                  value={formatRwf(
+                                                    month.personalContribution,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Opening Aguka"
+                                                  value={formatRwf(
+                                                    month.openingCashBalance,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Extra cash"
+                                                  value={formatRwf(
+                                                    month.cashInjection,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Aguka interest"
+                                                  value={formatRwf(
+                                                    month.agukaInterest,
+                                                  )}
+                                                />
+                                              </DetailPanel>
+                                              <DetailPanel title="Income">
+                                                <DetailLine
+                                                  label="Coupon paid"
+                                                  value={formatRwf(
+                                                    month.couponPayment,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Reinvested"
+                                                  value={formatRwf(
+                                                    month.reinvestedCoupon,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Matured principal"
+                                                  value={formatRwf(
+                                                    month.maturedPrincipal,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Coupon lots"
+                                                  value={`${month.couponPayments.length}`}
+                                                />
+                                              </DetailPanel>
+                                              <DetailPanel title="Auction">
+                                                <DetailLine
+                                                  label="Intended bid"
+                                                  value={formatRwf(
+                                                    month.intendedBondBid,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Allocated"
+                                                  value={formatRwf(
+                                                    month.newBondPurchase,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Unfilled"
+                                                  value={formatRwf(
+                                                    month.unfilledBondBid,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Available cash"
+                                                  value={formatRwf(
+                                                    month.availableCash,
+                                                  )}
+                                                />
+                                              </DetailPanel>
+                                              <DetailPanel title="Portfolio">
+                                                <DetailLine
+                                                  label="Opening bonds"
+                                                  value={formatRwf(
+                                                    month.openingPortfolio,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Closing bonds"
+                                                  value={formatRwf(
+                                                    month.closingPortfolio,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Active lots"
+                                                  value={`${month.activeBondCount}`}
+                                                />
+                                                <DetailLine
+                                                  label="Closing Aguka"
+                                                  value={formatRwf(
+                                                    month.closingCashBalance,
+                                                  )}
+                                                />
+                                              </DetailPanel>
+                                            </div>
+                                            {month.cashInjectionLabels.length >
+                                              0 && (
+                                              <p className="mt-3 text-[10px] text-on-surface-variant">
+                                                Extra cash labels:{" "}
+                                                {month.cashInjectionLabels.join(
+                                                  ", ",
+                                                )}
+                                              </p>
                                             )}
-                                          </span>
-                                        </Link>
-                                      ) : (
-                                        formatRwf(0)
+                                          </td>
+                                        </tr>
                                       )}
-                                    </td>
-                                    <td className="px-3 py-3 text-on-surface-variant">
-                                      {formatRwf(month.closingCashBalance)}
-                                    </td>
-                                    <td className="px-3 py-3 font-bold">
-                                      {formatRwf(month.closingPortfolio)}
-                                      <span className="mt-1 block text-[9px] font-medium text-on-surface-variant">
-                                        {month.activeBondCount} active{" "}
-                                        {month.activeBondCount === 1
-                                          ? "lot"
-                                          : "lots"}
-                                      </span>
-                                    </td>
-                                    <td className="px-3 py-3 font-black">
-                                      {formatRwf(month.totalAccountValue)}
-                                    </td>
-                                  </tr>
-                                ))}
+                                    </Fragment>
+                                  );
+                                })}
                               </tbody>
                             </table>
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -2489,10 +2435,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--md-sys-color-primary)]">Model guide</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Useful, transparent, intentionally conservative.</h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-[var(--md-sys-color-on-surface-variant)]">
-              This planner follows the spreadsheet logic: contributions enter monthly,
-              coupons are based on the opening portfolio in payment months, tax is
-              deducted before reinvestment, and passive income is estimated from the
-              closing portfolio.
+              This planner models monthly contributions, partial Treasury bond
+              auction allocation, and Aguka as the idle-cash parking layer. Coupons,
+              unfilled bids, Aguka returns, and matured principal are pooled into
+              future bid attempts.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -2500,6 +2446,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               ["Market price risk", "Bond prices can fluctuate if sold before maturity."],
               ["Holding to maturity", "Holding to maturity avoids market-price loss if the issuer pays as agreed."],
               ["Coupon and tenor", `BK Capital states tenors of ${TREASURY_BOND_TENORS.join(", ")} years and annual coupon rates from ${formatPercent(MIN_ANNUAL_COUPON_RATE, 2)} to ${formatPercent(MAX_ANNUAL_COUPON_RATE, 2)}, depending on the issuance.`],
+              ["Auction fill risk", `The model defaults to ${formatPercent(DEFAULT_ASSUMPTIONS.auctionFillRate, 0)} allocation based on the BNR historical sold/applied pattern, not 100% allocation.`],
+              ["Aguka idle cash", `Unfilled bond money is modeled in Aguka at ${formatPercent(DEFAULT_ASSUMPTIONS.agukaAnnualRate, 1)} tax-exempt annual return until it is used for another bid.`],
               ["Secondary market", `Buying or selling before maturity carries a ${formatPercent(SECONDARY_MARKET_COMMISSION_RATE, 3)} commission on turnover on each side, according to BK Capital.`],
               ["Projection only", "This model is educational and does not guarantee future returns."],
               ["Privacy boundary", "Simulation inputs remain on your device; only authenticated purchases are stored in Neon."],
@@ -2533,6 +2481,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-outline/10 bg-[var(--md-sys-color-background)]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
         <Link href="/bonds" aria-label="Learn about bonds" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
           <ShieldCheck size={18} />
+        </Link>
+        <Link href="/bonds/calendar" aria-label="Open issuance calendar" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
+          <CalendarClock size={18} />
         </Link>
         <Link href="/bonds/education" aria-label="Open bond education" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
           <BookOpenText size={18} />
