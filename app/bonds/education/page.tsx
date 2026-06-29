@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Rwanda Treasury Bonds from Zero | Bond Education",
   description:
     "Learn Rwanda Treasury bonds from absolute beginner definitions through prices, coupons, YTM, tax, premium risk, discounts, reopenings, and advanced RSE analysis.",
-  alternates: { canonical: "/bonds/education" },
+  alternates: { canonical: "/education" },
 };
 
 export default function BondEducationPage() {
