@@ -7,7 +7,6 @@ import {
   Copy,
   ExternalLink,
   HelpCircle,
-  Info,
   RadioTower,
   Search,
   Sparkles,
@@ -42,7 +41,7 @@ function pricePosition(price: number | null) {
   if (displayedPrice < 100) {
     return {
       label: "Discount",
-      shortLabel: `Discount -${(100 - displayedPrice).toFixed(2)}`,
+      shortLabel: "Discount",
       detail: `${(100 - displayedPrice).toFixed(2)} below par`,
       classes:
         "border-tertiary/25 bg-tertiary-container/45 text-[var(--md-sys-color-on-tertiary-container)]",
@@ -51,7 +50,7 @@ function pricePosition(price: number | null) {
   if (displayedPrice > 100) {
     return {
       label: "Premium",
-      shortLabel: `Premium +${(displayedPrice - 100).toFixed(2)}`,
+      shortLabel: "Premium",
       detail: `${(displayedPrice - 100).toFixed(2)} above par`,
       classes:
         "border-error/20 bg-error-container/30 text-[var(--md-sys-color-on-error-container)]",
@@ -147,15 +146,6 @@ function opportunitySignal(bond: RankedBond): OpportunitySignal {
   };
 }
 
-function tradeRecencyLabel(value: string | null) {
-  if (!value) return null;
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    timeZone: "Africa/Kigali",
-  }).format(new Date(value));
-}
-
 function tradeRecencyDateTime(value: string | null) {
   if (!value) return "Unknown";
   return new Intl.DateTimeFormat("en", {
@@ -199,13 +189,9 @@ function StrategyMathFormula({
 
 export function RseRankedBondTable({
   bonds,
-  pagesFetched,
-  rowsAnalyzed,
   marketUpdated,
 }: {
   bonds: RankedBond[];
-  pagesFetched: number;
-  rowsAnalyzed: number;
   marketUpdated: string | null;
 }) {
   const [formulaOpen, setFormulaOpen] = useState(false);
@@ -331,6 +317,15 @@ export function RseRankedBondTable({
               >
                 {searchOpen ? <X size={15} /> : <Search size={15} />}
               </button>
+              <button
+                type="button"
+                aria-label="How the strategy score is calculated"
+                onClick={() => setFormulaOpen(true)}
+                title="Ranking methodology"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-outline/10 bg-surface-container-low text-on-surface-variant transition hover:border-primary/30 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              >
+                <HelpCircle size={15} />
+              </button>
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
@@ -403,52 +398,15 @@ export function RseRankedBondTable({
         )}
       </div>
 
-      <div className="border-b border-primary/25 bg-primary/10 px-5 py-4">
-        <div className="flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-[0.14em] text-on-surface-variant">
-          <span className="rounded-full border border-outline/15 bg-background/70 px-2.5 py-1">
-            {pagesFetched} RSE {pagesFetched === 1 ? "page" : "pages"} fetched
-          </span>
-          <span className="rounded-full border border-outline/15 bg-background/70 px-2.5 py-1">
-            {rowsAnalyzed} Treasury rows analyzed
-          </span>
-          <span className="rounded-full border border-outline/15 bg-background/70 px-2.5 py-1">
-            {bonds.length} unique yield records
-          </span>
-          <span className="rounded-full border border-primary/20 bg-primary-container/35 px-2.5 py-1 text-[var(--md-sys-color-on-primary-container)]">
-            {ranked.length} long-term candidates
-          </span>
-          <button
-            type="button"
-            aria-label="How the strategy score is calculated"
-            onClick={() => setFormulaOpen(true)}
-            className="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-outline/15 bg-surface-container-lowest/70 text-[var(--md-sys-color-primary)] shadow-sm transition hover:border-primary/35 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-          >
-            <HelpCircle size={16} />
-          </button>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-primary/15 pt-4 text-[9px] font-black uppercase tracking-[0.11em]">
-          <span className="mr-1 text-on-surface-variant">Price guide</span>
-          <span className="rounded-full border border-tertiary/25 bg-tertiary-container/45 px-2.5 py-1 text-[var(--md-sys-color-on-tertiary-container)]">
-            Discount · below 100
-          </span>
-          <span className="rounded-full border border-primary/20 bg-primary-container/35 px-2.5 py-1 text-[var(--md-sys-color-on-primary-container)]">
-            At par · exactly 100
-          </span>
-          <span className="rounded-full border border-error/20 bg-error-container/30 px-2.5 py-1 text-[var(--md-sys-color-on-error-container)]">
-            Premium · above 100
-          </span>
-        </div>
-      </div>
-
       <div className="bond-scrollbar hidden overflow-x-auto md:block">
         <table className="w-full min-w-[760px] table-fixed border-collapse text-left">
-          <thead className="bg-surface-container text-[9px] uppercase tracking-[0.12em] text-on-surface-variant">
+          <thead className="border-b border-outline/10 bg-surface-container-low/70 text-[9px] uppercase tracking-[0.12em] text-on-surface-variant">
             <tr>
-              <th className="w-[29%] px-4 py-3">Bond</th>
-              <th className="w-[13%] px-3 py-3">Price / 100</th>
-              <th className="w-[17%] px-3 py-3">Term</th>
-              <th className="w-[24%] px-3 py-3">Returns</th>
-              <th className="w-[17%] px-3 py-3">Strategy fit</th>
+              <th className="w-[32%] px-5 py-3.5">Bond</th>
+              <th className="w-[15%] px-3 py-3.5">Price</th>
+              <th className="w-[18%] px-3 py-3.5">Maturity</th>
+              <th className="w-[20%] px-3 py-3.5">Net return</th>
+              <th className="w-[15%] px-3 py-3.5">Fit</th>
             </tr>
           </thead>
           <tbody id="fixed-income-ranked-bonds">
@@ -464,11 +422,15 @@ export function RseRankedBondTable({
               return (
                 <tr
                   key={`${bond.code}-${bond.yieldToMaturity}`}
-                  className={`border-t border-outline/10 align-top text-xs ${
-                    highlighted ? "bg-primary/[0.07]" : ""
+                  className={`border-t border-outline/10 align-middle text-xs transition-colors hover:bg-primary/[0.045] ${
+                    highlighted
+                      ? "bg-primary/[0.065]"
+                      : index % 2 === 1
+                        ? "bg-surface-container-low/25"
+                        : ""
                   }`}
                 >
-                  <td className="px-4 py-5">
+                  <td className="px-5 py-4">
                     {codeForBk ? (
                       <button
                         type="button"
@@ -520,68 +482,52 @@ export function RseRankedBondTable({
                       </button>
                     )}
                   </td>
-                  <td className="px-3 py-5">
-                    <p className="font-black leading-5">
+                  <td className="px-3 py-4">
+                    <p
+                      className="text-sm font-black leading-5"
+                      title={
+                        bond.closingPrice !== null
+                          ? "RSE closing price"
+                          : bond.impliedCleanPrice != null
+                            ? "Implied clean price from RSE-published YTM"
+                            : "Price not published"
+                      }
+                    >
                       {bond.closingPrice !== null
                         ? bond.closingPrice.toFixed(2)
                         : bond.impliedCleanPrice != null
                           ? `≈ ${bond.impliedCleanPrice.toFixed(2)}`
                           : "Unavailable"}
                     </p>
-                    <p className="mt-1 text-[10px] font-medium leading-4 text-on-surface-variant">
-                      {bond.closingPrice !== null
-                        ? "RSE closing price"
-                        : bond.impliedCleanPrice != null
-                          ? "Implied clean price"
-                          : "Price not published"}
-                    </p>
                     {displayedPrice !== null && (
                       <span
                         title={`${priceStatus.label}: ${priceStatus.detail}`}
-                        className={`mt-2 inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-wider ${priceStatus.classes}`}
+                        className={`mt-1.5 inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-wider ${priceStatus.classes}`}
                       >
                         {priceStatus.shortLabel}
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-5">
-                    <p className="font-black">{bond.yearsRemaining.toFixed(1)} years</p>
+                  <td className="px-3 py-4">
+                    <p className="text-sm font-black">{bond.yearsRemaining.toFixed(1)} yrs</p>
                     <p className="mt-1 text-[10px] text-on-surface-variant">
-                      Matures {bond.maturityDate}
+                      {bond.maturityDate}
                     </p>
                   </td>
-                  <td className="px-3 py-5">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-base font-black text-primary">
+                  <td
+                    className="px-3 py-4"
+                    title={`${percent(bond.grossYield)} gross YTM · ${bond.yieldSource}`}
+                  >
+                    <div>
+                      <span className="text-lg font-black text-primary">
                         {percent(bond.netAnnualizedYield)}
                       </span>
-                      <span className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
-                        Net yield
-                      </span>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-on-surface-variant">
-                      <span>
-                        <strong className="text-on-surface">{bond.couponRate}</strong>{" "}
-                        coupon
-                      </span>
-                      <span>
-                        <strong className="text-on-surface">
-                          {percent(bond.grossYield)}
-                        </strong>{" "}
-                        gross YTM
-                      </span>
-                    </div>
-                    <p className="mt-1.5 text-[9px] font-semibold text-on-surface-variant">
-                      {bond.yieldSource}
+                    <p className="mt-1 text-[10px] text-on-surface-variant">
+                      Coupon <strong className="text-on-surface">{bond.couponRate}</strong>
                     </p>
-                    {bond.recentTradeCount > 0 && (
-                      <p className="mt-1.5 text-[9px] font-bold text-primary">
-                        Seen {bond.recentTradeCount}x recently · last{" "}
-                        {tradeRecencyLabel(bond.lastTradedAt) ?? "recently"}
-                      </p>
-                    )}
                   </td>
-                  <td className="px-3 py-5">
+                  <td className="px-3 py-4">
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-lg font-black text-primary">
                         {bond.strategyScore.toFixed(1)}
@@ -596,15 +542,6 @@ export function RseRankedBondTable({
                         style={{ width: `${bond.strategyScore}%` }}
                       />
                     </div>
-                    <p
-                      className="mt-2 text-[9px] font-medium leading-4 text-on-surface-variant"
-                      title="Yield · Duration · Price · Data confidence"
-                    >
-                      Y {bond.yieldScore.toFixed(0)} · D{" "}
-                      {bond.durationScore.toFixed(0)} · P{" "}
-                      {bond.priceScore.toFixed(0)} · C{" "}
-                      {bond.confidenceScore.toFixed(0)}
-                    </p>
                   </td>
                 </tr>
               );
@@ -703,18 +640,18 @@ export function RseRankedBondTable({
                   Recently traded
                 </button>
               )}
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/60 p-3">
+              <div className="mt-4 grid grid-cols-3 gap-4 border-y border-outline/10 py-4">
+                <div>
                   <p className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
-                    Net yield
+                    Net return
                   </p>
                   <p className="mt-1 text-base font-black text-primary">
                     {percent(bond.netAnnualizedYield)}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/60 p-3">
+                <div>
                   <p className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
-                    Price / 100
+                    Price
                   </p>
                   <p className="mt-1 text-sm font-black text-on-surface">
                     {bond.closingPrice !== null
@@ -723,65 +660,28 @@ export function RseRankedBondTable({
                         ? `≈ ${bond.impliedCleanPrice.toFixed(2)}`
                         : "Unavailable"}
                   </p>
-                  <p className="mt-1 text-[10px] font-medium text-on-surface-variant">
-                    {bond.closingPrice !== null
-                      ? "RSE closing"
-                      : bond.impliedCleanPrice != null
-                        ? "Implied clean price"
-                        : "Not published"}
-                  </p>
                   {displayedPrice !== null && (
                     <span
                       title={`${priceStatus.label}: ${priceStatus.detail}`}
-                      className={`mt-2 inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-wider ${priceStatus.classes}`}
+                      className={`mt-1.5 inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-wider ${priceStatus.classes}`}
                     >
                       {priceStatus.shortLabel}
                     </span>
                   )}
                 </div>
-                <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/60 p-3">
+                <div>
                   <p className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
-                    Time remaining
+                    Years left
                   </p>
                   <p className="mt-1 text-sm font-black text-on-surface">
-                    {bond.yearsRemaining.toFixed(1)} years
-                  </p>
-                  <p className="mt-1 text-[10px] font-medium text-on-surface-variant">
-                    {bond.maturityDate}
+                    {bond.yearsRemaining.toFixed(1)} yrs
                   </p>
                 </div>
-                <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/60 p-3">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">
-                    Coupon · Gross YTM
-                  </p>
-                  <p className="mt-1 text-sm font-black text-on-surface">
-                    {bond.couponRate} · {percent(bond.grossYield)}
-                  </p>
-                  <p className="mt-1 text-[10px] font-medium text-on-surface-variant">
-                    {bond.yieldSource}
-                  </p>
-                  {bond.recentTradeCount > 0 && (
-                    <p className="mt-1 text-[10px] font-bold text-primary">
-                      Seen {bond.recentTradeCount}x recently · last{" "}
-                      {tradeRecencyLabel(bond.lastTradedAt) ?? "recently"}
-                    </p>
-                  )}
-                </div>
               </div>
-
-              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-outline/10">
-                <div
-                  className="h-full rounded-full bg-primary"
-                  style={{ width: `${bond.strategyScore}%` }}
-                />
-              </div>
-              <p
-                className="mt-2 text-[9px] font-medium leading-4 text-on-surface-variant"
-                title="Yield · Duration · Price · Data confidence"
-              >
-                Score components: Y {bond.yieldScore.toFixed(0)} · D{" "}
-                {bond.durationScore.toFixed(0)} · P {bond.priceScore.toFixed(0)} · C{" "}
-                {bond.confidenceScore.toFixed(0)}
+              <p className="mt-3 text-[10px] font-medium text-on-surface-variant">
+                Coupon <strong className="text-on-surface">{bond.couponRate}</strong>
+                <span className="mx-2 text-outline">·</span>
+                Matures <strong className="text-on-surface">{bond.maturityDate}</strong>
               </p>
             </article>
           );
@@ -797,21 +697,8 @@ export function RseRankedBondTable({
       </div>
       {hasMoreBonds && (
         <div className="flex flex-col gap-3 border-t border-outline/10 bg-surface-container-lowest/45 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-on-surface-variant">
-            {showAll ? (
-              <>
-                Showing all{" "}
-                <strong className="text-on-surface">{ranked.length}</strong>{" "}
-                ranked bonds.
-              </>
-            ) : (
-              <>
-                Showing the top{" "}
-                <strong className="text-on-surface">5</strong> of{" "}
-                <strong className="text-on-surface">{ranked.length}</strong>{" "}
-                ranked bonds.
-              </>
-            )}
+          <p className="text-xs font-semibold text-on-surface-variant">
+            {showAll ? ranked.length : 5} of {ranked.length} bonds
           </p>
           <button
             type="button"
@@ -832,18 +719,6 @@ export function RseRankedBondTable({
           </button>
         </div>
       )}
-      <div className="flex gap-2 border-t border-outline/10 bg-surface-container-low/40 px-5 py-4 text-[10px] leading-4 text-on-surface-variant">
-        <Info size={14} className="mt-0.5 shrink-0 text-primary" />
-        <p>
-          Strategy score = 70% net yield + 25% long-term runway + 5% price
-          value. Twelve years remaining receives the full duration score, which
-          places active 15-year and 20-year issues in the same long-term tier.
-          Data confidence affects the label, not attractiveness. Recently
-          traded means the bond appeared in saved RSE bond-market observations;
-          it is a liquidity clue to verify, not a guarantee that a seller is
-          still available.
-        </p>
-      </div>
 
       {formulaOpen && (
         <div
