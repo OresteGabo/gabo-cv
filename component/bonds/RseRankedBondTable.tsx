@@ -9,12 +9,14 @@ import {
   HelpCircle,
   Info,
   RadioTower,
+  Search,
   Sparkles,
   TrendingUp,
   X,
 } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { RseOutstandingBond } from "@/lib/bonds/rse";
+import { RseRefreshButton } from "./RseRefreshButton";
 
 type RankedBond = RseOutstandingBond & {
   impliedCleanPrice?: number | null;
@@ -199,17 +201,26 @@ export function RseRankedBondTable({
   bonds,
   pagesFetched,
   rowsAnalyzed,
+  marketUpdated,
 }: {
   bonds: RankedBond[];
   pagesFetched: number;
   rowsAnalyzed: number;
+  marketUpdated: string | null;
 }) {
   const [formulaOpen, setFormulaOpen] = useState(false);
   const [tradeDetailsOpen, setTradeDetailsOpen] = useState<RankedBond | null>(
     null,
   );
   const [showAll, setShowAll] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
 
   useEffect(() => {
     if (!formulaOpen && !tradeDetailsOpen) return;
@@ -240,8 +251,37 @@ export function RseRankedBondTable({
         ),
     [bonds],
   );
-  const visibleBonds = showAll ? ranked : ranked.slice(0, 5);
-  const hasMoreBonds = ranked.length > 5;
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
+  const searchedBonds = useMemo(() => {
+    if (!normalizedSearch) return ranked;
+
+    return ranked.filter((bond) =>
+      [
+        bond.bond,
+        bond.code,
+        bond.issueDate,
+        bond.maturityDate,
+        bond.couponRate,
+        bond.yieldToMaturity,
+      ].some((value) => value.toLocaleLowerCase().includes(normalizedSearch)),
+    );
+  }, [normalizedSearch, ranked]);
+  const rankByBond = useMemo(
+    () =>
+      new Map(
+        ranked.map((bond, index) => [
+          `${bond.code}-${bond.yieldToMaturity}`,
+          index,
+        ]),
+      ),
+    [ranked],
+  );
+  const visibleBonds = normalizedSearch
+    ? searchedBonds
+    : showAll
+      ? ranked
+      : ranked.slice(0, 5);
+  const hasMoreBonds = !normalizedSearch && ranked.length > 5;
 
   async function copyBkCode(code: string) {
     try {
@@ -266,6 +306,103 @@ export function RseRankedBondTable({
 
   return (
     <>
+      <div className="border-b border-outline/10 px-5 py-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+              Treasury listings
+            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <h3 className="font-black">Fixed income board</h3>
+              <button
+                type="button"
+                aria-label={searchOpen ? "Close Treasury bond search" : "Search Treasury bonds"}
+                aria-expanded={searchOpen}
+                onClick={() => {
+                  setSearchOpen((current) => !current);
+                  if (searchOpen) setSearchQuery("");
+                }}
+                title={searchOpen ? "Close search" : "Search Treasury bonds"}
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                  searchOpen
+                    ? "border-primary/35 bg-primary/10 text-primary"
+                    : "border-outline/10 bg-surface-container-low text-on-surface-variant hover:border-primary/30 hover:text-primary"
+                }`}
+              >
+                {searchOpen ? <X size={15} /> : <Search size={15} />}
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <p className="text-[10px] font-bold text-on-surface-variant">
+              {marketUpdated
+                ? `Last refreshed ${marketUpdated} CAT`
+                : "Last refresh unavailable"}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <RseRefreshButton />
+              <a
+                href="https://rse.rw/fixed-income-board"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded-xl border border-outline/15 bg-background px-3 py-2.5 text-xs font-black text-primary transition hover:border-primary/35"
+              >
+                Open RSE <ExternalLink size={12} />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {searchOpen && (
+          <div className="mt-4 flex flex-col gap-2 border-t border-outline/10 pt-4 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:max-w-md">
+              <Search
+                size={15}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-outline"
+              />
+              <input
+                ref={searchInputRef}
+                id="treasury-bond-search"
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape") return;
+                  setSearchQuery("");
+                  setSearchOpen(false);
+                }}
+                aria-label="Find a Treasury bond"
+                placeholder="Bond name, code, maturity, coupon or YTM"
+                autoComplete="off"
+                className="h-10 w-full rounded-xl border border-outline/15 bg-background pl-10 pr-10 text-sm font-semibold text-on-surface outline-none transition placeholder:font-medium placeholder:text-on-surface-variant/70 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                aria-label="Clear Treasury bond search"
+                className={`absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                  searchQuery ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+              >
+                <X size={14} />
+              </button>
+            </div>
+            {normalizedSearch && (
+              <p
+                role="status"
+                className="shrink-0 text-[10px] font-black uppercase tracking-[0.1em] text-on-surface-variant"
+              >
+                {searchedBonds.length} {searchedBonds.length === 1 ? "match" : "matches"}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="border-b border-primary/25 bg-primary/10 px-5 py-4">
         <div className="flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-[0.14em] text-on-surface-variant">
           <span className="rounded-full border border-outline/15 bg-background/70 px-2.5 py-1">
@@ -316,9 +453,11 @@ export function RseRankedBondTable({
           </thead>
           <tbody id="fixed-income-ranked-bonds">
             {visibleBonds.map((bond, index) => {
-              const highlighted = index < 2;
+              const rankPosition =
+                rankByBond.get(`${bond.code}-${bond.yieldToMaturity}`) ?? index;
+              const highlighted = rankPosition < 2;
               const opportunity = opportunitySignal(bond);
-              const codeForBk = index < 3 ? bkBondCode(bond.bond) : null;
+              const codeForBk = rankPosition < 3 ? bkBondCode(bond.bond) : null;
               const displayedPrice =
                 bond.closingPrice ?? bond.impliedCleanPrice ?? null;
               const priceStatus = pricePosition(displayedPrice);
@@ -369,7 +508,7 @@ export function RseRankedBondTable({
                         </span>
                       </div>
                     )}
-                    {index < 5 && bond.recentTradeCount > 0 && (
+                    {rankPosition < 5 && bond.recentTradeCount > 0 && (
                       <button
                         type="button"
                         onClick={() => setTradeDetailsOpen(bond)}
@@ -470,15 +609,27 @@ export function RseRankedBondTable({
                 </tr>
               );
             })}
+            {visibleBonds.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-5 py-12 text-center">
+                  <p className="font-black text-on-surface">No Treasury bonds found</p>
+                  <p className="mt-1 text-xs text-on-surface-variant">
+                    Try a shorter bond name, code, maturity year, coupon, or YTM.
+                  </p>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       <div id="fixed-income-ranked-bonds-mobile" className="divide-y divide-outline/10 md:hidden">
         {visibleBonds.map((bond, index) => {
-          const highlighted = index < 2;
+          const rankPosition =
+            rankByBond.get(`${bond.code}-${bond.yieldToMaturity}`) ?? index;
+          const highlighted = rankPosition < 2;
           const opportunity = opportunitySignal(bond);
-          const codeForBk = index < 3 ? bkBondCode(bond.bond) : null;
+          const codeForBk = rankPosition < 3 ? bkBondCode(bond.bond) : null;
           const displayedPrice =
             bond.closingPrice ?? bond.impliedCleanPrice ?? null;
           const priceStatus = pricePosition(displayedPrice);
@@ -541,7 +692,7 @@ export function RseRankedBondTable({
                   </span>
                 </div>
               )}
-              {index < 5 && bond.recentTradeCount > 0 && (
+              {rankPosition < 5 && bond.recentTradeCount > 0 && (
                 <button
                   type="button"
                   onClick={() => setTradeDetailsOpen(bond)}
@@ -635,6 +786,14 @@ export function RseRankedBondTable({
             </article>
           );
         })}
+        {visibleBonds.length === 0 && (
+          <div className="p-8 text-center">
+            <p className="font-black text-on-surface">No Treasury bonds found</p>
+            <p className="mt-1 text-xs leading-5 text-on-surface-variant">
+              Try a shorter bond name, code, maturity year, coupon, or YTM.
+            </p>
+          </div>
+        )}
       </div>
       {hasMoreBonds && (
         <div className="flex flex-col gap-3 border-t border-outline/10 bg-surface-container-lowest/45 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
