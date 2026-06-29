@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BondPurchaseDetails } from "@/component/bonds/BondPurchaseDetails";
 import {
@@ -6,6 +7,11 @@ import {
   TREASURY_BOND_TENORS,
 } from "@/lib/bonds/calculations";
 import type { BondPurchase } from "@/lib/bonds/types";
+
+export const metadata: Metadata = {
+  title: "Modeled Bond Purchase | Gabo",
+  robots: { index: false, follow: false },
+};
 
 function addYears(dateValue: string, years: number) {
   const [year, month, day] = dateValue.split("-").map(Number);
