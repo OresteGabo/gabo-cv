@@ -114,7 +114,7 @@ export function parsePurchase(value: unknown): BondPurchaseInput | null {
     accountReference.length > 120 ||
     sourceUrl.length > 1000 ||
     !validOptionalUrl ||
-    !["active", "sold", "matured"].includes(status) ||
+    !["submitted", "active", "sold", "matured"].includes(status) ||
     notes.length > 1000
   ) {
     return null;
