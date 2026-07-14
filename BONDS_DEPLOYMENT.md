@@ -22,25 +22,21 @@ subdomain URL, preserving bookmarks while keeping one public bond-site address.
 
 ## Portfolio storage
 
-For local personal use, the portfolio API automatically falls back to a JSON
-file when `BONDS_DATABASE_URL` is not set. The default file is
-`.data/bonds-portfolio.json`, and `.data/` is ignored by git. This is
-intentional: the file contains private account and transaction data.
+The portfolio API uses the JSON file database by default. The default file is
+`.data/bonds-portfolio.json`.
 
-Set `BONDS_PORTFOLIO_DATABASE=file` to force file storage even when a Neon URL is
-present during local development. Set `BONDS_FILE_DATABASE_NAME` only if you
+The repository tracks `.data/bonds-portfolio.json` so the current file database
+is included when the code is pushed to GitHub and deployed. Other files inside
+`.data/` remain ignored.
+
+Set `BONDS_PORTFOLIO_DATABASE=database` only when you want the portfolio to use
+Postgres through `BONDS_DATABASE_URL`. Set `BONDS_FILE_DATABASE_NAME` only if you
 want a different file name inside `.data/`.
 
-Neon remains useful for a deployed multi-device setup because Vercel/serverless
-files are not durable storage. Do not push `.data/bonds-portfolio.json` to
-GitHub to move real records into production. Instead, configure
-`BONDS_DATABASE_URL` in the deployment environment, sign in to the deployed
-private portfolio, and add the transaction there, or import the local JSON into
-the production database.
-
-In production, the app uses file storage only when
-`BONDS_ALLOW_PRODUCTION_FILE_DATABASE=true` is also set. Use that override only
-on a server with a persistent private disk, not on Vercel/serverless.
+On Vercel/serverless, the committed JSON file is useful as a deployed read
+source. Runtime writes to project files are not durable there, so production
+changes should be made locally and pushed, or moved later to a durable database
+such as Neon.
 
 ## Neon setup
 
@@ -48,8 +44,8 @@ on a server with a persistent private disk, not on Vercel/serverless.
 2. Run `db/bonds-schema.sql` in the Neon SQL Editor.
 3. Copy `.env.bonds.example` values into `.env.local` for development.
 4. Add the same values in Vercel Project Settings > Environment Variables.
-5. In Vercel, leave `BONDS_PORTFOLIO_DATABASE` unset and set
-   `BONDS_DATABASE_URL` to the Neon connection string.
+5. Set `BONDS_PORTFOLIO_DATABASE=database` when switching production from the
+   committed JSON file to Neon.
 
 Run `db/bonds-schema.sql` again when upgrading an existing installation. The
 file contains additive migrations for the real transaction ledger and saved RSE
