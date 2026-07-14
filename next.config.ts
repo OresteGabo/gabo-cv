@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingIncludes: {
+    "/*": ["./.data/bonds-portfolio.json"],
+  },
   poweredByHeader: false,
   reactCompiler: true,
   async headers() {
