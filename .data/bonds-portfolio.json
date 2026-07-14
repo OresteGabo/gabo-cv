@@ -1,0 +1,34 @@
+{
+  "purchases": [
+    {
+      "id": "b78479df-481b-43ad-9817-75a2d8c31f89",
+      "instrumentType": "treasury",
+      "issuer": "Government of Rwanda",
+      "currency": "RWF",
+      "market": "primary",
+      "purchaseDate": "2026-07-14",
+      "settlementDate": "2026-07-17",
+      "bondName": "Oreste 7 Year bond",
+      "isin": "",
+      "tenorYears": 7,
+      "faceValue": 2200000,
+      "pricePercent": 100,
+      "accruedInterestPaid": 0,
+      "feesPaid": 11000,
+      "amountInvested": 2211000,
+      "couponRate": 0,
+      "withholdingTaxRate": 0.05,
+      "maturityDate": "2033-07-08",
+      "firstCouponDate": "",
+      "couponDates": [],
+      "couponFrequency": 2,
+      "scheduleConfidence": "estimated",
+      "broker": "BK Capital",
+      "accountReference": "100019471637 BK Capital Settlement",
+      "sourceUrl": "",
+      "status": "submitted",
+      "notes": "Bank of Kigali. Narration: Oreste 7 Year bond. RWF 2,211,000 includes RWF 2,200,000 principal plus RWF 11,000 application fee and bank charges. Coupon rate pending until issuance.",
+      "createdAt": "2026-07-14T00:00:00.000Z"
+    }
+  ]
+}
