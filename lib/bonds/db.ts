@@ -11,15 +11,7 @@ type BondFileDatabase = {
 let fileWriteQueue: Promise<void> = Promise.resolve();
 
 function shouldUseFileDatabase() {
-  const mode = process.env.BONDS_PORTFOLIO_DATABASE;
-  if (mode === "file") {
-    return (
-      process.env.NODE_ENV !== "production" ||
-      process.env.BONDS_ALLOW_PRODUCTION_FILE_DATABASE === "true"
-    );
-  }
-  if (mode === "database") return false;
-  return !process.env.BONDS_DATABASE_URL && process.env.NODE_ENV !== "production";
+  return process.env.BONDS_PORTFOLIO_DATABASE !== "database";
 }
 
 function fileDatabasePath() {
