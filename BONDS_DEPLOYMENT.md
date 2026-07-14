@@ -14,11 +14,24 @@ subdomain URL, preserving bookmarks while keeping one public bond-site address.
 - 50M, 100M, and 200M RWF milestones
 - Annual and monthly schedules
 - CSV projection export
-- Private Neon-backed real purchase log
+- Private real purchase log backed by Neon or a local JSON file
 - Saved RSE bond-market observations for recent secondary-market activity
 - Protected market snapshot endpoint for scheduled RSE captures
 - Signed, HTTP-only owner session
 - Responsive layout suitable for installation from a phone browser
+
+## Portfolio storage
+
+For local personal use, the portfolio API automatically falls back to a JSON
+file when `BONDS_DATABASE_URL` is not set. The default file is
+`.data/bonds-portfolio.json`, and `.data/` is ignored by git.
+
+Set `BONDS_PORTFOLIO_DATABASE=file` to force file storage even when a Neon URL is
+present. Set `BONDS_FILE_DATABASE_NAME` only if you want a different file name
+inside `.data/`.
+
+Neon remains useful for a deployed multi-device setup because Vercel/serverless
+files are not durable storage.
 
 ## Neon setup
 
