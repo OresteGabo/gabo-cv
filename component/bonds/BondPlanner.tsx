@@ -2074,7 +2074,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               </div>
               <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Track real bond purchases</h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--md-sys-color-on-surface-variant)]">
-                Simulation is public. Actual purchases are stored in Neon and only returned after your signed admin session is verified.
+                Simulation is public. Actual purchases are stored in your private portfolio database and only returned after your signed owner session is verified.
               </p>
             </div>
             {authenticated && (
@@ -2654,7 +2654,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               ["Aguka idle cash", `Unfilled bond money is modeled in Aguka at ${formatPercent(DEFAULT_ASSUMPTIONS.agukaAnnualRate, 1)} tax-exempt annual return until it is used for another bid.`],
               ["Secondary market", `Buying or selling before maturity carries a ${formatPercent(SECONDARY_MARKET_COMMISSION_RATE, 3)} commission on turnover on each side, according to BK Capital.`],
               ["Projection only", "This model is educational and does not guarantee future returns."],
-              ["Privacy boundary", "Simulation inputs remain on your device; only authenticated purchases are stored in Neon."],
+              ["Privacy boundary", "Simulation inputs remain on your device; only authenticated purchases are stored in the private portfolio database."],
             ].map(([title, copy], index) => (
               <article key={title} className="rounded-2xl border border-outline/10 bg-surface-container-low p-5">
                 <span className="text-[10px] font-mono text-[var(--md-sys-color-primary)]">0{index + 1}</span>
