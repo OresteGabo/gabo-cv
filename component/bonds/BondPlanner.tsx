@@ -134,6 +134,50 @@ function generateSemiannualCouponDates(
   return dates;
 }
 
+function validIsoDate(value: string | null) {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+}
+
+function purchaseFromCalendarPrefill(params: URLSearchParams): BondPurchaseInput | null {
+  if (params.get("prefill") !== "calendar") return null;
+
+  const tenorYears = Number(params.get("tenorYears"));
+  const purchaseDate = validIsoDate(params.get("purchaseDate"));
+  const settlementDate = validIsoDate(params.get("settlementDate"));
+  const maturityDate = validIsoDate(params.get("maturityDate"));
+  const sourceDescription = params.get("sourceDescription")?.trim();
+
+  if (!purchaseDate || !settlementDate || !maturityDate) return null;
+
+  return {
+    ...EMPTY_PURCHASE,
+    purchaseDate,
+    settlementDate,
+    bondName: params.get("bondName")?.trim().slice(0, 120) || "Treasury bond",
+    isin: "",
+    tenorYears:
+      Number.isFinite(tenorYears) && tenorYears > 0
+        ? tenorYears
+        : EMPTY_PURCHASE.tenorYears,
+    faceValue: 100_000,
+    pricePercent: 100,
+    accruedInterestPaid: 0,
+    feesPaid: 0,
+    amountInvested: 100_000,
+    couponRate: 0,
+    maturityDate,
+    firstCouponDate: "",
+    couponDates: [],
+    scheduleConfidence: "estimated",
+    accountReference: "",
+    sourceUrl: "",
+    status: "submitted",
+    notes: sourceDescription
+      ? `From BNR calendar: ${sourceDescription}. Add amount, fees, and coupon after issuance.`
+      : "From BNR calendar. Add amount, fees, and coupon after issuance.",
+  };
+}
+
 function Metric({
   label,
   value,
@@ -544,7 +588,13 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     null,
   );
   const [savingPurchase, setSavingPurchase] = useState(false);
+  const [purchasePendingDelete, setPurchasePendingDelete] =
+    useState<BondPurchase | null>(null);
+  const [deletingPurchaseId, setDeletingPurchaseId] = useState<string | null>(
+    null,
+  );
   const assumptionsHydrated = useRef(false);
+  const prefillApplied = useRef("");
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -577,6 +627,25 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       JSON.stringify(cashInjections),
     );
   }, [cashInjections]);
+
+  useEffect(() => {
+    if (view !== "portfolio" || editingPurchaseId) return;
+    const search = window.location.search;
+    if (!search || prefillApplied.current === search) return;
+
+    const prefilledPurchase = purchaseFromCalendarPrefill(
+      new URLSearchParams(search),
+    );
+    if (!prefilledPurchase) return;
+
+    prefillApplied.current = search;
+    setPurchase(prefilledPurchase);
+    window.setTimeout(() => {
+      document
+        .getElementById("portfolio-transaction-form")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  }, [editingPurchaseId, view]);
 
   useEffect(() => {
     if (view !== "portfolio") {
@@ -719,6 +788,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
         purchase.feesPaid) *
         100,
     ) / 100;
+  const calendarPrefilledPurchase =
+    purchase.status === "submitted" &&
+    purchase.notes.startsWith("From BNR calendar");
   const selectedInjectionMonth = Math.min(
     projection.length,
     Math.max(
@@ -833,7 +905,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPortfolioError("");
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const response = await fetch("/api/bonds/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -848,7 +921,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       return;
     }
     setAuthenticated(true);
-    event.currentTarget.reset();
+    formElement.reset();
   }
 
   async function logout() {
@@ -884,8 +957,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
         broker: "BK Capital",
         withholdingTaxRate: WITHHOLDING_TAX_RATE,
         couponFrequency: 2,
-        scheduleConfidence: "confirmed",
-        couponDates,
+        scheduleConfidence:
+          purchase.status === "submitted"
+            ? "estimated"
+            : purchase.scheduleConfidence,
+        couponDates: purchase.status === "submitted" ? [] : couponDates,
         amountInvested: purchaseCashCost,
       }),
     });
@@ -919,7 +995,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       broker: "BK Capital",
       withholdingTaxRate: WITHHOLDING_TAX_RATE,
       couponFrequency: 2,
-      scheduleConfidence: "confirmed",
+      scheduleConfidence:
+        input.status === "submitted" ? "estimated" : input.scheduleConfidence,
     });
     setEditingPurchaseId(item.id);
     document
@@ -927,12 +1004,32 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  async function removePurchase(id: string) {
-    const response = await fetch(`/api/bonds/purchases/${id}`, {
-      method: "DELETE",
-    });
-    if (response.ok) {
-      setPurchases((current) => current.filter((item) => item.id !== id));
+  async function removePurchase() {
+    if (!purchasePendingDelete) return;
+    const { id } = purchasePendingDelete;
+    setDeletingPurchaseId(id);
+    setPortfolioError("");
+    try {
+      const response = await fetch(`/api/bonds/purchases/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setPurchases((current) => current.filter((item) => item.id !== id));
+        if (editingPurchaseId === id) {
+          setPurchase(EMPTY_PURCHASE);
+          setEditingPurchaseId(null);
+        }
+        setPurchasePendingDelete(null);
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setPortfolioError(
+          data.error ?? "Could not delete the purchase record.",
+        );
+      }
+    } catch {
+      setPortfolioError("Could not delete the purchase record.");
+    } finally {
+      setDeletingPurchaseId(null);
     }
   }
 
@@ -2035,12 +2132,22 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                           : "Record Treasury bond purchase"}
                       </h3>
                       <p className="mt-1 text-[10px] text-on-surface-variant">
-                        Record the transaction confirmed by BK Capital.
+                        Save applications as submitted, then update coupon details after issuance.
                       </p>
                     </div>
                   </div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    {!editingPurchaseId && (
+                    {!editingPurchaseId && calendarPrefilledPurchase ? (
+                      <div className="sm:col-span-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+                          Prefilled from calendar
+                        </p>
+                        <p className="mt-2 text-[10px] leading-4 text-on-surface-variant">
+                          Official dates and tenor are filled in. Add your
+                          purchase amount, fees, and coupon details when known.
+                        </p>
+                      </div>
+                    ) : !editingPurchaseId ? (
                       <div className="sm:col-span-2 rounded-2xl border border-tertiary/20 bg-tertiary/5 p-4">
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-tertiary">
                           Prefilled example · Do not save unchanged
@@ -2053,7 +2160,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                           the official prospectus.
                         </p>
                       </div>
-                    )}
+                    ) : null}
                     <div className="sm:col-span-2 rounded-2xl border border-primary/15 bg-primary/5 p-4">
                       <div className="flex flex-wrap items-center gap-2">
                         {[
@@ -2115,6 +2222,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                     ].map(([label, key, step]) => {
                       const fieldKey =
                         String(key) as keyof BondPurchaseInput;
+                      const couponPending =
+                        fieldKey === "couponRate" &&
+                        purchase.status === "submitted" &&
+                        purchase.couponRate === 0;
                       return (
                         <label key={fieldKey} className="text-[11px] font-bold text-on-surface-variant">
                           {label}
@@ -2122,14 +2233,19 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                             type="number"
                             min={0}
                             step={Number(step)}
-                            required
+                            required={fieldKey !== "couponRate" || purchase.status !== "submitted"}
                             value={
-                              fieldKey === "couponRate"
+                              couponPending
+                                ? ""
+                                : fieldKey === "couponRate"
                                 ? purchase.couponRate * 100
                                 : Number(purchase[fieldKey])
                             }
                             onChange={(event) => {
-                              const value = Number(event.target.value);
+                              const value =
+                                event.target.value === ""
+                                  ? 0
+                                  : Number(event.target.value);
                               setPurchase((current) => ({
                                 ...current,
                                 [fieldKey]:
@@ -2166,6 +2282,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                     <label className="text-[11px] font-bold text-on-surface-variant">
                       Position status
                       <select value={purchase.status} onChange={(event) => setPurchase((current) => ({ ...current, status: event.target.value as BondPurchaseInput["status"] }))} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface">
+                        <option value="submitted">Submitted</option>
                         <option value="active">Active</option>
                         <option value="sold">Sold</option>
                         <option value="matured">Matured</option>
@@ -2189,7 +2306,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                           First coupon payment
                           <input
                             type="date"
-                            required
+                            required={purchase.status !== "submitted"}
                             value={purchase.firstCouponDate}
                             onChange={(event) =>
                               setPurchase((current) => ({
@@ -2294,12 +2411,14 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         <div className="border-t border-primary/10 pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
                           <p className="text-[10px] font-black uppercase tracking-wider text-primary">Net coupon every 6 months</p>
                           <p className="mt-1 text-xl font-black">
-                            {formatRwf(
-                              purchase.faceValue *
-                                purchase.couponRate *
-                                (1 - WITHHOLDING_TAX_RATE) /
-                                2,
-                            )}
+                            {purchase.status === "submitted" && purchase.couponRate === 0
+                              ? "Pending"
+                              : formatRwf(
+                                  purchase.faceValue *
+                                    purchase.couponRate *
+                                    (1 - WITHHOLDING_TAX_RATE) /
+                                    2,
+                                )}
                           </p>
                           <p className="mt-1 text-[10px] text-on-surface-variant">
                             Based on face value after the fixed 5% withholding tax.
@@ -2360,13 +2479,17 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       </thead>
                       <tbody>
                         {purchases.map((item) => {
+                          const couponPending =
+                            item.status === "submitted" || item.couponRate === 0;
                           const netRate =
                             item.couponRate *
                             (1 - item.withholdingTaxRate);
-                          const tracking = calculateBondTracking(
-                            item,
-                            new Date().toISOString().slice(0, 10),
-                          );
+                          const tracking = couponPending
+                            ? null
+                            : calculateBondTracking(
+                                item,
+                                new Date().toISOString().slice(0, 10),
+                              );
                           return (
                             <tr key={item.id} className="border-t border-outline/10 text-xs">
                               <td className="px-4 py-4">
@@ -2381,7 +2504,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                   {item.issuer} · {item.isin || item.purchaseDate}
                                 </span>
                                 <span className="mt-1 inline-block rounded-full bg-surface-container px-2 py-1 text-[9px] font-black uppercase text-on-surface-variant">
-                                  BK Capital · RWF
+                                  {item.status === "submitted" ? "Submitted" : "BK Capital"} · RWF
                                 </span>
                               </td>
                               <td className="px-4 py-4">
@@ -2390,11 +2513,20 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                               </td>
                               <td className="px-4 py-4">{item.pricePercent.toFixed(3)}%</td>
                               <td className="px-4 py-4">
-                                <strong className="block text-primary">{formatRwf(item.faceValue * netRate / item.couponFrequency)}</strong>
-                                <span className="text-[10px] text-on-surface-variant">{formatPercent(netRate)} net rate</span>
+                                {couponPending ? (
+                                  <>
+                                    <strong className="block text-tertiary">Coupon pending</strong>
+                                    <span className="text-[10px] text-on-surface-variant">Update after issuance</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <strong className="block text-primary">{formatRwf(item.faceValue * netRate / item.couponFrequency)}</strong>
+                                    <span className="text-[10px] text-on-surface-variant">{formatPercent(netRate)} net rate</span>
+                                  </>
+                                )}
                               </td>
                               <td className="px-4 py-4 text-on-surface-variant">
-                                {tracking.nextCouponDate ?? "No future payment"}
+                                {tracking?.nextCouponDate ?? "Pending issuance"}
                               </td>
                               <td className="px-4 py-4">
                                 <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${item.scheduleConfidence === "confirmed" ? "bg-primary/10 text-primary" : "bg-tertiary/10 text-tertiary"}`}>
@@ -2410,7 +2542,13 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                 >
                                   <Pencil size={15} />
                                 </button>
-                                <button onClick={() => removePurchase(item.id)} aria-label={`Delete ${item.bondName}`} className="rounded-lg p-2 text-[var(--md-sys-color-outline)] hover:bg-error-container/30 hover:text-error">
+                                <button
+                                  type="button"
+                                  onClick={() => setPurchasePendingDelete(item)}
+                                  aria-label={`Delete ${item.bondName}`}
+                                  disabled={deletingPurchaseId === item.id}
+                                  className="rounded-lg p-2 text-[var(--md-sys-color-outline)] hover:bg-error-container/30 hover:text-error disabled:pointer-events-none disabled:opacity-45"
+                                >
                                   <Trash2 size={15} />
                                 </button>
                               </td>
@@ -2426,6 +2564,72 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
           )}
         </div>
       </section>
+      )}
+
+      {purchasePendingDelete && (
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-black/45 px-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-purchase-title"
+            className="w-full max-w-md rounded-3xl border border-error/20 bg-surface-container-lowest p-5 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-error-container/50 text-error">
+                <Trash2 size={20} />
+              </span>
+              <button
+                type="button"
+                onClick={() => setPurchasePendingDelete(null)}
+                aria-label="Cancel delete"
+                disabled={deletingPurchaseId === purchasePendingDelete.id}
+                className="rounded-xl p-2 text-outline transition hover:bg-surface-container hover:text-on-surface disabled:pointer-events-none disabled:opacity-45"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <h2
+              id="delete-purchase-title"
+              className="mt-4 text-xl font-black tracking-tight text-on-surface"
+            >
+              Delete this purchase record?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+              This will permanently remove {purchasePendingDelete.bondName} from
+              your portfolio records.
+            </p>
+            <div className="mt-4 rounded-2xl border border-outline/10 bg-surface-container-low p-4 text-sm">
+              <p className="font-black text-on-surface">
+                {formatRwf(purchasePendingDelete.faceValue)}
+              </p>
+              <p className="mt-1 text-xs text-on-surface-variant">
+                Settlement {purchasePendingDelete.settlementDate} · Maturity{" "}
+                {purchasePendingDelete.maturityDate}
+              </p>
+            </div>
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setPurchasePendingDelete(null)}
+                disabled={deletingPurchaseId === purchasePendingDelete.id}
+                className="rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:text-on-surface disabled:pointer-events-none disabled:opacity-45"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={removePurchase}
+                disabled={deletingPurchaseId === purchasePendingDelete.id}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-error px-4 py-3 text-sm font-black text-on-error transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-70"
+              >
+                <Trash2 size={16} />
+                {deletingPurchaseId === purchasePendingDelete.id
+                  ? "Deleting..."
+                  : "Delete record"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {view === "simulator" && (
