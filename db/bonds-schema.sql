@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS bond_purchases (
   broker TEXT NOT NULL DEFAULT '' CHECK (char_length(broker) <= 120),
   account_reference TEXT NOT NULL DEFAULT '' CHECK (char_length(account_reference) <= 120),
   source_url TEXT NOT NULL DEFAULT '' CHECK (char_length(source_url) <= 1000),
-  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'sold', 'matured')),
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('submitted', 'active', 'sold', 'matured')),
   notes TEXT NOT NULL DEFAULT '' CHECK (char_length(notes) <= 1000),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -75,6 +75,10 @@ ALTER TABLE bond_purchases ADD CONSTRAINT bond_purchases_amount_invested_check
   CHECK (amount_invested > 0);
 ALTER TABLE bond_purchases ADD CONSTRAINT bond_purchases_coupon_rate_check
   CHECK (coupon_rate >= 0 AND coupon_rate <= 1);
+
+ALTER TABLE bond_purchases DROP CONSTRAINT IF EXISTS bond_purchases_status_check;
+ALTER TABLE bond_purchases ADD CONSTRAINT bond_purchases_status_check
+  CHECK (status IN ('submitted', 'active', 'sold', 'matured'));
 
 CREATE INDEX IF NOT EXISTS bond_purchases_maturity_date_idx
   ON bond_purchases (maturity_date);
