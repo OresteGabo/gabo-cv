@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { BondIssuanceCalendar } from "@/component/bonds/BondIssuanceCalendar";
 
 export const metadata: Metadata = {
-  title: "BNR Treasury Bond Calendar | Gabo",
+  title: "Private Treasury Bond Calendar | Gabo",
   description:
-    "Official BNR Rwanda Treasury Bond issuance calendar with open book, closing book, settlement, tenor, and maturity dates.",
+    "Private Rwanda Treasury Bond calendar with recorded applications, purchase status, settlement dates, and maturity tracking.",
   alternates: { canonical: "/calendar" },
+  robots: { index: false, follow: false },
 };
 
 export default function BondCalendarPage() {
