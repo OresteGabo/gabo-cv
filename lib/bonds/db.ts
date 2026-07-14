@@ -1,5 +1,28 @@
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { neon } from "@neondatabase/serverless";
 import type { BondPurchase, BondPurchaseInput } from "./types";
+
+type BondFileDatabase = {
+  purchases: BondPurchase[];
+};
+
+let fileWriteQueue: Promise<void> = Promise.resolve();
+
+function shouldUseFileDatabase() {
+  return (
+    process.env.BONDS_PORTFOLIO_DATABASE === "file" ||
+    !process.env.BONDS_DATABASE_URL
+  );
+}
+
+function fileDatabasePath() {
+  const fileName = (
+    process.env.BONDS_FILE_DATABASE_NAME ?? "bonds-portfolio.json"
+  ).replace(/[^a-zA-Z0-9._-]/g, "_");
+  return join(process.cwd(), ".data", fileName);
+}
 
 function database() {
   const url = process.env.BONDS_DATABASE_URL;
@@ -9,7 +32,168 @@ function database() {
   return neon(url);
 }
 
+function sortPurchases(purchases: BondPurchase[]) {
+  return [...purchases].sort(
+    (a, b) =>
+      b.purchaseDate.localeCompare(a.purchaseDate) ||
+      b.createdAt.localeCompare(a.createdAt),
+  );
+}
+
+function normalizePurchase(value: unknown): BondPurchase | null {
+  if (!value || typeof value !== "object") return null;
+  const purchase = value as Partial<BondPurchase>;
+  if (!purchase.id || !purchase.purchaseDate || !purchase.bondName) return null;
+
+  return {
+    id: purchase.id,
+    instrumentType: purchase.instrumentType ?? "treasury",
+    issuer: purchase.issuer ?? "Government of Rwanda",
+    currency: purchase.currency ?? "RWF",
+    market: purchase.market ?? "primary",
+    purchaseDate: purchase.purchaseDate,
+    settlementDate: purchase.settlementDate ?? purchase.purchaseDate,
+    bondName: purchase.bondName,
+    isin: purchase.isin ?? "",
+    tenorYears: purchase.tenorYears ?? 0,
+    faceValue: purchase.faceValue ?? purchase.amountInvested ?? 0,
+    pricePercent: purchase.pricePercent ?? 100,
+    accruedInterestPaid: purchase.accruedInterestPaid ?? 0,
+    feesPaid: purchase.feesPaid ?? 0,
+    amountInvested:
+      purchase.amountInvested ??
+      (purchase.faceValue ?? 0) + (purchase.feesPaid ?? 0),
+    couponRate: purchase.couponRate ?? 0,
+    withholdingTaxRate: purchase.withholdingTaxRate ?? 0.05,
+    maturityDate: purchase.maturityDate ?? purchase.purchaseDate,
+    firstCouponDate: purchase.firstCouponDate ?? "",
+    couponDates: Array.isArray(purchase.couponDates)
+      ? purchase.couponDates
+      : [],
+    couponFrequency: purchase.couponFrequency ?? 2,
+    scheduleConfidence: purchase.scheduleConfidence ?? "estimated",
+    broker: purchase.broker ?? "",
+    accountReference: purchase.accountReference ?? "",
+    sourceUrl: purchase.sourceUrl ?? "",
+    status: purchase.status ?? "active",
+    notes: purchase.notes ?? "",
+    createdAt: purchase.createdAt ?? new Date().toISOString(),
+  };
+}
+
+async function readFileDatabase(): Promise<BondFileDatabase> {
+  const path = fileDatabasePath();
+  try {
+    const raw = await readFile(path, "utf8");
+    const parsed = JSON.parse(raw) as Partial<BondFileDatabase>;
+    const purchases = Array.isArray(parsed.purchases)
+      ? parsed.purchases
+          .map((purchase) => normalizePurchase(purchase))
+          .filter((purchase): purchase is BondPurchase => Boolean(purchase))
+      : [];
+    return { purchases: sortPurchases(purchases) };
+  } catch (error) {
+    if ((error as { code?: string }).code === "ENOENT") {
+      return { purchases: [] };
+    }
+    throw error;
+  }
+}
+
+async function writeFileDatabase(fileDatabase: BondFileDatabase) {
+  const path = fileDatabasePath();
+  await mkdir(dirname(path), { recursive: true });
+  const temporaryPath = `${path}.${process.pid}.${Date.now()}.tmp`;
+  const payload = JSON.stringify(
+    { purchases: sortPurchases(fileDatabase.purchases) },
+    null,
+    2,
+  );
+  await writeFile(temporaryPath, `${payload}\n`, "utf8");
+  await rename(temporaryPath, path);
+}
+
+async function updateFileDatabase<T>(
+  change: (fileDatabase: BondFileDatabase) => T | Promise<T>,
+): Promise<T> {
+  const operation = fileWriteQueue.then(async () => {
+    const fileDatabase = await readFileDatabase();
+    const result = await change(fileDatabase);
+    await writeFileDatabase(fileDatabase);
+    return result;
+  });
+  fileWriteQueue = operation.then(
+    () => undefined,
+    () => undefined,
+  );
+  return operation;
+}
+
+function purchaseFromInput(
+  input: BondPurchaseInput,
+  existing?: BondPurchase,
+): BondPurchase {
+  return {
+    id: existing?.id ?? randomUUID(),
+    ...input,
+    createdAt: existing?.createdAt ?? new Date().toISOString(),
+  };
+}
+
+async function listFilePurchases(): Promise<BondPurchase[]> {
+  await fileWriteQueue;
+  const fileDatabase = await readFileDatabase();
+  return fileDatabase.purchases;
+}
+
+async function createFilePurchase(
+  input: BondPurchaseInput,
+): Promise<BondPurchase> {
+  return updateFileDatabase((fileDatabase) => {
+    const purchase = purchaseFromInput(input);
+    fileDatabase.purchases = sortPurchases([
+      purchase,
+      ...fileDatabase.purchases,
+    ]);
+    return purchase;
+  });
+}
+
+async function getFilePurchase(id: string): Promise<BondPurchase | null> {
+  await fileWriteQueue;
+  const fileDatabase = await readFileDatabase();
+  return fileDatabase.purchases.find((purchase) => purchase.id === id) ?? null;
+}
+
+async function deleteFilePurchase(id: string): Promise<boolean> {
+  return updateFileDatabase((fileDatabase) => {
+    const initialLength = fileDatabase.purchases.length;
+    fileDatabase.purchases = fileDatabase.purchases.filter(
+      (purchase) => purchase.id !== id,
+    );
+    return fileDatabase.purchases.length !== initialLength;
+  });
+}
+
+async function updateFilePurchase(
+  id: string,
+  input: BondPurchaseInput,
+): Promise<BondPurchase | null> {
+  return updateFileDatabase((fileDatabase) => {
+    const index = fileDatabase.purchases.findIndex(
+      (purchase) => purchase.id === id,
+    );
+    if (index === -1) return null;
+    const purchase = purchaseFromInput(input, fileDatabase.purchases[index]);
+    fileDatabase.purchases[index] = purchase;
+    fileDatabase.purchases = sortPurchases(fileDatabase.purchases);
+    return purchase;
+  });
+}
+
 export async function listPurchases(): Promise<BondPurchase[]> {
+  if (shouldUseFileDatabase()) return listFilePurchases();
+
   const sql = database();
   const rows = await sql`
     SELECT
@@ -50,6 +234,8 @@ export async function listPurchases(): Promise<BondPurchase[]> {
 export async function createPurchase(
   input: BondPurchaseInput,
 ): Promise<BondPurchase> {
+  if (shouldUseFileDatabase()) return createFilePurchase(input);
+
   const sql = database();
   const rows = await sql`
     INSERT INTO bond_purchases (
@@ -142,6 +328,8 @@ export async function createPurchase(
 }
 
 export async function getPurchase(id: string): Promise<BondPurchase | null> {
+  if (shouldUseFileDatabase()) return getFilePurchase(id);
+
   const sql = database();
   const rows = await sql`
     SELECT
@@ -181,6 +369,8 @@ export async function getPurchase(id: string): Promise<BondPurchase | null> {
 }
 
 export async function deletePurchase(id: string): Promise<boolean> {
+  if (shouldUseFileDatabase()) return deleteFilePurchase(id);
+
   const sql = database();
   const rows = await sql`
     DELETE FROM bond_purchases
@@ -194,6 +384,8 @@ export async function updatePurchase(
   id: string,
   input: BondPurchaseInput,
 ): Promise<BondPurchase | null> {
+  if (shouldUseFileDatabase()) return updateFilePurchase(id, input);
+
   const sql = database();
   const rows = await sql`
     UPDATE bond_purchases
