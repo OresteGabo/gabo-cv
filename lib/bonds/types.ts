@@ -125,7 +125,7 @@ export type BondPurchase = {
   broker: string;
   accountReference: string;
   sourceUrl: string;
-  status: "active" | "sold" | "matured";
+  status: "submitted" | "active" | "sold" | "matured";
   notes: string;
   createdAt: string;
 };
