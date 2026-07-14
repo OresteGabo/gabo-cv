@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const pages = ["", "/calendar", "/education", "/simulator"];
+const pages = ["", "/education", "/simulator"];
 
 export function GET() {
   const urls = pages
