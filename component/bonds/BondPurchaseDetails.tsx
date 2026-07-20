@@ -132,7 +132,7 @@ export function BondPurchaseDetails({
           <h1 className="mt-4 text-xl font-black">Private bond details</h1>
           <p className="mt-2 text-sm leading-6 text-on-surface-variant">{error}</p>
           <Link
-            href={modeled ? "/bonds/simulator#projection" : "/bonds/portfolio"}
+            href={modeled ? "/simulator#projection" : "/"}
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary"
           >
             <ArrowLeft size={16} /> Return to planner
@@ -153,7 +153,7 @@ export function BondPurchaseDetails({
           <div className="flex items-center gap-4">
             <GaboBrand />
             <Link
-              href={modeled ? "/bonds/simulator#projection" : "/bonds/portfolio"}
+              href={modeled ? "/simulator#projection" : "/"}
               className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-on-surface-variant hover:text-primary"
             >
               <ArrowLeft size={15} /> {modeled ? "Projection" : "Portfolio"}
