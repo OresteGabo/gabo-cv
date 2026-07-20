@@ -10,15 +10,15 @@ import type {
 export const DEFAULT_ASSUMPTIONS: BondAssumptions = {
   monthlyContribution: 300_000,
   horizonYears: 20,
-  startMonth: 6,
+  startMonth: 7,
   startYear: 2026,
-  tenorYears: 10,
-  annualCouponRate: 0.12,
+  tenorYears: 7,
+  annualCouponRate: 0.115,
   couponPaymentsPerYear: 2,
   reinvestmentRate: 1,
   auctionFillRate: 0.67,
   agukaAnnualRate: 0.1,
-  startingPortfolio: 0,
+  startingPortfolio: 2_200_000,
   purchaseMinimum: 100_000,
 };
 
