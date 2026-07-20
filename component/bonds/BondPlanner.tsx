@@ -2088,9 +2088,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 <p className="text-[10px] font-black uppercase tracking-[0.22em]">Private portfolio</p>
               </div>
               <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Track real bond purchases</h2>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--md-sys-color-on-surface-variant)]">
-                Simulation is public. Actual purchases are stored in your private portfolio database and can be updated here after each accepted auction, without changing the code.
-              </p>
             </div>
             {authenticated && (
               <button onClick={logout} className="flex w-fit items-center gap-2 rounded-xl border border-outline/10 px-3 py-2 text-xs font-black text-[var(--md-sys-color-on-surface-variant)] hover:text-on-surface">
@@ -2113,7 +2110,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--md-sys-color-primary)]/10 text-[var(--md-sys-color-primary)]"><ShieldCheck size={21} /></span>
                 <div>
                   <h3 className="font-black">Owner access</h3>
-                  <p className="text-xs text-[var(--md-sys-color-outline)]">Sign in with your temporary owner account.</p>
                 </div>
               </div>
               <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)]">
@@ -2146,9 +2142,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                           ? "Edit Treasury bond purchase"
                           : "Record Treasury bond purchase"}
                       </h3>
-                      <p className="mt-1 text-[10px] text-on-surface-variant">
-                        Save applications as submitted, then update allocation and coupon details after issuance.
-                      </p>
                     </div>
                   </div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -2156,10 +2149,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       <div className="sm:col-span-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
                           Prefilled from calendar
-                        </p>
-                        <p className="mt-2 text-[10px] leading-4 text-on-surface-variant">
-                          Official dates and tenor are filled in. Add your
-                          purchase amount, fees, and coupon details when known.
                         </p>
                       </div>
                     ) : !editingPurchaseId ? (
@@ -2169,12 +2158,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
                               Accepted July 2026 result loaded
                             </p>
-                            <p className="mt-2 text-[10px] leading-4 text-on-surface-variant">
-                              This form is prefilled from your BNR/BK Capital
-                              confirmation: RWF 2.2M applied, RWF 2.2M
-                              allocated, 7-year FXD2/2026/7YR at 11.50%.
-                              For future auctions, update these fields here and
-                              save the new transaction.
+                            <p className="mt-2 text-sm font-black text-on-surface">
+                              RWF 2.2M · FXD2/2026/7YR · 11.50%
                             </p>
                           </div>
                           <button
@@ -2188,28 +2173,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         </div>
                       </div>
                     ) : null}
-                    <div className="sm:col-span-2 rounded-2xl border border-primary/15 bg-primary/5 p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {[
-                          "Rwanda Treasury Bond",
-                          "BK Capital",
-                          "RWF",
-                          "5% tax",
-                          "Semiannual coupons",
-                        ].map((label) => (
-                          <span
-                            key={label}
-                            className="rounded-full border border-primary/15 bg-background/70 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-primary"
-                          >
-                            {label}
-                          </span>
-                        ))}
-                      </div>
-                      <p className="mt-3 text-[10px] leading-4 text-on-surface-variant">
-                        These portfolio defaults are applied automatically to every
-                        transaction.
-                      </p>
-                    </div>
                     {[
                       ["Bond name", "bondName", "text", true],
                       ["ISIN / security code", "isin", "text", false],
@@ -2319,11 +2282,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
-                            Semiannual coupon schedule
-                          </p>
-                          <p className="mt-1 text-[10px] leading-4 text-on-surface-variant">
-                            Enter the first prospectus payment date, then generate the
-                            six-month schedule through maturity.
+                            Coupon schedule
                           </p>
                         </div>
                         <CalendarDays size={18} className="shrink-0 text-primary" />
@@ -2429,14 +2388,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                     <div className="sm:col-span-2 rounded-xl border border-primary/15 bg-primary/5 p-3">
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-wider text-primary">Calculated transaction cost</p>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-primary">Transaction cost</p>
                           <p className="mt-1 text-xl font-black">{formatRwf(purchaseCashCost)}</p>
-                          <p className="mt-1 text-[10px] text-on-surface-variant">
-                            Face value × executed price + accrued interest + fees.
-                          </p>
                         </div>
                         <div className="border-t border-primary/10 pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-primary">Net coupon every 6 months</p>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-primary">Net semiannual coupon</p>
                           <p className="mt-1 text-xl font-black">
                             {purchase.status === "submitted" && purchase.couponRate === 0
                               ? "Pending"
@@ -2446,9 +2402,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                     (1 - WITHHOLDING_TAX_RATE) /
                                     2,
                                 )}
-                          </p>
-                          <p className="mt-1 text-[10px] text-on-surface-variant">
-                            Based on face value after the fixed 5% withholding tax.
                           </p>
                         </div>
                       </div>
@@ -2488,7 +2441,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       <div>
                         <WalletCards className="mx-auto text-[var(--md-sys-color-outline)]" />
                         <p className="mt-3 font-bold">No purchases recorded yet</p>
-                        <p className="mt-1 text-xs text-[var(--md-sys-color-outline)]">Add your first treasury bond using the form.</p>
                       </div>
                     </div>
                   ) : (
@@ -2713,8 +2665,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
             </Link>
           </div>
           <div className="text-xs text-on-surface-variant md:text-right">
-            <p>Rwanda Treasury Bond Planner · RWF projections</p>
-            <p className="mt-1">Educational model · Not financial advice</p>
+            <p>Rwanda Treasury Bond Planner</p>
           </div>
         </div>
       </footer>
