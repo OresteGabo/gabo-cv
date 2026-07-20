@@ -19,7 +19,6 @@ import {
   Sparkles,
   Target,
   Trash2,
-  TrendingUp,
   WalletCards,
   X,
 } from "lucide-react";
@@ -1146,20 +1145,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
           </div>
 
           <nav className="hidden items-center gap-1 lg:flex">
-            <NavLink active={false} href="/bonds" icon={<ShieldCheck size={15} />}>
-              Market
-            </NavLink>
-            <NavLink active={false} href="/bonds/calendar" icon={<CalendarClock size={15} />}>
-              Calendar
-            </NavLink>
-            <NavLink active={false} href="/bonds/education" icon={<BookOpenText size={15} />}>
-              Education
-            </NavLink>
-            <NavLink active={view === "simulator"} href="/bonds/simulator" icon={<Sparkles size={15} />}>
-              Simulator
-            </NavLink>
-            <NavLink active={view === "portfolio"} href="/bonds/portfolio" icon={<WalletCards size={15} />}>
+            <NavLink active={view === "portfolio"} href="/" icon={<WalletCards size={15} />}>
               Portfolio
+            </NavLink>
+            <NavLink active={false} href="/calendar" icon={<CalendarClock size={15} />}>
+              Calendar
             </NavLink>
           </nav>
 
@@ -1184,11 +1174,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
         </div>
         {menuOpen && (
           <nav className="grid grid-cols-2 gap-2 border-t border-outline/10 p-3 lg:hidden">
-            <NavLink active={false} href="/bonds" icon={<ShieldCheck size={15} />}>Market</NavLink>
-            <NavLink active={false} href="/bonds/calendar" icon={<CalendarClock size={15} />}>Calendar</NavLink>
-            <NavLink active={false} href="/bonds/education" icon={<BookOpenText size={15} />}>Education</NavLink>
-            <NavLink active={view === "simulator"} href="/bonds/simulator" icon={<Sparkles size={15} />}>Simulator</NavLink>
-            <NavLink active={view === "portfolio"} href="/bonds/portfolio" icon={<WalletCards size={15} />}>Portfolio</NavLink>
+            <NavLink active={view === "portfolio"} href="/" icon={<WalletCards size={15} />}>Portfolio</NavLink>
+            <NavLink active={false} href="/calendar" icon={<CalendarClock size={15} />}>Calendar</NavLink>
           </nav>
         )}
       </header>
@@ -1734,7 +1721,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 </div>
               </div>
               <Link
-                href="/bonds/calendar"
+                href="/calendar"
                 className="inline-flex w-fit items-center gap-2 rounded-xl border border-outline/10 bg-surface-container-lowest px-3 py-2 text-xs font-black text-on-surface transition hover:border-[var(--md-sys-color-tertiary)]/40 hover:text-[var(--md-sys-color-tertiary)]"
               >
                 Full calendar <ChevronRight size={15} />
@@ -1892,7 +1879,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                         <td className="px-3 py-3 font-black text-primary">
                                           {month.newBondPurchaseLot ? (
                                             <Link
-                                              href={`/bonds/modeled-purchase?${new URLSearchParams({
+                                              href={`/modeled-purchase?${new URLSearchParams({
                                                 label: `Pooled purchase lot ${String(month.month).padStart(3, "0")}`,
                                                 amount: String(
                                                   month.newBondPurchaseLot
@@ -2534,7 +2521,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                             <tr key={item.id} className="border-t border-outline/10 text-xs">
                               <td className="px-4 py-4">
                                 <Link
-                                  href={`/bonds/purchases/${item.id}`}
+                                  href={`/purchases/${item.id}`}
                                   className="inline-flex items-center gap-1.5 text-sm font-black text-on-surface hover:text-[var(--md-sys-color-primary)]"
                                 >
                                   {item.bondName}
@@ -2715,6 +2702,16 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               Personal finance systems · Built with care
             </p>
           </div>
+          <div className="flex flex-wrap gap-2 text-xs font-black text-on-surface-variant md:justify-end">
+            <Link href="/simulator" className="inline-flex items-center gap-1.5 rounded-xl border border-outline/10 px-3 py-2 transition hover:border-primary/30 hover:text-primary">
+              <Sparkles size={14} />
+              Simulator
+            </Link>
+            <Link href="/education" className="inline-flex items-center gap-1.5 rounded-xl border border-outline/10 px-3 py-2 transition hover:border-primary/30 hover:text-primary">
+              <BookOpenText size={14} />
+              Courses
+            </Link>
+          </div>
           <div className="text-xs text-on-surface-variant md:text-right">
             <p>Rwanda Treasury Bond Planner · RWF projections</p>
             <p className="mt-1">Educational model · Not financial advice</p>
@@ -2723,20 +2720,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       </footer>
 
       <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-outline/10 bg-[var(--md-sys-color-background)]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
-        <Link href="/bonds" aria-label="Learn about bonds" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
-          <ShieldCheck size={18} />
-        </Link>
-        <Link href="/bonds/calendar" aria-label="Open issuance calendar" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
-          <CalendarClock size={18} />
-        </Link>
-        <Link href="/bonds/education" aria-label="Open bond education" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
-          <BookOpenText size={18} />
-        </Link>
-        <Link href="/bonds/simulator" aria-label="Open simulator" className={`rounded-xl p-3 ${view === "simulator" ? "bg-primary text-on-primary" : "text-[var(--md-sys-color-outline)]"}`}>
-          <TrendingUp size={18} />
-        </Link>
-        <Link href="/bonds/portfolio" aria-label="Open portfolio" className={`rounded-xl p-3 ${view === "portfolio" ? "bg-primary text-on-primary" : "text-[var(--md-sys-color-outline)]"}`}>
+        <Link href="/" aria-label="Open portfolio" className={`rounded-xl p-3 ${view === "portfolio" ? "bg-primary text-on-primary" : "text-[var(--md-sys-color-outline)]"}`}>
           <WalletCards size={18} />
+        </Link>
+        <Link href="/calendar" aria-label="Open issuance calendar" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
+          <CalendarClock size={18} />
         </Link>
       </nav>
     </main>
