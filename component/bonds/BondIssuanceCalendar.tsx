@@ -583,13 +583,11 @@ export function BondIssuanceCalendar() {
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 text-primary" size={18} />
               <div>
-                <p className="font-black text-on-surface">Source and model use</p>
-                <p className="mt-1">
-                  Source: {BNR_ISSUANCE_CALENDAR_SOURCE.label}. The data is
-                  stored locally in the app from{" "}
-                  <span className="font-bold">{BNR_ISSUANCE_CALENDAR_SOURCE.fileName}</span>.
-                  Use BNR or your broker confirmation for final auction details,
-                  coupon rates, and prospectus terms.
+                <p className="font-black text-on-surface">
+                  Source: {BNR_ISSUANCE_CALENDAR_SOURCE.label}
+                </p>
+                <p className="mt-1 text-xs">
+                  {BNR_ISSUANCE_CALENDAR_SOURCE.fileName}
                 </p>
               </div>
             </div>
@@ -618,8 +616,7 @@ export function BondIssuanceCalendar() {
             </Link>
           </div>
           <div className="text-xs text-on-surface-variant md:text-right">
-            <p>Rwanda Treasury Bond Planner · RWF projections</p>
-            <p className="mt-1">Educational model · Not financial advice</p>
+            <p>Rwanda Treasury Bond Planner</p>
           </div>
         </div>
       </footer>
