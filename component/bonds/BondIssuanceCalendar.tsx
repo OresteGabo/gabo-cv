@@ -136,7 +136,7 @@ function portfolioPrefillHref(event: BondIssuanceEvent) {
     maturityDate: event.maturityDate,
     sourceDescription: event.sourceDescription,
   });
-  return `/bonds/portfolio?${params.toString()}#portfolio-transaction-form`;
+  return `/?${params.toString()}#portfolio-transaction-form`;
 }
 
 export function BondIssuanceCalendar() {
@@ -291,13 +291,10 @@ export function BondIssuanceCalendar() {
             </span>
           </div>
           <nav className="hidden items-center gap-1 lg:flex">
-            <NavLink href="/bonds">Market</NavLink>
-            <NavLink href="/bonds/calendar" active>
+            <NavLink href="/">Portfolio</NavLink>
+            <NavLink href="/calendar" active>
               Calendar
             </NavLink>
-            <NavLink href="/bonds/education">Education</NavLink>
-            <NavLink href="/bonds/simulator">Simulator</NavLink>
-            <NavLink href="/bonds/portfolio">Portfolio</NavLink>
           </nav>
           <BondThemeToggle />
         </div>
@@ -431,7 +428,7 @@ export function BondIssuanceCalendar() {
                 />
               )}
               <Link
-                href="/bonds/simulator"
+                href="/simulator"
                 className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary"
               >
                 Use in simulator <ArrowRight size={16} />
@@ -552,7 +549,7 @@ export function BondIssuanceCalendar() {
                               return (
                                 <Link
                                   key={purchase.id}
-                                  href={`/bonds/purchases/${purchase.id}`}
+                                  href={`/purchases/${purchase.id}`}
                                   className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-[10px] font-black text-primary"
                                 >
                                   <span>{formatRwf(purchase.faceValue, true)}</span>
@@ -602,21 +599,37 @@ export function BondIssuanceCalendar() {
         </>
       )}
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-outline/10 bg-background/92 px-2 py-2 backdrop-blur-xl lg:hidden">
-        <Link href="/bonds" aria-label="Market" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
-          <ShieldCheck size={18} />
-        </Link>
-        <Link href="/bonds/calendar" aria-label="Calendar" className="grid place-items-center rounded-xl bg-primary p-3 text-on-primary">
-          <CalendarClock size={18} />
-        </Link>
-        <Link href="/bonds/education" aria-label="Education" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
-          <BookOpenText size={18} />
-        </Link>
-        <Link href="/bonds/simulator" aria-label="Simulator" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
-          <Sparkles size={18} />
-        </Link>
-        <Link href="/bonds/portfolio" aria-label="Portfolio" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
+      <footer className="border-t border-outline/10 bg-surface-container-lowest/30">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 px-6 py-10 md:flex-row md:items-center md:px-8">
+          <div>
+            <GaboBrand />
+            <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
+              Personal finance systems · Built with care
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs font-black text-on-surface-variant md:justify-end">
+            <Link href="/simulator" className="inline-flex items-center gap-1.5 rounded-xl border border-outline/10 px-3 py-2 transition hover:border-primary/30 hover:text-primary">
+              <Sparkles size={14} />
+              Simulator
+            </Link>
+            <Link href="/education" className="inline-flex items-center gap-1.5 rounded-xl border border-outline/10 px-3 py-2 transition hover:border-primary/30 hover:text-primary">
+              <BookOpenText size={14} />
+              Courses
+            </Link>
+          </div>
+          <div className="text-xs text-on-surface-variant md:text-right">
+            <p>Rwanda Treasury Bond Planner · RWF projections</p>
+            <p className="mt-1">Educational model · Not financial advice</p>
+          </div>
+        </div>
+      </footer>
+
+      <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-outline/10 bg-[var(--md-sys-color-background)]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
+        <Link href="/" aria-label="Portfolio" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
           <WalletCards size={18} />
+        </Link>
+        <Link href="/calendar" aria-label="Calendar" className="grid place-items-center rounded-xl bg-primary p-3 text-on-primary">
+          <CalendarClock size={18} />
         </Link>
       </nav>
     </main>
