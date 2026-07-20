@@ -4,9 +4,9 @@ export function GET() {
   return NextResponse.json(
     {
       name: "Rwanda Treasury Bond Lab",
-      short_name: "Bond Lab",
+      short_name: "Bond Portfolio",
       description:
-        "Learn, simulate, and privately track Rwanda Treasury Bonds.",
+        "Privately track Rwanda Treasury Bonds and BNR issuance dates.",
       start_url: "/",
       scope: "/",
       display: "standalone",
@@ -21,24 +21,14 @@ export function GET() {
       ],
       shortcuts: [
         {
-          name: "Bond education",
-          short_name: "Education",
-          url: "/education",
-        },
-        {
           name: "BNR issuance calendar",
           short_name: "Calendar",
           url: "/calendar",
         },
         {
-          name: "Bond simulator",
-          short_name: "Simulator",
-          url: "/simulator",
-        },
-        {
           name: "Private portfolio",
           short_name: "Portfolio",
-          url: "/portfolio",
+          url: "/",
         },
       ],
     },
