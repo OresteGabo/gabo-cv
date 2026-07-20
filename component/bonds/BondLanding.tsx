@@ -104,16 +104,16 @@ export async function BondLanding({
             </span>
           </div>
           <nav className="flex items-center gap-2">
-            <Link href="/bonds/calendar" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container md:block">
+            <Link href="/calendar" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container md:block">
               Calendar
             </Link>
-            <Link href="/bonds/education" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container md:block">
+            <Link href="/education" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container md:block">
               Education
             </Link>
-            <Link href="/bonds/simulator" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block">
+            <Link href="/simulator" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block">
               Simulator
             </Link>
-            <Link href="/bonds/portfolio" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block">
+            <Link href="/" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block">
               Portfolio
             </Link>
             <BondThemeToggle />
@@ -137,16 +137,16 @@ export async function BondLanding({
               every bond you actually own.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/bonds/simulator" className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-black text-on-primary shadow-lg shadow-primary/15 transition hover:-translate-y-0.5">
+              <Link href="/simulator" className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-black text-on-primary shadow-lg shadow-primary/15 transition hover:-translate-y-0.5">
                 Run a simulation <ArrowRight size={17} />
               </Link>
-              <Link href="/bonds/portfolio" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
+              <Link href="/" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
                 Open my portfolio <LockKeyhole size={16} />
               </Link>
-              <Link href="/bonds/calendar" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
+              <Link href="/calendar" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
                 View BNR calendar <CalendarClock size={16} />
               </Link>
-              <Link href="/bonds/education" className="inline-flex items-center gap-2 rounded-2xl px-3 py-3.5 text-sm font-black text-primary transition hover:bg-primary/10">
+              <Link href="/education" className="inline-flex items-center gap-2 rounded-2xl px-3 py-3.5 text-sm font-black text-primary transition hover:bg-primary/10">
                 Learn bond mechanics <BookOpenText size={16} />
               </Link>
             </div>
@@ -324,7 +324,7 @@ export async function BondLanding({
               reinvestment, starting capital, and occasional cash injections. See
               annual and monthly outcomes without creating real transactions.
             </p>
-            <Link href="/bonds/simulator" className="mt-7 inline-flex items-center gap-2 text-sm font-black text-primary">
+            <Link href="/simulator" className="mt-7 inline-flex items-center gap-2 text-sm font-black text-primary">
               Go to simulator <ArrowRight size={16} />
             </Link>
           </article>
@@ -338,7 +338,7 @@ export async function BondLanding({
               maturity, exact coupon dates, and source documents. Every position keeps
               its own schedule and detail page.
             </p>
-            <Link href="/bonds/portfolio" className="mt-7 inline-flex items-center gap-2 text-sm font-black text-primary">
+            <Link href="/" className="mt-7 inline-flex items-center gap-2 text-sm font-black text-primary">
               Open private portfolio <ArrowRight size={16} />
             </Link>
           </article>
