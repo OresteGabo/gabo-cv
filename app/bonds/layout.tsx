@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-  title: "Rwanda Treasury Bonds | Gabo",
+  title: "Private Rwanda Bond Portfolio | Gabo",
   description:
-    "Learn how Rwanda Treasury Bonds work, model long-term strategies, and privately track real purchases.",
+    "Privately track Rwanda Treasury Bond purchases, coupon dates, BNR issuance calendar events, and long-term portfolio income.",
   metadataBase: new URL("https://bonds.orestegabo.dev"),
   manifest: "/manifest.webmanifest",
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   openGraph: {
-    title: "Rwanda Treasury Bonds",
+    title: "Private Rwanda Bond Portfolio",
     description:
-      "Clear information, transparent simulations, and private tracking for Rwanda Treasury Bonds.",
+      "Private portfolio tracking and calendar planning for Rwanda Treasury Bonds.",
     url: "https://bonds.orestegabo.dev",
     siteName: "Rwanda Treasury Bond Planner",
     type: "website",
