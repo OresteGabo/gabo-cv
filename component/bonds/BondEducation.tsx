@@ -214,22 +214,16 @@ export function BondEducation() {
           </div>
           <nav className="flex items-center gap-1 sm:gap-2">
             <Link
-              href="/bonds"
+              href="/"
               className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container md:block"
             >
-              Market
-            </Link>
-            <Link
-              href="/bonds/simulator"
-              className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block"
-            >
-              Simulator
-            </Link>
-            <Link
-              href="/bonds/portfolio"
-              className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block"
-            >
               Portfolio
+            </Link>
+            <Link
+              href="/calendar"
+              className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block"
+            >
+              Calendar
             </Link>
             <BondThemeToggle />
           </nav>
@@ -1760,13 +1754,13 @@ export function BondEducation() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
-                href="/bonds#rse-market"
+                href="/"
                 className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-black text-on-primary"
               >
-                Review live market data <ArrowRight size={16} />
+                Open my portfolio <ArrowRight size={16} />
               </Link>
               <Link
-                href="/bonds/simulator"
+                href="/simulator"
                 className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface hover:border-primary/35 hover:text-primary"
               >
                 Open the simulator <Calculator size={16} />
