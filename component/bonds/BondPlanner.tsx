@@ -64,41 +64,59 @@ import { calculateBondTracking } from "@/lib/bonds/tracking";
 
 type PlannerView = "simulator" | "portfolio";
 
-const STORAGE_KEY = "rwanda-bond-planner-assumptions-v1";
+const STORAGE_KEY = "rwanda-bond-planner-assumptions-v2";
 const INJECTIONS_STORAGE_KEY = "rwanda-bond-planner-injections-v1";
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-const EMPTY_PURCHASE: BondPurchaseInput = {
+
+const JULY_2026_ACCEPTED_PURCHASE: BondPurchaseInput = {
   instrumentType: "treasury",
   issuer: "Government of Rwanda",
   currency: "RWF",
   market: "primary",
-  purchaseDate: "2026-06-08",
-  settlementDate: "2026-06-10",
-  bondName: "FXD1/2026/10Yrs",
-  isin: "RW000A4EN3L3",
-  tenorYears: 10,
-  faceValue: 1_000_000,
+  purchaseDate: "2026-07-15",
+  settlementDate: "2026-07-17",
+  bondName: "FXD2/2026/7YR",
+  isin: "RWBO7Y000682/MN",
+  tenorYears: 7,
+  faceValue: 2_200_000,
   pricePercent: 100,
   accruedInterestPaid: 0,
   feesPaid: 0,
-  amountInvested: 1_000_000,
-  couponRate: 0.12,
+  amountInvested: 2_200_000,
+  couponRate: 0.115,
   withholdingTaxRate: WITHHOLDING_TAX_RATE,
-  maturityDate: "2036-01-04",
-  firstCouponDate: "2026-07-04",
-  couponDates: generateSemiannualCouponDates("2026-07-04", "2036-01-04"),
+  maturityDate: "2033-07-08",
+  firstCouponDate: "2027-01-15",
+  couponDates: [
+    "2027-01-15",
+    "2027-07-16",
+    "2028-01-14",
+    "2028-07-14",
+    "2029-01-12",
+    "2029-07-13",
+    "2030-01-11",
+    "2030-07-12",
+    "2031-01-10",
+    "2031-07-11",
+    "2032-01-09",
+    "2032-07-09",
+    "2033-01-07",
+    "2033-07-08",
+  ],
   couponFrequency: 2,
   scheduleConfidence: "confirmed",
   broker: "BK Capital",
-  accountReference: "BK-EXAMPLE-2026-001",
-  sourceUrl: "https://rse.rw/fixed-income-board",
+  accountReference: "BNR-FXD2-2026-7YR",
+  sourceUrl: "",
   status: "active",
   notes:
-    "Example transaction for form guidance. Bond identity, ISIN, maturity and 12% coupon come from RSE. Trade dates, RWF 1,000,000 face value, price, account reference and coupon dates are illustrative and must be replaced with the BK Capital confirmation or prospectus before saving.",
+    "Accepted BNR July 15, 2026 7-year T-bond result. Applied RWF 2,200,000; allocated RWF 2,200,000; settlement RWF 2,200,000; gross coupon per payment RWF 126,500 before withholding tax.",
 };
+
+const EMPTY_PURCHASE = JULY_2026_ACCEPTED_PURCHASE;
 
 function generateSemiannualCouponDates(
   firstCouponDate: string,
@@ -583,7 +601,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [purchases, setPurchases] = useState<BondPurchase[]>([]);
   const [portfolioError, setPortfolioError] = useState("");
-  const [purchase, setPurchase] = useState<BondPurchaseInput>(EMPTY_PURCHASE);
+  const [purchase, setPurchase] = useState<BondPurchaseInput>(() => ({
+    ...EMPTY_PURCHASE,
+  }));
   const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(
     null,
   );
@@ -978,7 +998,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
           )
         : [data.purchase, ...current],
     );
-    setPurchase(EMPTY_PURCHASE);
+    setPurchase({ ...EMPTY_PURCHASE });
     setEditingPurchaseId(null);
   }
 
@@ -1004,6 +1024,14 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function useAcceptedJulyResult() {
+    setEditingPurchaseId(null);
+    setPurchase({ ...JULY_2026_ACCEPTED_PURCHASE });
+    document
+      .getElementById("portfolio-transaction-form")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function removePurchase() {
     if (!purchasePendingDelete) return;
     const { id } = purchasePendingDelete;
@@ -1016,7 +1044,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       if (response.ok) {
         setPurchases((current) => current.filter((item) => item.id !== id));
         if (editingPurchaseId === id) {
-          setPurchase(EMPTY_PURCHASE);
+          setPurchase({ ...EMPTY_PURCHASE });
           setEditingPurchaseId(null);
         }
         setPurchasePendingDelete(null);
@@ -2074,7 +2102,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               </div>
               <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Track real bond purchases</h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--md-sys-color-on-surface-variant)]">
-                Simulation is public. Actual purchases are stored in your private portfolio database and only returned after your signed owner session is verified.
+                Simulation is public. Actual purchases are stored in your private portfolio database and can be updated here after each accepted auction, without changing the code.
               </p>
             </div>
             {authenticated && (
@@ -2132,7 +2160,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                           : "Record Treasury bond purchase"}
                       </h3>
                       <p className="mt-1 text-[10px] text-on-surface-variant">
-                        Save applications as submitted, then update coupon details after issuance.
+                        Save applications as submitted, then update allocation and coupon details after issuance.
                       </p>
                     </div>
                   </div>
@@ -2148,17 +2176,29 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         </p>
                       </div>
                     ) : !editingPurchaseId ? (
-                      <div className="sm:col-span-2 rounded-2xl border border-tertiary/20 bg-tertiary/5 p-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-tertiary">
-                          Prefilled example · Do not save unchanged
-                        </p>
-                        <p className="mt-2 text-[10px] leading-4 text-on-surface-variant">
-                          The bond name, ISIN, maturity, tenor and 12% coupon are from
-                          the RSE Fixed Income Board. Purchase dates, settlement,
-                          principal, price, reference and generated coupon dates are
-                          examples. Replace them with your BK Capital confirmation and
-                          the official prospectus.
-                        </p>
+                      <div className="sm:col-span-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+                              Accepted July 2026 result loaded
+                            </p>
+                            <p className="mt-2 text-[10px] leading-4 text-on-surface-variant">
+                              This form is prefilled from your BNR/BK Capital
+                              confirmation: RWF 2.2M applied, RWF 2.2M
+                              allocated, 7-year FXD2/2026/7YR at 11.50%.
+                              For future auctions, update these fields here and
+                              save the new transaction.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={useAcceptedJulyResult}
+                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-background/70 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary transition hover:bg-primary/10"
+                          >
+                            <RefreshCcw size={13} />
+                            Reload result
+                          </button>
+                        </div>
                       </div>
                     ) : null}
                     <div className="sm:col-span-2 rounded-2xl border border-primary/15 bg-primary/5 p-4">
@@ -2437,7 +2477,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         type="button"
                         onClick={() => {
                           setEditingPurchaseId(null);
-                          setPurchase(EMPTY_PURCHASE);
+                          setPurchase({ ...EMPTY_PURCHASE });
                         }}
                         className="rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant"
                       >
