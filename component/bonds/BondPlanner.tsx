@@ -251,6 +251,19 @@ function DetailLine({ label, value }: { label: string; value: string }) {
   );
 }
 
+function LockedField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-outline/10 bg-surface-container-low px-3 py-2.5">
+      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-on-surface-variant">
+        {label}
+      </p>
+      <p className="mt-1 break-words text-sm font-black text-on-surface">
+        {value || "-"}
+      </p>
+    </div>
+  );
+}
+
 function InfoTip({ label, children }: { label: string; children: ReactNode }) {
   return (
     <span className="group relative inline-flex">
@@ -807,6 +820,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
         purchase.feesPaid) *
         100,
     ) / 100;
+  const purchaseAnnualNetCoupon =
+    purchase.status === "submitted" && purchase.couponRate === 0
+      ? 0
+      : purchase.faceValue * purchase.couponRate * (1 - WITHHOLDING_TAX_RATE);
+  const purchaseTermsLocked = purchase.status !== "submitted";
   const calendarPrefilledPurchase =
     purchase.status === "submitted" &&
     purchase.notes.startsWith("From BNR calendar");
@@ -2129,7 +2147,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <Metric label="Principal held" value={formatRwf(actualPortfolio)} accent />
                 <Metric label="Total cash cost" value={formatRwf(actualCashCost)} />
-                <Metric label="Expected annual net coupons" value={formatRwf(actualAnnualIncome)} />
+                <Metric label="Saved annual net coupons" value={formatRwf(actualAnnualIncome)} />
                 <Metric label="Recorded transactions" value={String(purchases.length)} />
               </div>
               <div className="mt-6 grid gap-6 xl:grid-cols-[480px_1fr]">
@@ -2139,7 +2157,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                     <div>
                       <h3 className="font-black">
                         {editingPurchaseId
-                          ? "Edit Treasury bond purchase"
+                          ? purchaseTermsLocked
+                            ? "Update purchase record"
+                            : "Edit Treasury bond purchase"
                           : "Record Treasury bond purchase"}
                       </h3>
                     </div>
@@ -2173,106 +2193,125 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         </div>
                       </div>
                     ) : null}
-                    {[
-                      ["Bond name", "bondName", "text", true],
-                      ["ISIN / security code", "isin", "text", false],
-                      ["Trade date", "purchaseDate", "date", true],
-                      ["Settlement date", "settlementDate", "date", true],
-                      ["Maturity date", "maturityDate", "date", true],
-                    ].map(([label, key, type, required]) => {
-                      const fieldKey =
-                        String(key) as keyof BondPurchaseInput;
-                      return (
-                        <label key={fieldKey} className={`text-[11px] font-bold text-on-surface-variant ${fieldKey === "bondName" ? "sm:col-span-2" : ""}`}>
-                          {label}
-                          <input
-                            type={String(type)}
-                            required={Boolean(required)}
-                            value={String(purchase[fieldKey])}
+                    {purchaseTermsLocked ? (
+                      <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
+                        <LockedField label="Bond" value={purchase.bondName} />
+                        <LockedField label="Code" value={purchase.isin} />
+                        <LockedField label="Trade date" value={purchase.purchaseDate} />
+                        <LockedField label="Settlement" value={purchase.settlementDate} />
+                        <LockedField label="Maturity" value={purchase.maturityDate} />
+                        <LockedField label="Tenor" value={`${purchase.tenorYears} years`} />
+                        <LockedField label="Principal" value={formatRwf(purchase.faceValue)} />
+                        <LockedField label="Price" value={`${purchase.pricePercent.toFixed(3)}%`} />
+                        <LockedField label="Coupon" value={formatPercent(purchase.couponRate, 2)} />
+                        <LockedField label="Cash cost" value={formatRwf(purchaseCashCost)} />
+                      </div>
+                    ) : (
+                      <>
+                        {[
+                          ["Bond name", "bondName", "text", true],
+                          ["ISIN / security code", "isin", "text", false],
+                          ["Trade date", "purchaseDate", "date", true],
+                          ["Settlement date", "settlementDate", "date", true],
+                          ["Maturity date", "maturityDate", "date", true],
+                        ].map(([label, key, type, required]) => {
+                          const fieldKey =
+                            String(key) as keyof BondPurchaseInput;
+                          return (
+                            <label key={fieldKey} className={`text-[11px] font-bold text-on-surface-variant ${fieldKey === "bondName" ? "sm:col-span-2" : ""}`}>
+                              {label}
+                              <input
+                                type={String(type)}
+                                required={Boolean(required)}
+                                value={String(purchase[fieldKey])}
+                                onChange={(event) =>
+                                  setPurchase((current) => ({
+                                    ...current,
+                                    [fieldKey]: event.target.value,
+                                    ...(fieldKey === "maturityDate"
+                                      ? { couponDates: [] }
+                                      : {}),
+                                  }))
+                                }
+                                className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
+                              />
+                            </label>
+                          );
+                        })}
+                        {[
+                          ["Face value / principal", "faceValue", 1],
+                          ["Executed price (% of face)", "pricePercent", 0.001],
+                          ["Accrued interest paid", "accruedInterestPaid", 1],
+                          ["Fees and commission", "feesPaid", 1],
+                          ["Coupon rate (%)", "couponRate", 0.001],
+                        ].map(([label, key, step]) => {
+                          const fieldKey =
+                            String(key) as keyof BondPurchaseInput;
+                          const couponPending =
+                            fieldKey === "couponRate" &&
+                            purchase.status === "submitted" &&
+                            purchase.couponRate === 0;
+                          return (
+                            <label key={fieldKey} className="text-[11px] font-bold text-on-surface-variant">
+                              {label}
+                              <input
+                                type="number"
+                                min={0}
+                                step={Number(step)}
+                                required={fieldKey !== "couponRate" || purchase.status !== "submitted"}
+                                value={
+                                  couponPending
+                                    ? ""
+                                    : fieldKey === "couponRate"
+                                    ? purchase.couponRate * 100
+                                    : Number(purchase[fieldKey])
+                                }
+                                onChange={(event) => {
+                                  const value =
+                                    event.target.value === ""
+                                      ? 0
+                                      : Number(event.target.value);
+                                  setPurchase((current) => ({
+                                    ...current,
+                                    [fieldKey]:
+                                      fieldKey === "couponRate"
+                                        ? value / 100
+                                        : value,
+                                  }));
+                                }}
+                                className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
+                              />
+                            </label>
+                          );
+                        })}
+                        <label className="text-[11px] font-bold text-on-surface-variant">
+                          Tenor
+                          <select
+                            required
+                            value={purchase.tenorYears}
                             onChange={(event) =>
                               setPurchase((current) => ({
                                 ...current,
-                                [fieldKey]: event.target.value,
-                                ...(fieldKey === "maturityDate"
-                                  ? { couponDates: [] }
-                                  : {}),
+                                tenorYears: Number(event.target.value),
                               }))
                             }
-                            className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
-                          />
+                            className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface"
+                          >
+                            {TREASURY_BOND_TENORS.map((tenor) => (
+                              <option key={tenor} value={tenor}>
+                                {tenor} years
+                              </option>
+                            ))}
+                          </select>
                         </label>
-                      );
-                    })}
-                    {[
-                      ["Face value / principal", "faceValue", 1],
-                      ["Executed price (% of face)", "pricePercent", 0.001],
-                      ["Accrued interest paid", "accruedInterestPaid", 1],
-                      ["Fees and commission", "feesPaid", 1],
-                      ["Coupon rate (%)", "couponRate", 0.001],
-                    ].map(([label, key, step]) => {
-                      const fieldKey =
-                        String(key) as keyof BondPurchaseInput;
-                      const couponPending =
-                        fieldKey === "couponRate" &&
-                        purchase.status === "submitted" &&
-                        purchase.couponRate === 0;
-                      return (
-                        <label key={fieldKey} className="text-[11px] font-bold text-on-surface-variant">
-                          {label}
-                          <input
-                            type="number"
-                            min={0}
-                            step={Number(step)}
-                            required={fieldKey !== "couponRate" || purchase.status !== "submitted"}
-                            value={
-                              couponPending
-                                ? ""
-                                : fieldKey === "couponRate"
-                                ? purchase.couponRate * 100
-                                : Number(purchase[fieldKey])
-                            }
-                            onChange={(event) => {
-                              const value =
-                                event.target.value === ""
-                                  ? 0
-                                  : Number(event.target.value);
-                              setPurchase((current) => ({
-                                ...current,
-                                [fieldKey]:
-                                  fieldKey === "couponRate"
-                                    ? value / 100
-                                    : value,
-                              }));
-                            }}
-                            className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
-                          />
-                        </label>
-                      );
-                    })}
-                    <label className="text-[11px] font-bold text-on-surface-variant">
-                      Tenor
-                      <select
-                        required
-                        value={purchase.tenorYears}
-                        onChange={(event) =>
-                          setPurchase((current) => ({
-                            ...current,
-                            tenorYears: Number(event.target.value),
-                          }))
-                        }
-                        className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface"
-                      >
-                        {TREASURY_BOND_TENORS.map((tenor) => (
-                          <option key={tenor} value={tenor}>
-                            {tenor} years
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                      </>
+                    )}
                     <label className="text-[11px] font-bold text-on-surface-variant">
                       Position status
                       <select value={purchase.status} onChange={(event) => setPurchase((current) => ({ ...current, status: event.target.value as BondPurchaseInput["status"] }))} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface">
-                        <option value="submitted">Submitted</option>
+                        {!purchaseTermsLocked && (
+                          <option value="submitted">Submitted</option>
+                        )}
                         <option value="active">Active</option>
                         <option value="sold">Sold</option>
                         <option value="matured">Matured</option>
@@ -2287,40 +2326,42 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         </div>
                         <CalendarDays size={18} className="shrink-0 text-primary" />
                       </div>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                        <label className="text-[11px] font-bold text-on-surface-variant">
-                          First coupon payment
-                          <input
-                            type="date"
-                            required={purchase.status !== "submitted"}
-                            value={purchase.firstCouponDate}
-                            onChange={(event) =>
+                      {!purchaseTermsLocked && (
+                        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                          <label className="text-[11px] font-bold text-on-surface-variant">
+                            First coupon payment
+                            <input
+                              type="date"
+                              required={purchase.status !== "submitted"}
+                              value={purchase.firstCouponDate}
+                              onChange={(event) =>
+                                setPurchase((current) => ({
+                                  ...current,
+                                  firstCouponDate: event.target.value,
+                                  couponDates: [],
+                                }))
+                              }
+                              className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            disabled={!purchase.firstCouponDate || !purchase.maturityDate}
+                            onClick={() =>
                               setPurchase((current) => ({
                                 ...current,
-                                firstCouponDate: event.target.value,
-                                couponDates: [],
+                                couponDates: generateSemiannualCouponDates(
+                                  current.firstCouponDate,
+                                  current.maturityDate,
+                                ),
                               }))
                             }
-                            className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          disabled={!purchase.firstCouponDate || !purchase.maturityDate}
-                          onClick={() =>
-                            setPurchase((current) => ({
-                              ...current,
-                              couponDates: generateSemiannualCouponDates(
-                                current.firstCouponDate,
-                                current.maturityDate,
-                              ),
-                            }))
-                          }
-                          className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs font-black text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          Generate dates
-                        </button>
-                      </div>
+                            className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs font-black text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            Generate dates
+                          </button>
+                        </div>
+                      )}
 
                       {purchase.couponDates.length > 0 ? (
                         <div className="bond-scrollbar mt-4 max-h-64 overflow-y-auto pr-1">
@@ -2333,40 +2374,48 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                 <span className="w-7 text-center text-[9px] font-black text-outline">
                                   {String(index + 1).padStart(2, "0")}
                                 </span>
-                                <input
-                                  type="date"
-                                  required
-                                  value={date}
-                                  onChange={(event) =>
-                                    setPurchase((current) => ({
-                                      ...current,
-                                      couponDates: current.couponDates
-                                        .map((item, itemIndex) =>
-                                          itemIndex === index
-                                            ? event.target.value
-                                            : item,
-                                        )
-                                        .filter(Boolean)
-                                        .sort(),
-                                    }))
-                                  }
-                                  className="min-w-0 flex-1 bg-transparent text-xs font-bold text-on-surface outline-none"
-                                />
-                                <button
-                                  type="button"
-                                  aria-label={`Remove coupon date ${date}`}
-                                  onClick={() =>
-                                    setPurchase((current) => ({
-                                      ...current,
-                                      couponDates: current.couponDates.filter(
-                                        (_, itemIndex) => itemIndex !== index,
-                                      ),
-                                    }))
-                                  }
-                                  className="rounded-lg p-1.5 text-outline transition hover:bg-error-container/30 hover:text-error"
-                                >
-                                  <X size={14} />
-                                </button>
+                                {purchaseTermsLocked ? (
+                                  <span className="min-w-0 flex-1 text-xs font-bold text-on-surface">
+                                    {date}
+                                  </span>
+                                ) : (
+                                  <>
+                                    <input
+                                      type="date"
+                                      required
+                                      value={date}
+                                      onChange={(event) =>
+                                        setPurchase((current) => ({
+                                          ...current,
+                                          couponDates: current.couponDates
+                                            .map((item, itemIndex) =>
+                                              itemIndex === index
+                                                ? event.target.value
+                                                : item,
+                                            )
+                                            .filter(Boolean)
+                                            .sort(),
+                                        }))
+                                      }
+                                      className="min-w-0 flex-1 bg-transparent text-xs font-bold text-on-surface outline-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      aria-label={`Remove coupon date ${date}`}
+                                      onClick={() =>
+                                        setPurchase((current) => ({
+                                          ...current,
+                                          couponDates: current.couponDates.filter(
+                                            (_, itemIndex) => itemIndex !== index,
+                                          ),
+                                        }))
+                                      }
+                                      className="rounded-lg p-1.5 text-outline transition hover:bg-error-container/30 hover:text-error"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -2386,22 +2435,25 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       <input type="url" value={purchase.sourceUrl} onChange={(event) => setPurchase((current) => ({ ...current, sourceUrl: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface" />
                     </label>
                     <div className="sm:col-span-2 rounded-xl border border-primary/15 bg-primary/5 p-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-3">
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-wider text-primary">Transaction cost</p>
                           <p className="mt-1 text-xl font-black">{formatRwf(purchaseCashCost)}</p>
                         </div>
                         <div className="border-t border-primary/10 pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-primary">Net annual coupon</p>
+                          <p className="mt-1 text-xl font-black">
+                            {purchaseAnnualNetCoupon > 0
+                              ? formatRwf(purchaseAnnualNetCoupon)
+                              : "Pending"}
+                          </p>
+                        </div>
+                        <div className="border-t border-primary/10 pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
                           <p className="text-[10px] font-black uppercase tracking-wider text-primary">Net semiannual coupon</p>
                           <p className="mt-1 text-xl font-black">
-                            {purchase.status === "submitted" && purchase.couponRate === 0
-                              ? "Pending"
-                              : formatRwf(
-                                  purchase.faceValue *
-                                    purchase.couponRate *
-                                    (1 - WITHHOLDING_TAX_RATE) /
-                                    2,
-                                )}
+                            {purchaseAnnualNetCoupon > 0
+                              ? formatRwf(purchaseAnnualNetCoupon / 2)
+                              : "Pending"}
                           </p>
                         </div>
                       </div>
