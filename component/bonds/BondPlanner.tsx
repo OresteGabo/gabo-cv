@@ -91,7 +91,7 @@ function purchaseFromCatalogEntry(
     market: "primary",
     purchaseDate: entry.purchaseDate,
     settlementDate: entry.settlementDate,
-    bondName: entry.bondName,
+    bondName: entry.issuanceNumber,
     isin: entry.isin,
     tenorYears: entry.tenorYears,
     faceValue,
@@ -122,13 +122,35 @@ const JULY_2026_ACCEPTED_PURCHASE: BondPurchaseInput = purchaseFromCatalogEntry(
 
 const EMPTY_PURCHASE = JULY_2026_ACCEPTED_PURCHASE;
 
-function issuanceNumberForPurchase(purchase: Pick<BondPurchase, "bondName" | "isin">) {
+function normalizedBondIdentity(value: string) {
+  return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+}
+
+function issuanceNumberForPurchase(
+  purchase: Pick<
+    BondPurchase,
+    | "bondName"
+    | "isin"
+    | "tenorYears"
+    | "couponRate"
+    | "settlementDate"
+    | "maturityDate"
+  >,
+) {
+  const purchaseCode = normalizedBondIdentity(purchase.isin);
+  const purchaseName = normalizedBondIdentity(purchase.bondName);
   return (
     bondCatalog.find(
       (entry) =>
-        entry.isin.toUpperCase() === purchase.isin.toUpperCase() ||
-        entry.bondName.toUpperCase() === purchase.bondName.toUpperCase(),
-    )?.bondName ?? purchase.bondName
+        normalizedBondIdentity(entry.isin) === purchaseCode ||
+        normalizedBondIdentity(entry.issuanceNumber) === purchaseName ||
+        (
+          entry.tenorYears === purchase.tenorYears &&
+          entry.maturityDate === purchase.maturityDate &&
+          entry.settlementDate === purchase.settlementDate &&
+          Math.abs(entry.couponRate - purchase.couponRate) < 0.000001
+        ),
+    )?.issuanceNumber ?? purchase.bondName
   );
 }
 
@@ -2330,7 +2352,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         >
                           {bondCatalog.map((entry) => (
                             <option key={entry.id} value={entry.id}>
-                              {entry.bondName} · {formatPercent(entry.couponRate, 2)} · {entry.maturityDate}
+                              {entry.issuanceNumber} · {formatPercent(entry.couponRate, 2)} · {entry.maturityDate}
                             </option>
                           ))}
                         </select>
