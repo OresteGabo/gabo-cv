@@ -1,0 +1,16 @@
+[
+  {
+    "id": "fxd2-2026-7yr-oreste-result",
+    "purchaseMatcher": {
+      "issuanceNumber": "FXD2/2026/7YR",
+      "settlementDate": "2026-07-17",
+      "maturityDate": "2033-07-08",
+      "faceValue": 2200000
+    },
+    "label": "BNR investor result",
+    "fileName": "fxd2-2026-7yr-oreste-result.pdf",
+    "originalFileName": "ORESTE BOND RESULTS.pdf",
+    "contentType": "application/pdf",
+    "storedPath": "private/bonds/documents/fxd2-2026-7yr-oreste-result.pdf"
+  }
+]
