@@ -6,9 +6,12 @@ import {
   BookOpenText,
   CalendarClock,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronRight,
+  Copy,
   Database,
+  Settings,
   LockKeyhole,
   LogOut,
   Menu,
@@ -118,6 +121,16 @@ const JULY_2026_ACCEPTED_PURCHASE: BondPurchaseInput = purchaseFromCatalogEntry(
 );
 
 const EMPTY_PURCHASE = JULY_2026_ACCEPTED_PURCHASE;
+
+function issuanceNumberForPurchase(purchase: Pick<BondPurchase, "bondName" | "isin">) {
+  return (
+    bondCatalog.find(
+      (entry) =>
+        entry.isin.toUpperCase() === purchase.isin.toUpperCase() ||
+        entry.bondName.toUpperCase() === purchase.bondName.toUpperCase(),
+    )?.bondName ?? purchase.bondName
+  );
+}
 
 function generateSemiannualCouponDates(
   firstCouponDate: string,
@@ -626,8 +639,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     null,
   );
   const [savingPurchase, setSavingPurchase] = useState(false);
+  const [portfolioSettingsOpen, setPortfolioSettingsOpen] = useState(false);
   const [purchasePendingDelete, setPurchasePendingDelete] =
     useState<BondPurchase | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [copiedSecurityCode, setCopiedSecurityCode] = useState("");
   const [deletingPurchaseId, setDeletingPurchaseId] = useState<string | null>(
     null,
   );
@@ -1108,6 +1124,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
           setPurchasePanelOpen(false);
         }
         setPurchasePendingDelete(null);
+        setDeleteConfirmation("");
+        if (purchases.length <= 1) setPortfolioSettingsOpen(false);
       } else {
         const data = await response.json().catch(() => ({}));
         setPortfolioError(
@@ -1119,6 +1137,18 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     } finally {
       setDeletingPurchaseId(null);
     }
+  }
+
+  function requestPurchaseDelete(item: BondPurchase) {
+    setPurchasePendingDelete(item);
+    setDeleteConfirmation("");
+  }
+
+  async function copySecurityCode(code: string) {
+    if (!code) return;
+    await navigator.clipboard.writeText(code);
+    setCopiedSecurityCode(code);
+    window.setTimeout(() => setCopiedSecurityCode(""), 1400);
   }
 
   function exportProjection() {
@@ -2193,7 +2223,19 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 <Metric label="Saved annual net coupons" value={formatRwf(actualAnnualIncome)} />
                 <Metric label="Recorded transactions" value={String(purchases.length)} />
               </div>
-              <div className="mt-6 flex justify-end">
+              <div className="mt-6 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPortfolioSettingsOpen((open) => !open)}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-black transition ${
+                    portfolioSettingsOpen
+                      ? "border-primary/25 bg-primary/10 text-primary"
+                      : "border-outline/10 text-on-surface-variant hover:border-primary/30 hover:text-primary"
+                  }`}
+                >
+                  <Settings size={17} />
+                  Settings
+                </button>
                 <button
                   type="button"
                   onClick={startNewPurchase}
@@ -2203,6 +2245,52 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                   Add purchase
                 </button>
               </div>
+              {portfolioSettingsOpen && (
+                <div className="mt-4 rounded-3xl border border-outline/10 bg-surface-container-lowest/75 p-5">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+                        Portfolio settings
+                      </p>
+                      <h3 className="mt-1 font-black">Records</h3>
+                    </div>
+                    <span className="rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant">
+                      {purchases.length} saved
+                    </span>
+                  </div>
+                  {purchases.length === 0 ? (
+                    <p className="mt-4 text-sm text-on-surface-variant">
+                      No saved records.
+                    </p>
+                  ) : (
+                    <div className="mt-4 grid gap-2">
+                      {purchases.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex flex-col gap-3 rounded-2xl border border-outline/10 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div>
+                            <p className="font-black text-on-surface">
+                              {item.bondName}
+                            </p>
+                            <p className="mt-1 text-xs text-on-surface-variant">
+                              {formatRwf(item.faceValue)} · {item.settlementDate}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => requestPurchaseDelete(item)}
+                            className="inline-flex w-fit items-center gap-2 rounded-xl border border-error/20 px-3 py-2 text-xs font-black text-error transition hover:bg-error-container/30"
+                          >
+                            <Trash2 size={14} />
+                            Delete
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className={`mt-4 grid gap-6 ${purchasePanelOpen ? "xl:grid-cols-[minmax(0,1fr)_420px]" : ""}`}>
                 {purchasePanelOpen && (
                 <form id="portfolio-transaction-form" onSubmit={savePurchase} className="order-2 scroll-mt-24 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
@@ -2596,6 +2684,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         {purchases.map((item) => {
                           const couponPending =
                             item.status === "submitted" || item.couponRate === 0;
+                          const issuanceNumber = issuanceNumberForPurchase(item);
                           const netRate =
                             item.couponRate *
                             (1 - item.withholdingTaxRate);
@@ -2612,15 +2701,24 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                   href={`/purchases/${item.id}`}
                                   className="inline-flex items-center gap-1.5 text-sm font-black text-on-surface hover:text-[var(--md-sys-color-primary)]"
                                 >
-                                  {item.bondName}
+                                  {issuanceNumber}
                                   <ChevronRight size={14} />
                                 </Link>
-                                <span className="block text-[var(--md-sys-color-outline)]">
-                                  {item.issuer} · {item.isin || item.purchaseDate}
-                                </span>
-                                <span className="mt-1 inline-block rounded-full bg-surface-container px-2 py-1 text-[9px] font-black uppercase text-on-surface-variant">
-                                  {item.status === "submitted" ? "Submitted" : "BK Capital"} · RWF
-                                </span>
+                                {item.isin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => copySecurityCode(item.isin)}
+                                    className="mt-1 inline-flex items-center gap-1.5 rounded-lg text-[10px] font-black text-outline transition hover:text-primary"
+                                    aria-label={`Copy ${item.isin}`}
+                                  >
+                                    {copiedSecurityCode === item.isin ? (
+                                      <Check size={12} />
+                                    ) : (
+                                      <Copy size={12} />
+                                    )}
+                                    {item.isin}
+                                  </button>
+                                )}
                               </td>
                               <td className="px-4 py-4">
                                 <strong className="block">{formatRwf(item.faceValue)}</strong>
@@ -2657,15 +2755,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                 >
                                   <Pencil size={15} />
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setPurchasePendingDelete(item)}
-                                  aria-label={`Delete ${item.bondName}`}
-                                  disabled={deletingPurchaseId === item.id}
-                                  className="rounded-lg p-2 text-[var(--md-sys-color-outline)] hover:bg-error-container/30 hover:text-error disabled:pointer-events-none disabled:opacity-45"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
                               </td>
                             </tr>
                           );
@@ -2695,7 +2784,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               </span>
               <button
                 type="button"
-                onClick={() => setPurchasePendingDelete(null)}
+                onClick={() => {
+                  setPurchasePendingDelete(null);
+                  setDeleteConfirmation("");
+                }}
                 aria-label="Cancel delete"
                 disabled={deletingPurchaseId === purchasePendingDelete.id}
                 className="rounded-xl p-2 text-outline transition hover:bg-surface-container hover:text-on-surface disabled:pointer-events-none disabled:opacity-45"
@@ -2722,10 +2814,22 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 {purchasePendingDelete.maturityDate}
               </p>
             </div>
+            <label className="mt-4 block text-xs font-bold text-on-surface-variant">
+              Type DELETE {purchasePendingDelete.bondName}
+              <input
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                autoComplete="off"
+                className="mt-2 w-full rounded-xl border border-outline/10 bg-background px-3 py-3 text-sm font-black text-on-surface outline-none focus:border-error/50"
+              />
+            </label>
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={() => setPurchasePendingDelete(null)}
+                onClick={() => {
+                  setPurchasePendingDelete(null);
+                  setDeleteConfirmation("");
+                }}
                 disabled={deletingPurchaseId === purchasePendingDelete.id}
                 className="rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:text-on-surface disabled:pointer-events-none disabled:opacity-45"
               >
@@ -2734,7 +2838,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               <button
                 type="button"
                 onClick={removePurchase}
-                disabled={deletingPurchaseId === purchasePendingDelete.id}
+                disabled={
+                  deletingPurchaseId === purchasePendingDelete.id ||
+                  deleteConfirmation !== `DELETE ${purchasePendingDelete.bondName}`
+                }
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-error px-4 py-3 text-sm font-black text-on-error transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-70"
               >
                 <Trash2 size={16} />
