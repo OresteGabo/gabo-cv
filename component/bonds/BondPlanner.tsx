@@ -126,31 +126,40 @@ function normalizedBondIdentity(value: string) {
   return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 }
 
-function issuanceNumberForPurchase(
+function catalogEntryForPurchase(
   purchase: Pick<
     BondPurchase,
     | "bondName"
     | "isin"
     | "tenorYears"
     | "couponRate"
+    | "purchaseDate"
     | "settlementDate"
     | "maturityDate"
+    | "faceValue"
   >,
 ) {
   const purchaseCode = normalizedBondIdentity(purchase.isin);
   const purchaseName = normalizedBondIdentity(purchase.bondName);
-  return (
-    bondCatalog.find(
-      (entry) =>
-        normalizedBondIdentity(entry.isin) === purchaseCode ||
-        normalizedBondIdentity(entry.issuanceNumber) === purchaseName ||
-        (
-          entry.tenorYears === purchase.tenorYears &&
-          entry.maturityDate === purchase.maturityDate &&
-          entry.settlementDate === purchase.settlementDate &&
-          Math.abs(entry.couponRate - purchase.couponRate) < 0.000001
-        ),
-    )?.issuanceNumber ?? purchase.bondName
+  return bondCatalog.find(
+    (entry) =>
+      normalizedBondIdentity(entry.isin) === purchaseCode ||
+      normalizedBondIdentity(entry.issuanceNumber) === purchaseName ||
+      (
+        entry.tenorYears === purchase.tenorYears &&
+        entry.maturityDate === purchase.maturityDate &&
+        entry.settlementDate === purchase.settlementDate
+      ) ||
+      (
+        entry.tenorYears === purchase.tenorYears &&
+        entry.purchaseDate === purchase.purchaseDate &&
+        entry.settlementDate === purchase.settlementDate
+      ) ||
+      (
+        entry.tenorYears === purchase.tenorYears &&
+        entry.defaultFaceValue === purchase.faceValue &&
+        purchaseName.includes("7YEAR")
+      ),
   );
 }
 
@@ -2706,7 +2715,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         {purchases.map((item) => {
                           const couponPending =
                             item.status === "submitted" || item.couponRate === 0;
-                          const issuanceNumber = issuanceNumberForPurchase(item);
+                          const catalogEntry = catalogEntryForPurchase(item);
+                          const issuanceNumber =
+                            catalogEntry?.issuanceNumber ?? item.bondName;
+                          const securityCode = item.isin || catalogEntry?.isin || "";
                           const netRate =
                             item.couponRate *
                             (1 - item.withholdingTaxRate);
@@ -2726,19 +2738,19 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                   {issuanceNumber}
                                   <ChevronRight size={14} />
                                 </Link>
-                                {item.isin && (
+                                {securityCode && (
                                   <button
                                     type="button"
-                                    onClick={() => copySecurityCode(item.isin)}
+                                    onClick={() => copySecurityCode(securityCode)}
                                     className="mt-1 inline-flex items-center gap-1.5 rounded-lg text-[10px] font-black text-outline transition hover:text-primary"
-                                    aria-label={`Copy ${item.isin}`}
+                                    aria-label={`Copy ${securityCode}`}
                                   >
-                                    {copiedSecurityCode === item.isin ? (
+                                    {copiedSecurityCode === securityCode ? (
                                       <Check size={12} />
                                     ) : (
                                       <Copy size={12} />
                                     )}
-                                    {item.isin}
+                                    {securityCode}
                                   </button>
                                 )}
                               </td>
