@@ -2718,7 +2718,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                           const catalogEntry = catalogEntryForPurchase(item);
                           const issuanceNumber =
                             catalogEntry?.issuanceNumber ?? item.bondName;
-                          const securityCode = item.isin || catalogEntry?.isin || "";
                           const netRate =
                             item.couponRate *
                             (1 - item.withholdingTaxRate);
@@ -2738,21 +2737,19 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                   {issuanceNumber}
                                   <ChevronRight size={14} />
                                 </Link>
-                                {securityCode && (
-                                  <button
-                                    type="button"
-                                    onClick={() => copySecurityCode(securityCode)}
-                                    className="mt-1 inline-flex items-center gap-1.5 rounded-lg text-[10px] font-black text-outline transition hover:text-primary"
-                                    aria-label={`Copy ${securityCode}`}
-                                  >
-                                    {copiedSecurityCode === securityCode ? (
-                                      <Check size={12} />
-                                    ) : (
-                                      <Copy size={12} />
-                                    )}
-                                    {securityCode}
-                                  </button>
-                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => copySecurityCode(issuanceNumber)}
+                                  className="mt-1 inline-flex items-center gap-1.5 rounded-lg text-[10px] font-black text-outline transition hover:text-primary"
+                                  aria-label={`Copy ${issuanceNumber}`}
+                                >
+                                  {copiedSecurityCode === issuanceNumber ? (
+                                    <Check size={12} />
+                                  ) : (
+                                    <Copy size={12} />
+                                  )}
+                                  Copy issuance
+                                </button>
                               </td>
                               <td className="px-4 py-4">
                                 <strong className="block">{formatRwf(item.faceValue)}</strong>
