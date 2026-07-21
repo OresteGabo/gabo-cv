@@ -5,7 +5,9 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Download,
   LockKeyhole,
+  ReceiptText,
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +18,7 @@ import {
 } from "@/lib/bonds/calculations";
 import { calculateBondTracking } from "@/lib/bonds/tracking";
 import type { BondPurchase } from "@/lib/bonds/types";
+import { documentsForPurchase } from "@/lib/bonds/document-metadata";
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 
@@ -144,6 +147,7 @@ export function BondPurchaseDetails({
 
   const netRate =
     purchase.couponRate * (1 - purchase.withholdingTaxRate);
+  const documents = modeled ? [] : documentsForPurchase(purchase);
 
   return (
     <main className="bond-app relative min-h-screen overflow-x-hidden bg-background text-on-background">
@@ -258,6 +262,37 @@ export function BondPurchaseDetails({
             <DetailMetric label="Currency" value={purchase.currency} />
             <DetailMetric label="Market" value={purchase.market} />
             <DetailMetric label="Status" value={purchase.status} />
+          </section>
+        )}
+
+        {!modeled && documents.length > 0 && (
+          <section className="mt-6 rounded-3xl border border-outline/10 bg-surface-container-lowest p-5 md:p-7">
+            <div className="flex items-center gap-3">
+              <ReceiptText size={20} className="text-[var(--md-sys-color-primary)]" />
+              <h2 className="text-xl font-black">Documents</h2>
+            </div>
+            <div className="mt-4 grid gap-2">
+              {documents.map((document) => (
+                <a
+                  key={document.id}
+                  href={`/api/bonds/documents/${document.id}`}
+                  className="flex flex-col gap-3 rounded-2xl border border-outline/10 bg-background/70 p-4 text-sm transition hover:border-primary/30 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span>
+                    <strong className="block text-on-surface">
+                      {document.label}
+                    </strong>
+                    <span className="mt-1 block text-xs text-on-surface-variant">
+                      {document.originalFileName}
+                    </span>
+                  </span>
+                  <span className="inline-flex items-center gap-2 text-xs font-black text-primary">
+                    <Download size={15} />
+                    Download
+                  </span>
+                </a>
+              ))}
+            </div>
           </section>
         )}
 
