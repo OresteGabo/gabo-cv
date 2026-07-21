@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { neon } from "@neondatabase/serverless";
+import { canonicalPurchaseFromCatalog } from "./catalog";
 import type { BondPurchase, BondPurchaseInput } from "./types";
 
 type BondFileDatabase = {
@@ -42,7 +43,7 @@ function normalizePurchase(value: unknown): BondPurchase | null {
   const purchase = value as Partial<BondPurchase>;
   if (!purchase.id || !purchase.purchaseDate || !purchase.bondName) return null;
 
-  return {
+  return canonicalPurchaseFromCatalog({
     id: purchase.id,
     instrumentType: purchase.instrumentType ?? "treasury",
     issuer: purchase.issuer ?? "Government of Rwanda",
@@ -75,7 +76,7 @@ function normalizePurchase(value: unknown): BondPurchase | null {
     status: purchase.status ?? "active",
     notes: purchase.notes ?? "",
     createdAt: purchase.createdAt ?? new Date().toISOString(),
-  };
+  });
 }
 
 async function readFileDatabase(): Promise<BondFileDatabase> {
@@ -130,11 +131,11 @@ function purchaseFromInput(
   input: BondPurchaseInput,
   existing?: BondPurchase,
 ): BondPurchase {
-  return {
+  return canonicalPurchaseFromCatalog({
     id: existing?.id ?? randomUUID(),
     ...input,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
-  };
+  });
 }
 
 async function listFilePurchases(): Promise<BondPurchase[]> {
@@ -225,7 +226,9 @@ export async function listPurchases(): Promise<BondPurchase[]> {
     FROM bond_purchases
     ORDER BY purchase_date DESC, created_at DESC
   `;
-  return rows as BondPurchase[];
+  return rows
+    .map((row) => normalizePurchase(row))
+    .filter((purchase): purchase is BondPurchase => Boolean(purchase));
 }
 
 export async function createPurchase(
@@ -321,7 +324,9 @@ export async function createPurchase(
       notes,
       created_at::text AS "createdAt"
   `;
-  return rows[0] as BondPurchase;
+  const purchase = normalizePurchase(rows[0]);
+  if (!purchase) throw new Error("The saved purchase could not be normalized.");
+  return purchase;
 }
 
 export async function getPurchase(id: string): Promise<BondPurchase | null> {
@@ -362,7 +367,7 @@ export async function getPurchase(id: string): Promise<BondPurchase | null> {
     WHERE id = ${id}::uuid
     LIMIT 1
   `;
-  return (rows[0] as BondPurchase | undefined) ?? null;
+  return normalizePurchase(rows[0]);
 }
 
 export async function deletePurchase(id: string): Promise<boolean> {
@@ -445,5 +450,5 @@ export async function updatePurchase(
       notes,
       created_at::text AS "createdAt"
   `;
-  return (rows[0] as BondPurchase | undefined) ?? null;
+  return normalizePurchase(rows[0]);
 }
