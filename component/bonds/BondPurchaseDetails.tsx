@@ -252,6 +252,15 @@ export function BondPurchaseDetails({
           />
         </section>
 
+        {!modeled && (
+          <section className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <DetailMetric label="Issuer" value={purchase.issuer} />
+            <DetailMetric label="Currency" value={purchase.currency} />
+            <DetailMetric label="Market" value={purchase.market} />
+            <DetailMetric label="Status" value={purchase.status} />
+          </section>
+        )}
+
         <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
           <article className="rounded-3xl border border-outline/10 bg-surface-container-lowest p-5 md:p-7">
             <div className="flex items-center justify-between gap-4">
