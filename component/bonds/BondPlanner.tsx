@@ -163,6 +163,26 @@ function catalogEntryForPurchase(
   );
 }
 
+function confirmedPurchaseFromCatalog(
+  purchase: BondPurchase,
+  catalogEntry: BondCatalogEntry | undefined,
+): BondPurchase {
+  if (!catalogEntry) return purchase;
+  return {
+    ...purchase,
+    bondName: catalogEntry.issuanceNumber,
+    isin: purchase.isin || catalogEntry.isin,
+    couponRate: purchase.couponRate || catalogEntry.couponRate,
+    firstCouponDate: purchase.firstCouponDate || catalogEntry.firstCouponDate,
+    couponDates:
+      purchase.couponDates.length > 0
+        ? purchase.couponDates
+        : catalogEntry.couponDates,
+    scheduleConfidence: "confirmed",
+    status: "active",
+  };
+}
+
 function generateSemiannualCouponDates(
   firstCouponDate: string,
   maturityDate: string,
@@ -833,8 +853,13 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   );
   const netAnnualRate = modeledCouponRate * (1 - WITHHOLDING_TAX_RATE);
   const actualPortfolio = purchases.reduce(
-    (total, item) =>
-      total + (item.status === "active" ? item.faceValue : 0),
+    (total, item) => {
+      const displayItem = confirmedPurchaseFromCatalog(
+        item,
+        catalogEntryForPurchase(item),
+      );
+      return total + (displayItem.status === "active" ? displayItem.faceValue : 0);
+    },
     0,
   );
   const actualCashCost = purchases.reduce(
@@ -858,13 +883,20 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     ? getIssuanceAlert(nextIssuance)
     : null;
   const actualAnnualIncome = purchases.reduce(
-    (total, item) =>
-      total +
-      (item.status === "active"
-        ? item.faceValue *
-          item.couponRate *
-          (1 - item.withholdingTaxRate)
-        : 0),
+    (total, item) => {
+      const displayItem = confirmedPurchaseFromCatalog(
+        item,
+        catalogEntryForPurchase(item),
+      );
+      return (
+        total +
+        (displayItem.status === "active"
+          ? displayItem.faceValue *
+            displayItem.couponRate *
+            (1 - displayItem.withholdingTaxRate)
+          : 0)
+      );
+    },
     0,
   );
   const purchaseCashCost =
@@ -1076,7 +1108,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   }
 
   function editPurchase(item: BondPurchase) {
-    const { id, createdAt, ...input } = item;
+    const confirmedItem = confirmedPurchaseFromCatalog(
+      item,
+      catalogEntryForPurchase(item),
+    );
+    const { id, createdAt, ...input } = confirmedItem;
     void id;
     void createdAt;
     setPurchase({
@@ -2713,18 +2749,23 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       </thead>
                       <tbody>
                         {purchases.map((item) => {
-                          const couponPending =
-                            item.status === "submitted" || item.couponRate === 0;
                           const catalogEntry = catalogEntryForPurchase(item);
+                          const displayItem = confirmedPurchaseFromCatalog(
+                            item,
+                            catalogEntry,
+                          );
+                          const couponPending =
+                            displayItem.status === "submitted" ||
+                            displayItem.couponRate === 0;
                           const issuanceNumber =
-                            catalogEntry?.issuanceNumber ?? item.bondName;
+                            catalogEntry?.issuanceNumber ?? displayItem.bondName;
                           const netRate =
-                            item.couponRate *
-                            (1 - item.withholdingTaxRate);
+                            displayItem.couponRate *
+                            (1 - displayItem.withholdingTaxRate);
                           const tracking = couponPending
                             ? null
                             : calculateBondTracking(
-                                item,
+                                displayItem,
                                 new Date().toISOString().slice(0, 10),
                               );
                           return (
@@ -2751,10 +2792,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                 </button>
                               </td>
                               <td className="px-4 py-4">
-                                <strong className="block">{formatRwf(item.faceValue)}</strong>
-                                <span className="text-[10px] text-on-surface-variant">{formatRwf(item.amountInvested)} cash cost</span>
+                                <strong className="block">{formatRwf(displayItem.faceValue)}</strong>
+                                <span className="text-[10px] text-on-surface-variant">{formatRwf(displayItem.amountInvested)} cash cost</span>
                               </td>
-                              <td className="px-4 py-4">{item.pricePercent.toFixed(3)}%</td>
+                              <td className="px-4 py-4">{displayItem.pricePercent.toFixed(3)}%</td>
                               <td className="px-4 py-4">
                                 {couponPending ? (
                                   <>
@@ -2763,7 +2804,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                   </>
                                 ) : (
                                   <>
-                                    <strong className="block text-primary">{formatRwf(item.faceValue * netRate / item.couponFrequency)}</strong>
+                                    <strong className="block text-primary">{formatRwf(displayItem.faceValue * netRate / displayItem.couponFrequency)}</strong>
                                     <span className="text-[10px] text-on-surface-variant">{formatPercent(netRate)} net rate</span>
                                   </>
                                 )}
@@ -2772,8 +2813,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                 {tracking?.nextCouponDate ?? "Pending issuance"}
                               </td>
                               <td className="px-4 py-4">
-                                <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${item.scheduleConfidence === "confirmed" ? "bg-primary/10 text-primary" : "bg-tertiary/10 text-tertiary"}`}>
-                                  {item.scheduleConfidence}
+                                <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${displayItem.scheduleConfidence === "confirmed" ? "bg-primary/10 text-primary" : "bg-tertiary/10 text-tertiary"}`}>
+                                  {displayItem.scheduleConfidence}
                                 </span>
                               </td>
                               <td className="px-4 py-4">
