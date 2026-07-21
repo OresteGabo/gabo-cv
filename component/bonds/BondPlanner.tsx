@@ -2748,7 +2748,6 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                                   ) : (
                                     <Copy size={12} />
                                   )}
-                                  Copy issuance
                                 </button>
                               </td>
                               <td className="px-4 py-4">
