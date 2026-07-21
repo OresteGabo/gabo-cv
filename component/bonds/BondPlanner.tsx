@@ -61,12 +61,15 @@ import type {
   BondPurchaseInput,
 } from "@/lib/bonds/types";
 import bondCatalog from "@/lib/bonds/bond-catalog.json";
+import {
+  catalogEntryForPurchase,
+  type BondCatalogEntry,
+} from "@/lib/bonds/catalog";
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 import { calculateBondTracking } from "@/lib/bonds/tracking";
 
 type PlannerView = "simulator" | "portfolio";
-type BondCatalogEntry = (typeof bondCatalog)[number];
 
 const STORAGE_KEY = "rwanda-bond-planner-assumptions-v2";
 const INJECTIONS_STORAGE_KEY = "rwanda-bond-planner-injections-v1";
@@ -121,67 +124,6 @@ const JULY_2026_ACCEPTED_PURCHASE: BondPurchaseInput = purchaseFromCatalogEntry(
 );
 
 const EMPTY_PURCHASE = JULY_2026_ACCEPTED_PURCHASE;
-
-function normalizedBondIdentity(value: string) {
-  return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-}
-
-function catalogEntryForPurchase(
-  purchase: Pick<
-    BondPurchase,
-    | "bondName"
-    | "isin"
-    | "tenorYears"
-    | "couponRate"
-    | "purchaseDate"
-    | "settlementDate"
-    | "maturityDate"
-    | "faceValue"
-  >,
-) {
-  const purchaseCode = normalizedBondIdentity(purchase.isin);
-  const purchaseName = normalizedBondIdentity(purchase.bondName);
-  return bondCatalog.find(
-    (entry) =>
-      normalizedBondIdentity(entry.isin) === purchaseCode ||
-      normalizedBondIdentity(entry.issuanceNumber) === purchaseName ||
-      (
-        entry.tenorYears === purchase.tenorYears &&
-        entry.maturityDate === purchase.maturityDate &&
-        entry.settlementDate === purchase.settlementDate
-      ) ||
-      (
-        entry.tenorYears === purchase.tenorYears &&
-        entry.purchaseDate === purchase.purchaseDate &&
-        entry.settlementDate === purchase.settlementDate
-      ) ||
-      (
-        entry.tenorYears === purchase.tenorYears &&
-        entry.defaultFaceValue === purchase.faceValue &&
-        purchaseName.includes("7YEAR")
-      ),
-  );
-}
-
-function confirmedPurchaseFromCatalog(
-  purchase: BondPurchase,
-  catalogEntry: BondCatalogEntry | undefined,
-): BondPurchase {
-  if (!catalogEntry) return purchase;
-  return {
-    ...purchase,
-    bondName: catalogEntry.issuanceNumber,
-    isin: purchase.isin || catalogEntry.isin,
-    couponRate: purchase.couponRate || catalogEntry.couponRate,
-    firstCouponDate: purchase.firstCouponDate || catalogEntry.firstCouponDate,
-    couponDates:
-      purchase.couponDates.length > 0
-        ? purchase.couponDates
-        : catalogEntry.couponDates,
-    scheduleConfidence: "confirmed",
-    status: "active",
-  };
-}
 
 function generateSemiannualCouponDates(
   firstCouponDate: string,
@@ -853,13 +795,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   );
   const netAnnualRate = modeledCouponRate * (1 - WITHHOLDING_TAX_RATE);
   const actualPortfolio = purchases.reduce(
-    (total, item) => {
-      const displayItem = confirmedPurchaseFromCatalog(
-        item,
-        catalogEntryForPurchase(item),
-      );
-      return total + (displayItem.status === "active" ? displayItem.faceValue : 0);
-    },
+    (total, item) => total + (item.status === "active" ? item.faceValue : 0),
     0,
   );
   const actualCashCost = purchases.reduce(
@@ -883,20 +819,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     ? getIssuanceAlert(nextIssuance)
     : null;
   const actualAnnualIncome = purchases.reduce(
-    (total, item) => {
-      const displayItem = confirmedPurchaseFromCatalog(
-        item,
-        catalogEntryForPurchase(item),
-      );
-      return (
-        total +
-        (displayItem.status === "active"
-          ? displayItem.faceValue *
-            displayItem.couponRate *
-            (1 - displayItem.withholdingTaxRate)
-          : 0)
-      );
-    },
+    (total, item) =>
+      total +
+      (item.status === "active"
+        ? item.faceValue * item.couponRate * (1 - item.withholdingTaxRate)
+        : 0),
     0,
   );
   const purchaseCashCost =
@@ -1108,11 +1035,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   }
 
   function editPurchase(item: BondPurchase) {
-    const confirmedItem = confirmedPurchaseFromCatalog(
-      item,
-      catalogEntryForPurchase(item),
-    );
-    const { id, createdAt, ...input } = confirmedItem;
+    const { id, createdAt, ...input } = item;
     void id;
     void createdAt;
     setPurchase({
@@ -2750,10 +2673,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       <tbody>
                         {purchases.map((item) => {
                           const catalogEntry = catalogEntryForPurchase(item);
-                          const displayItem = confirmedPurchaseFromCatalog(
-                            item,
-                            catalogEntry,
-                          );
+                          const displayItem = item;
                           const couponPending =
                             displayItem.status === "submitted" ||
                             displayItem.couponRate === 0;
