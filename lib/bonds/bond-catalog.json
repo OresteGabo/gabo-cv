@@ -1,7 +1,7 @@
 [
   {
     "id": "fxd2-2026-7yr",
-    "bondName": "FXD2/2026/7YR",
+    "issuanceNumber": "FXD2/2026/7YR",
     "isin": "RWBO7Y000682/MN",
     "tenorYears": 7,
     "couponRate": 0.115,
