@@ -57,11 +57,13 @@ import type {
   BondPurchase,
   BondPurchaseInput,
 } from "@/lib/bonds/types";
+import bondCatalog from "@/lib/bonds/bond-catalog.json";
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 import { calculateBondTracking } from "@/lib/bonds/tracking";
 
 type PlannerView = "simulator" | "portfolio";
+type BondCatalogEntry = (typeof bondCatalog)[number];
 
 const STORAGE_KEY = "rwanda-bond-planner-assumptions-v2";
 const INJECTIONS_STORAGE_KEY = "rwanda-bond-planner-injections-v1";
@@ -70,50 +72,50 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-const JULY_2026_ACCEPTED_PURCHASE: BondPurchaseInput = {
-  instrumentType: "treasury",
-  issuer: "Government of Rwanda",
-  currency: "RWF",
-  market: "primary",
-  purchaseDate: "2026-07-15",
-  settlementDate: "2026-07-17",
-  bondName: "FXD2/2026/7YR",
-  isin: "RWBO7Y000682/MN",
-  tenorYears: 7,
-  faceValue: 2_200_000,
-  pricePercent: 100,
-  accruedInterestPaid: 0,
-  feesPaid: 0,
-  amountInvested: 2_200_000,
-  couponRate: 0.115,
-  withholdingTaxRate: WITHHOLDING_TAX_RATE,
-  maturityDate: "2033-07-08",
-  firstCouponDate: "2027-01-15",
-  couponDates: [
-    "2027-01-15",
-    "2027-07-16",
-    "2028-01-14",
-    "2028-07-14",
-    "2029-01-12",
-    "2029-07-13",
-    "2030-01-11",
-    "2030-07-12",
-    "2031-01-10",
-    "2031-07-11",
-    "2032-01-09",
-    "2032-07-09",
-    "2033-01-07",
-    "2033-07-08",
-  ],
-  couponFrequency: 2,
-  scheduleConfidence: "confirmed",
-  broker: "BK Capital",
-  accountReference: "BNR-FXD2-2026-7YR",
-  sourceUrl: "",
-  status: "active",
-  notes:
-    "Accepted BNR July 15, 2026 7-year T-bond result. Applied RWF 2,200,000; allocated RWF 2,200,000; settlement RWF 2,200,000; gross coupon per payment RWF 126,500 before withholding tax.",
-};
+function purchaseFromCatalogEntry(
+  entry: BondCatalogEntry,
+  overrides: Partial<BondPurchaseInput> = {},
+): BondPurchaseInput {
+  const faceValue = overrides.faceValue ?? entry.defaultFaceValue;
+  const pricePercent = overrides.pricePercent ?? entry.pricePercent;
+  const accruedInterestPaid = overrides.accruedInterestPaid ?? 0;
+  const feesPaid = overrides.feesPaid ?? 0;
+
+  return {
+    instrumentType: "treasury",
+    issuer: "Government of Rwanda",
+    currency: "RWF",
+    market: "primary",
+    purchaseDate: entry.purchaseDate,
+    settlementDate: entry.settlementDate,
+    bondName: entry.bondName,
+    isin: entry.isin,
+    tenorYears: entry.tenorYears,
+    faceValue,
+    pricePercent,
+    accruedInterestPaid,
+    feesPaid,
+    amountInvested:
+      faceValue * (pricePercent / 100) + accruedInterestPaid + feesPaid,
+    couponRate: entry.couponRate,
+    withholdingTaxRate: WITHHOLDING_TAX_RATE,
+    maturityDate: entry.maturityDate,
+    firstCouponDate: entry.firstCouponDate,
+    couponDates: entry.couponDates,
+    couponFrequency: 2,
+    scheduleConfidence: "confirmed",
+    broker: entry.broker,
+    accountReference: entry.accountReference,
+    sourceUrl: "",
+    status: "active",
+    notes: entry.notes,
+    ...overrides,
+  };
+}
+
+const JULY_2026_ACCEPTED_PURCHASE: BondPurchaseInput = purchaseFromCatalogEntry(
+  bondCatalog[0],
+);
 
 const EMPTY_PURCHASE = JULY_2026_ACCEPTED_PURCHASE;
 
@@ -616,6 +618,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   const [purchase, setPurchase] = useState<BondPurchaseInput>(() => ({
     ...EMPTY_PURCHASE,
   }));
+  const [purchasePanelOpen, setPurchasePanelOpen] = useState(false);
+  const [selectedCatalogBondId, setSelectedCatalogBondId] = useState(
+    bondCatalog[0]?.id ?? "",
+  );
   const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(
     null,
   );
@@ -672,6 +678,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
 
     prefillApplied.current = search;
     setPurchase(prefilledPurchase);
+    setPurchasePanelOpen(true);
     window.setTimeout(() => {
       document
         .getElementById("portfolio-transaction-form")
@@ -824,7 +831,8 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     purchase.status === "submitted" && purchase.couponRate === 0
       ? 0
       : purchase.faceValue * purchase.couponRate * (1 - WITHHOLDING_TAX_RATE);
-  const purchaseTermsLocked = purchase.status !== "submitted";
+  const purchaseTermsLocked =
+    Boolean(editingPurchaseId) && purchase.status !== "submitted";
   const calendarPrefilledPurchase =
     purchase.status === "submitted" &&
     purchase.notes.startsWith("From BNR calendar");
@@ -1017,6 +1025,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     );
     setPurchase({ ...EMPTY_PURCHASE });
     setEditingPurchaseId(null);
+    setPurchasePanelOpen(false);
   }
 
   function editPurchase(item: BondPurchase) {
@@ -1036,14 +1045,47 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
         input.status === "submitted" ? "estimated" : input.scheduleConfidence,
     });
     setEditingPurchaseId(item.id);
+    setPurchasePanelOpen(true);
     document
       .getElementById("portfolio-transaction-form")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function startNewPurchase() {
+    const catalogEntry =
+      bondCatalog.find((entry) => entry.id === selectedCatalogBondId) ??
+      bondCatalog[0];
+    setEditingPurchaseId(null);
+    setPurchase(purchaseFromCatalogEntry(catalogEntry));
+    setPurchasePanelOpen(true);
+    window.setTimeout(() => {
+      document
+        .getElementById("portfolio-transaction-form")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  }
+
+  function applyCatalogBond(id: string) {
+    const catalogEntry = bondCatalog.find((entry) => entry.id === id);
+    if (!catalogEntry) return;
+    setSelectedCatalogBondId(id);
+    setPurchase((current) =>
+      purchaseFromCatalogEntry(catalogEntry, {
+        faceValue: current.faceValue,
+        feesPaid: current.feesPaid,
+        accruedInterestPaid: current.accruedInterestPaid,
+        status: current.status,
+        sourceUrl: current.sourceUrl,
+        notes: catalogEntry.notes,
+      }),
+    );
+  }
+
   function useAcceptedJulyResult() {
     setEditingPurchaseId(null);
+    setSelectedCatalogBondId(bondCatalog[0]?.id ?? "");
     setPurchase({ ...JULY_2026_ACCEPTED_PURCHASE });
+    setPurchasePanelOpen(true);
     document
       .getElementById("portfolio-transaction-form")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1063,6 +1105,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
         if (editingPurchaseId === id) {
           setPurchase({ ...EMPTY_PURCHASE });
           setEditingPurchaseId(null);
+          setPurchasePanelOpen(false);
         }
         setPurchasePendingDelete(null);
       } else {
@@ -2150,10 +2193,22 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 <Metric label="Saved annual net coupons" value={formatRwf(actualAnnualIncome)} />
                 <Metric label="Recorded transactions" value={String(purchases.length)} />
               </div>
-              <div className="mt-6 grid gap-6 xl:grid-cols-[480px_1fr]">
-                <form id="portfolio-transaction-form" onSubmit={savePurchase} className="scroll-mt-24 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
-                  <div className="flex items-center gap-3">
-                    <Plus size={18} className="text-[var(--md-sys-color-primary)]" />
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={startNewPurchase}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90"
+                >
+                  <Plus size={17} />
+                  Add purchase
+                </button>
+              </div>
+              <div className={`mt-4 grid gap-6 ${purchasePanelOpen ? "xl:grid-cols-[minmax(0,1fr)_420px]" : ""}`}>
+                {purchasePanelOpen && (
+                <form id="portfolio-transaction-form" onSubmit={savePurchase} className="order-2 scroll-mt-24 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Plus size={18} className="text-[var(--md-sys-color-primary)]" />
                     <div>
                       <h3 className="font-black">
                         {editingPurchaseId
@@ -2163,8 +2218,36 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                           : "Record Treasury bond purchase"}
                       </h3>
                     </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPurchasePanelOpen(false);
+                        setEditingPurchaseId(null);
+                      }}
+                      aria-label="Close purchase panel"
+                      className="rounded-xl p-2 text-outline transition hover:bg-surface-container hover:text-on-surface"
+                    >
+                      <X size={17} />
+                    </button>
                   </div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {!editingPurchaseId && (
+                      <label className="sm:col-span-2 text-[11px] font-bold text-on-surface-variant">
+                        Bond
+                        <select
+                          value={selectedCatalogBondId}
+                          onChange={(event) => applyCatalogBond(event.target.value)}
+                          className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface"
+                        >
+                          {bondCatalog.map((entry) => (
+                            <option key={entry.id} value={entry.id}>
+                              {entry.bondName} · {formatPercent(entry.couponRate, 2)} · {entry.maturityDate}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     {!editingPurchaseId && calendarPrefilledPurchase ? (
                       <div className="sm:col-span-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
@@ -2486,8 +2569,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                     </button>
                   </div>
                 </form>
+                )}
 
-                <div className="bond-scrollbar overflow-x-auto rounded-3xl border border-outline/10">
+                <div className="bond-scrollbar order-1 overflow-x-auto rounded-3xl border border-outline/10">
                   {purchases.length === 0 ? (
                     <div className="grid min-h-64 place-items-center p-8 text-center">
                       <div>
