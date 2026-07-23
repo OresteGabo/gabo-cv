@@ -214,7 +214,7 @@ export function BondEducation() {
           </div>
           <nav className="flex items-center gap-1 sm:gap-2">
             <Link
-              href="/"
+              href="/portfolio"
               className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container md:block"
             >
               Portfolio
@@ -1754,7 +1754,7 @@ export function BondEducation() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
-                href="/"
+                href="/portfolio"
                 className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-black text-on-primary"
               >
                 Open my portfolio <ArrowRight size={16} />
