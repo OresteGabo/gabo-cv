@@ -113,7 +113,7 @@ export async function BondLanding({
             <Link href="/simulator" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block">
               Simulator
             </Link>
-            <Link href="/" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block">
+            <Link href="/portfolio" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block">
               Portfolio
             </Link>
             <BondThemeToggle />
@@ -140,7 +140,7 @@ export async function BondLanding({
               <Link href="/simulator" className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-black text-on-primary shadow-lg shadow-primary/15 transition hover:-translate-y-0.5">
                 Run a simulation <ArrowRight size={17} />
               </Link>
-              <Link href="/" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
+              <Link href="/portfolio" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
                 Open my portfolio <LockKeyhole size={16} />
               </Link>
               <Link href="/calendar" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
@@ -278,6 +278,8 @@ export async function BondLanding({
               {marketData.outstanding.length > 0 ? (
                 <RseRankedBondTable
                   bonds={marketData.outstanding}
+                  pagesFetched={marketData.fixedIncomePagesFetched}
+                  rowsAnalyzed={marketData.treasuryRowsAnalyzed}
                   marketUpdated={marketUpdated}
                 />
               ) : (
@@ -338,7 +340,7 @@ export async function BondLanding({
               maturity, exact coupon dates, and source documents. Every position keeps
               its own schedule and detail page.
             </p>
-            <Link href="/" className="mt-7 inline-flex items-center gap-2 text-sm font-black text-primary">
+            <Link href="/portfolio" className="mt-7 inline-flex items-center gap-2 text-sm font-black text-primary">
               Open private portfolio <ArrowRight size={16} />
             </Link>
           </article>
@@ -389,7 +391,21 @@ export async function BondLanding({
       <footer className="border-t border-outline/10 bg-surface-container-lowest/30">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 px-6 py-10 md:flex-row md:items-center md:px-8">
           <GaboBrand />
-          <p className="text-xs text-on-surface-variant">Rwanda Treasury Bond Lab · Educational information, simulation, and private tracking</p>
+          <div className="flex flex-wrap gap-2 text-xs font-black text-on-surface-variant md:justify-end">
+            <Link href="/" className="inline-flex items-center gap-1.5 rounded-xl border border-outline/10 px-3 py-2 text-primary transition hover:border-primary/30">
+              <Landmark size={14} />
+              Bonds
+            </Link>
+            <Link href="/simulator" className="inline-flex items-center gap-1.5 rounded-xl border border-outline/10 px-3 py-2 transition hover:border-primary/30 hover:text-primary">
+              <CircleDollarSign size={14} />
+              Simulator
+            </Link>
+            <Link href="/education" className="inline-flex items-center gap-1.5 rounded-xl border border-outline/10 px-3 py-2 transition hover:border-primary/30 hover:text-primary">
+              <BookOpenText size={14} />
+              Courses
+            </Link>
+          </div>
+          <p className="text-xs text-on-surface-variant md:text-right">Rwanda Treasury Bond Lab · Educational information, simulation, and private tracking</p>
         </div>
       </footer>
     </main>
