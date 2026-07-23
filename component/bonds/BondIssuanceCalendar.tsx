@@ -291,7 +291,7 @@ export function BondIssuanceCalendar() {
             </span>
           </div>
           <nav className="hidden items-center gap-1 lg:flex">
-            <NavLink href="/">Portfolio</NavLink>
+            <NavLink href="/portfolio">Portfolio</NavLink>
             <NavLink href="/calendar" active>
               Calendar
             </NavLink>
@@ -339,7 +339,7 @@ export function BondIssuanceCalendar() {
                 <ShieldCheck size={21} />
               </span>
               <div>
-                <h2 className="font-black">Owner access</h2>
+                <h2 className="font-black">Protected access</h2>
                 <p className="text-xs text-on-surface-variant">
                   Unlock private calendar records.
                 </p>
@@ -606,6 +606,10 @@ export function BondIssuanceCalendar() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-black text-on-surface-variant md:justify-end">
+            <Link href="/" className="inline-flex items-center gap-1.5 rounded-xl border border-outline/10 px-3 py-2 transition hover:border-primary/30 hover:text-primary">
+              <Landmark size={14} />
+              Bonds
+            </Link>
             <Link href="/simulator" className="inline-flex items-center gap-1.5 rounded-xl border border-outline/10 px-3 py-2 transition hover:border-primary/30 hover:text-primary">
               <Sparkles size={14} />
               Simulator
@@ -622,7 +626,7 @@ export function BondIssuanceCalendar() {
       </footer>
 
       <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-outline/10 bg-[var(--md-sys-color-background)]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
-        <Link href="/" aria-label="Portfolio" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
+        <Link href="/portfolio" aria-label="Portfolio" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
           <WalletCards size={18} />
         </Link>
         <Link href="/calendar" aria-label="Calendar" className="grid place-items-center rounded-xl bg-primary p-3 text-on-primary">
