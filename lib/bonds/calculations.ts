@@ -263,7 +263,8 @@ export function formatRwf(value: number, compact = false): string {
     currency: "RWF",
     currencyDisplay: "code",
     notation: compact ? "compact" : "standard",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: compact ? 1 : 0,
+    roundingMode: compact ? "trunc" : undefined,
   }).format(value);
 }
 
