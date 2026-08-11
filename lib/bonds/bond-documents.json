@@ -12,5 +12,19 @@
     "originalFileName": "ORESTE BOND RESULTS.pdf",
     "contentType": "application/pdf",
     "storedPath": "private/bonds/documents/fxd2-2026-7yr-oreste-result.pdf"
+  },
+  {
+    "id": "fxd3-2026-10yr-oreste-application",
+    "purchaseMatcher": {
+      "issuanceNumber": "FXD3/2026/10YRS",
+      "settlementDate": "2026-08-14",
+      "maturityDate": "2036-08-01",
+      "faceValue": 1000000
+    },
+    "label": "BNR application form",
+    "fileName": "fxd3-2026-10yr-oreste-application.pdf",
+    "originalFileName": "APPLICATION_FORM_FOR_10-YEAR_BOND_ISSUANCE_ON_AUGUST_12th_2026.pdf",
+    "contentType": "application/pdf",
+    "storedPath": "private/bonds/documents/fxd3-2026-10yr-oreste-application.pdf"
   }
 ]

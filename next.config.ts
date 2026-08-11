@@ -3,7 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingIncludes: {
-    "/*": ["./.data/bonds-portfolio.json"],
+    "/*": [
+      "./.data/bonds-portfolio.json",
+      "./private/bonds/documents/*.pdf",
+    ],
   },
   poweredByHeader: false,
   reactCompiler: true,

@@ -258,6 +258,18 @@ export function summarizeProjection(
 }
 
 export function formatRwf(value: number, compact = false): string {
+  if (compact && Math.abs(value) >= 1_000_000_000 && Math.abs(value) < 1_000_000_000_000) {
+    const billions = Math.trunc((value / 1_000_000_000) * 100) / 100;
+
+    return `${new Intl.NumberFormat("en-RW", {
+      style: "currency",
+      currency: "RWF",
+      currencyDisplay: "code",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(billions)}B`;
+  }
+
   return new Intl.NumberFormat("en-RW", {
     style: "currency",
     currency: "RWF",
