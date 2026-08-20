@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Copy,
   Database,
+  FileText,
   Landmark,
   Settings,
   LockKeyhole,
@@ -60,6 +61,7 @@ import type {
   CashInjection,
   BondPurchase,
   BondPurchaseInput,
+  EquityHolding,
 } from "@/lib/bonds/types";
 import bondCatalog from "@/lib/bonds/bond-catalog.json";
 import {
@@ -621,6 +623,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   const [authenticated, setAuthenticated] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [purchases, setPurchases] = useState<BondPurchase[]>([]);
+  const [equities, setEquities] = useState<EquityHolding[]>([]);
   const [portfolioError, setPortfolioError] = useState("");
   const [purchase, setPurchase] = useState<BondPurchaseInput>(() => ({
     ...EMPTY_PURCHASE,
@@ -728,6 +731,27 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     };
   }, [authenticated]);
 
+  useEffect(() => {
+    if (!authenticated) return;
+    let active = true;
+    fetch("/api/bonds/equities", { cache: "no-store" })
+      .then(async (response) => ({
+        ok: response.ok,
+        data: await response.json(),
+      }))
+      .then(({ ok, data }) => {
+        if (!active) return;
+        if (!ok) {
+          setPortfolioError(data.error ?? "Could not load equity holdings.");
+          return;
+        }
+        setEquities(data.holdings);
+      });
+    return () => {
+      active = false;
+    };
+  }, [authenticated]);
+
   const projection = useMemo(
     () => calculateProjection(assumptions, cashInjections),
     [assumptions, cashInjections],
@@ -803,6 +827,15 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     (total, item) => total + item.amountInvested,
     0,
   );
+  const actualEquityCost = equities.reduce(
+    (total, item) => total + item.netAmountPayable,
+    0,
+  );
+  const actualEquityShares = equities.reduce(
+    (total, item) => total + item.shares,
+    0,
+  );
+  const actualInvestmentCashCost = actualCashCost + actualEquityCost;
   const totalCashInjected = cashInjections.reduce(
     (total, injection) => total + injection.amount,
     0,
@@ -980,6 +1013,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     await fetch("/api/bonds/auth/logout", { method: "POST" });
     setAuthenticated(false);
     setPurchases([]);
+    setEquities([]);
   }
 
   async function savePurchase(event: FormEvent<HTMLFormElement>) {
@@ -1233,6 +1267,9 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
             <NavLink active={false} href="/calendar" icon={<CalendarClock size={15} />}>
               Calendar
             </NavLink>
+            <NavLink active={false} href="/documents" icon={<FileText size={15} />}>
+              Documents
+            </NavLink>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -1255,9 +1292,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
           </div>
         </div>
         {menuOpen && (
-          <nav className="grid grid-cols-2 gap-2 border-t border-outline/10 p-3 lg:hidden">
+          <nav className="grid grid-cols-3 gap-2 border-t border-outline/10 p-3 lg:hidden">
             <NavLink active={view === "portfolio"} href="/portfolio" icon={<WalletCards size={15} />}>Portfolio</NavLink>
             <NavLink active={false} href="/calendar" icon={<CalendarClock size={15} />}>Calendar</NavLink>
+            <NavLink active={false} href="/documents" icon={<FileText size={15} />}>Documents</NavLink>
           </nav>
         )}
       </header>
@@ -2209,12 +2247,94 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
           ) : (
             <>
               <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <Metric label="Principal held" value={formatRwf(actualPortfolio)} accent />
-                <Metric label="Total cash cost" value={formatRwf(actualCashCost)} />
+                <Metric label="Bond principal" value={formatRwf(actualPortfolio)} accent />
+                <Metric label="RSE equity cost" value={formatRwf(actualEquityCost)} />
+                <Metric label="Total cash cost" value={formatRwf(actualInvestmentCashCost)} />
                 <Metric label="Saved annual net coupons" value={formatRwf(actualAnnualIncome)} />
-                <Metric label="Recorded transactions" value={String(purchases.length)} />
               </div>
+              {equities.length > 0 && (
+                <section className="mt-4 overflow-hidden rounded-3xl border border-outline/10 bg-surface-container-lowest/75">
+                  <div className="flex flex-col gap-2 border-b border-outline/10 p-5 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-primary">
+                        <Landmark size={16} />
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em]">
+                          RSE equities
+                        </p>
+                      </div>
+                      <h3 className="mt-1 text-xl font-black">Listed shares</h3>
+                    </div>
+                    <span className="rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant">
+                      {actualEquityShares.toLocaleString()} shares
+                    </span>
+                  </div>
+                  <div className="bond-scrollbar overflow-x-auto">
+                    <table className="w-full min-w-[780px] border-collapse text-left">
+                      <thead className="bg-[var(--md-sys-color-surface-container)] text-[10px] uppercase tracking-[0.14em] text-[var(--md-sys-color-on-surface-variant)]">
+                        <tr>
+                          <th className="px-4 py-3">Security</th>
+                          <th className="px-4 py-3">Shares / price</th>
+                          <th className="px-4 py-3">Cash cost</th>
+                          <th className="px-4 py-3">Trade</th>
+                          <th className="px-4 py-3">Broker note</th>
+                          <th className="px-4 py-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {equities.map((item) => (
+                          <tr key={item.id} className="border-t border-outline/10 text-xs">
+                            <td className="px-4 py-4">
+                              <strong className="block text-sm text-on-surface">
+                                {item.securityName}
+                              </strong>
+                              <span className="mt-1 block text-[10px] text-on-surface-variant">
+                                {item.exchange} · {item.isin}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              <strong className="block">{item.shares.toLocaleString()}</strong>
+                              <span className="text-[10px] text-on-surface-variant">
+                                {formatRwf(item.pricePerShare)} per share
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              <strong className="block">{formatRwf(item.netAmountPayable)}</strong>
+                              <span className="text-[10px] text-on-surface-variant">
+                                {formatRwf(item.totalCharges)} charges
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              <strong className="block">{item.tradeDate}</strong>
+                              <span className="text-[10px] text-on-surface-variant">
+                                Settled {item.settlementDate}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              <strong className="block">{item.broker}</strong>
+                              <span className="text-[10px] text-on-surface-variant">
+                                {item.contractNote}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-black uppercase text-primary">
+                                {item.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
               <div className="mt-6 flex flex-wrap justify-end gap-2">
+                <Link
+                  href="/documents"
+                  className="inline-flex items-center gap-2 rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
+                >
+                  <FileText size={17} />
+                  Documents
+                </Link>
                 <button
                   type="button"
                   onClick={() => setPortfolioSettingsOpen((open) => !open)}
@@ -2246,7 +2366,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                       <h3 className="mt-1 font-black">Records</h3>
                     </div>
                     <span className="rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant">
-                      {purchases.length} saved
+                      {purchases.length + equities.length} saved
                     </span>
                   </div>
                   {purchases.length === 0 ? (
