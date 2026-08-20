@@ -25,6 +25,7 @@
 *.pem
 .data/*
 !.data/bonds-portfolio.json
+!.data/equity-portfolio.json
 
 # debug
 npm-debug.log*
