@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*": [
       "./.data/bonds-portfolio.json",
+      "./.data/equity-portfolio.json",
       "./private/bonds/documents/*.pdf",
     ],
   },
