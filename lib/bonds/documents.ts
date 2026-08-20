@@ -1,7 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { join, normalize, relative } from "node:path";
 import type { BondDocument } from "./document-metadata";
-export { getBondDocument } from "./document-metadata";
+export {
+  documentSummary,
+  getBondDocument,
+  listBondDocuments,
+} from "./document-metadata";
 
 export async function readBondDocumentFile(document: BondDocument) {
   const root = process.cwd();
