@@ -7,6 +7,7 @@ import {
   ChartNoAxesCombined,
   CircleDollarSign,
   ExternalLink,
+  FileText,
   Landmark,
   LockKeyhole,
   ReceiptText,
@@ -116,6 +117,9 @@ export async function BondLanding({
             <Link href="/portfolio" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block">
               Portfolio
             </Link>
+            <Link href="/documents" className="hidden rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container sm:block">
+              Documents
+            </Link>
             <BondThemeToggle />
           </nav>
         </div>
@@ -145,6 +149,9 @@ export async function BondLanding({
               </Link>
               <Link href="/calendar" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
                 View BNR calendar <CalendarClock size={16} />
+              </Link>
+              <Link href="/documents" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
+                Open documents <FileText size={16} />
               </Link>
               <Link href="/education" className="inline-flex items-center gap-2 rounded-2xl px-3 py-3.5 text-sm font-black text-primary transition hover:bg-primary/10">
                 Learn bond mechanics <BookOpenText size={16} />
