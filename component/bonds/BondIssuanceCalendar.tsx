@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookOpenText,
   CalendarClock,
+  FileText,
   Landmark,
   LockKeyhole,
   LogOut,
@@ -295,6 +296,7 @@ export function BondIssuanceCalendar() {
             <NavLink href="/calendar" active>
               Calendar
             </NavLink>
+            <NavLink href="/documents">Documents</NavLink>
           </nav>
           <BondThemeToggle />
         </div>
@@ -631,6 +633,9 @@ export function BondIssuanceCalendar() {
         </Link>
         <Link href="/calendar" aria-label="Calendar" className="grid place-items-center rounded-xl bg-primary p-3 text-on-primary">
           <CalendarClock size={18} />
+        </Link>
+        <Link href="/documents" aria-label="Documents" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
+          <FileText size={18} />
         </Link>
       </nav>
     </main>
