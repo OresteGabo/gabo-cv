@@ -1,0 +1,32 @@
+{
+  "holdings": [
+    {
+      "id": "equity-20260002941-01",
+      "instrumentType": "equity",
+      "exchange": "RSE",
+      "securityName": "I&M BANK RWANDA LIMITED",
+      "ticker": "IMR",
+      "isin": "RW000A2DN989",
+      "tradeDate": "2026-07-22",
+      "settlementDate": "2026-07-24",
+      "shares": 400,
+      "pricePerShare": 90,
+      "grossConsideration": 36000,
+      "brokerageCommission": 540,
+      "rseTransactionFee": 50.4,
+      "csdTransactionLevy": 18,
+      "cmaTransactionFee": 7.2,
+      "totalCharges": 615.6,
+      "netAmountPayable": 36615.6,
+      "broker": "BK Capital",
+      "contractNote": "20260002941#01",
+      "cdsAccountNo": "26Z018201",
+      "cdsReference": "6676R46227F",
+      "tradeReportId": "3438864109379382080",
+      "currency": "RWF",
+      "status": "active",
+      "notes": "Purchased 400 I&M Bank Rwanda Limited shares on the RSE at RWF 90.00 per share.",
+      "createdAt": "2026-07-22T00:00:00.000Z"
+    }
+  ]
+}
