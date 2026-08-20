@@ -131,3 +131,32 @@ export type BondPurchase = {
 };
 
 export type BondPurchaseInput = Omit<BondPurchase, "id" | "createdAt">;
+
+export type EquityHolding = {
+  id: string;
+  instrumentType: "equity";
+  exchange: string;
+  securityName: string;
+  ticker: string;
+  isin: string;
+  tradeDate: string;
+  settlementDate: string;
+  shares: number;
+  pricePerShare: number;
+  grossConsideration: number;
+  brokerageCommission: number;
+  rseTransactionFee: number;
+  csdTransactionLevy: number;
+  cmaTransactionFee: number;
+  totalCharges: number;
+  netAmountPayable: number;
+  broker: string;
+  contractNote: string;
+  cdsAccountNo: string;
+  cdsReference: string;
+  tradeReportId: string;
+  currency: string;
+  status: "active" | "sold";
+  notes: string;
+  createdAt: string;
+};
