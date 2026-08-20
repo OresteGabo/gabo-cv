@@ -8,6 +8,11 @@
       "faceValue": 2200000
     },
     "label": "BNR investor result",
+    "documentDate": "2026-07-15",
+    "category": "Bond result",
+    "instrumentName": "FXD2/2026/7YR",
+    "issuer": "Government of Rwanda",
+    "description": "Accepted July 2026 7-year Treasury bond investor result showing full RWF 2,200,000 allocation.",
     "fileName": "fxd2-2026-7yr-oreste-result.pdf",
     "originalFileName": "ORESTE BOND RESULTS.pdf",
     "contentType": "application/pdf",
@@ -16,15 +21,52 @@
   {
     "id": "fxd3-2026-10yr-oreste-application",
     "purchaseMatcher": {
-      "issuanceNumber": "FXD3/2026/10YRS",
+      "issuanceNumber": "FXD3/2026/10YR",
       "settlementDate": "2026-08-14",
       "maturityDate": "2036-08-01",
       "faceValue": 1000000
     },
     "label": "BNR application form",
+    "documentDate": "2026-08-12",
+    "category": "Bond application",
+    "instrumentName": "FXD3/2026/10YR",
+    "issuer": "Government of Rwanda",
+    "description": "Application form for the August 12, 2026 10-year Treasury bond bid.",
     "fileName": "fxd3-2026-10yr-oreste-application.pdf",
     "originalFileName": "APPLICATION_FORM_FOR_10-YEAR_BOND_ISSUANCE_ON_AUGUST_12th_2026.pdf",
     "contentType": "application/pdf",
     "storedPath": "private/bonds/documents/fxd3-2026-10yr-oreste-application.pdf"
+  },
+  {
+    "id": "fxd3-2026-10yr-oreste-result",
+    "purchaseMatcher": {
+      "issuanceNumber": "FXD3/2026/10YR",
+      "settlementDate": "2026-08-14",
+      "maturityDate": "2036-08-01",
+      "faceValue": 1000000
+    },
+    "label": "BNR investor result",
+    "documentDate": "2026-08-18",
+    "category": "Bond result",
+    "instrumentName": "FXD3/2026/10YR",
+    "issuer": "Government of Rwanda",
+    "description": "Accepted August 2026 10-year Treasury bond result showing 100% allocation, 12.00% coupon, and confirmed coupon dates.",
+    "fileName": "fxd3-2026-10yr-oreste-result.pdf",
+    "originalFileName": "GABO ORESTE MUHIRWA BOND RESULT.pdf",
+    "contentType": "application/pdf",
+    "storedPath": "private/bonds/documents/fxd3-2026-10yr-oreste-result.pdf"
+  },
+  {
+    "id": "im-bank-rwanda-equity-contract-2026-07-22",
+    "label": "Equity purchase contract note",
+    "documentDate": "2026-07-22",
+    "category": "Equity contract",
+    "instrumentName": "I&M Bank Rwanda Limited",
+    "issuer": "I&M Bank Rwanda Limited",
+    "description": "BK Capital contract note for 400 I&M Bank Rwanda shares purchased on the RSE at RWF 90.00 per share.",
+    "fileName": "im-bank-rwanda-equity-contract-2026-07-22.pdf",
+    "originalFileName": "Contract-20260002941#01-Equity-22-Jul-2026-2.pdf",
+    "contentType": "application/pdf",
+    "storedPath": "private/bonds/documents/im-bank-rwanda-equity-contract-2026-07-22.pdf"
   }
 ]
