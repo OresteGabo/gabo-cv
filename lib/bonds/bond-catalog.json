@@ -30,5 +30,43 @@
     "accountReference": "BNR-FXD2-2026-7YR",
     "defaultFaceValue": 2200000,
     "notes": "Accepted BNR July 15, 2026 7-year T-bond result. Applied RWF 2,200,000; allocated RWF 2,200,000; settlement RWF 2,200,000; gross coupon per payment RWF 126,500 before withholding tax."
+  },
+  {
+    "id": "fxd3-2026-10yr",
+    "issuanceNumber": "FXD3/2026/10YR",
+    "isin": "RWBO10Y000683/MN",
+    "tenorYears": 10,
+    "couponRate": 0.12,
+    "purchaseDate": "2026-08-12",
+    "settlementDate": "2026-08-14",
+    "maturityDate": "2036-08-01",
+    "firstCouponDate": "2027-02-12",
+    "couponDates": [
+      "2027-02-12",
+      "2027-08-13",
+      "2028-02-11",
+      "2028-08-11",
+      "2029-02-09",
+      "2029-08-10",
+      "2030-02-08",
+      "2030-08-09",
+      "2031-02-07",
+      "2031-08-08",
+      "2032-02-06",
+      "2032-08-06",
+      "2033-02-04",
+      "2033-08-05",
+      "2034-02-03",
+      "2034-08-04",
+      "2035-02-02",
+      "2035-08-03",
+      "2036-02-01",
+      "2036-08-01"
+    ],
+    "pricePercent": 100,
+    "broker": "BK Capital",
+    "accountReference": "BNR-FXD3-2026-10YR",
+    "defaultFaceValue": 1000000,
+    "notes": "Accepted BNR August 12, 2026 10-year T-bond result. Applied RWF 1,000,000; allocated RWF 1,000,000; settlement RWF 1,000,000; gross coupon per payment RWF 60,000 before withholding tax."
   }
 ]
