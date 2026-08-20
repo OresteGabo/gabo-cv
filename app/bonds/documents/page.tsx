@@ -4,7 +4,7 @@ import { BondDocumentsLibrary } from "@/component/bonds/BondDocumentsLibrary";
 export const metadata: Metadata = {
   title: "Private Investment Documents | Gabo",
   description:
-    "Private investment document library for bond results, bond applications, and equity contract notes.",
+    "Private investment document library for bond results and equity contract notes.",
   alternates: { canonical: "/documents" },
   robots: { index: false, follow: false },
 };
