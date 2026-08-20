@@ -218,7 +218,7 @@ export async function BondLanding({
                 </div>
                 <p className="mt-5 max-w-3xl text-sm leading-7 text-on-surface-variant">
                   Track newly issued bonds, active re-openings, official
-                  application forms, and real-time market auction results
+                  investor results, broker notes, and real-time market auction results
                   directly from the central bank the exact minute they drop.
                 </p>
                 <p className="mt-3 text-xs font-bold text-on-surface">
