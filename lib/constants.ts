@@ -192,7 +192,7 @@ export const PROJECTS = [
 // --- Work Experience ---
 export const EXPERIENCE = [
     {
-        company: "CDAFAL / Mulhouse City / France",
+        company: "Public-service digital platforms",
         role: { en: "Software Engineer", fr: "Ingénieur Logiciel" },
         period: "JUN 2023 — PRESENT",
         tasks: {
@@ -295,7 +295,7 @@ export const PHILOSOPHIES = [
 export const CDAFAL_EXP = {
     company: "CDAFAL / Mulhouse City / France",
     role: { en: "Web Developer Intern", fr: "Stagiaire Développeur Web" },
-    period: "JAN 2023 — JUN 2023",
+    period: "",
     location: { en: "Internship", fr: "Stage" },
     description: {
         en: "Helped digitalize internal member and student-management workflows, replacing fragmented manual processes with maintainable web and data tools.",

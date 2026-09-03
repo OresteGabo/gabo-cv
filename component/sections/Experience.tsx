@@ -46,7 +46,6 @@ export const Experience = ({ lang }: ExperienceProps) => {
             en: "Security & Performance",
             fr: "Sécurité & Performance"
         },
-        mainCompany: "CDAFAL / Mulhouse City / France",
         mainPeriod: {
             en: "Jun 2023 — Present",
             fr: "Juin 2023 — Aujourd’hui"
@@ -60,7 +59,6 @@ export const Experience = ({ lang }: ExperienceProps) => {
             fr: "Stagiaire Développeur Web"
         },
         internCompany: "CDAFAL / Mulhouse City / France",
-        internPeriod: "Jan 2023 — Jun 2023",
         internBadge: { en: "Academic Internship", fr: "Stage de Licence" },
         legacyLabel: { en: "Mission Scope", fr: "Périmètre de Mission" },
         modernLabel: { en: "Delivery: Digitalization System", fr: "Livraison : Système de Numérisation" },
@@ -141,11 +139,7 @@ export const Experience = ({ lang }: ExperienceProps) => {
                             {t.mainRole[lang]}
                         </h3>
 
-                        <div className="flex flex-wrap items-center gap-4 mb-8">
-                            <p className="text-primary font-bold text-lg uppercase tracking-wider">{t.mainCompany}</p>
-                            <span className="hidden md:block w-2 h-2 rounded-full bg-tertiary/40" />
-                            <p className="text-on-surface-variant font-mono text-sm uppercase">{t.mainPeriod[lang]}</p>
-                        </div>
+                        <p className="mb-8 text-on-surface-variant font-mono text-sm uppercase">{t.mainPeriod[lang]}</p>
 
                         {/* Combined Tech Stack */}
                         <div className="flex flex-wrap gap-2 mb-12">
@@ -223,7 +217,7 @@ export const Experience = ({ lang }: ExperienceProps) => {
                         {t.modernLabel[lang]}
                     </div>
                     <h3 className="text-3xl font-black tracking-tight mb-2 text-on-surface">{t.internRole[lang]}</h3>
-                    <p className="text-primary font-bold mb-8 uppercase tracking-widest text-xs">{t.internCompany} | {t.internPeriod}</p>
+                    <p className="text-primary font-bold mb-8 uppercase tracking-widest text-xs">{t.internCompany}</p>
                     <div className="grid grid-cols-1 gap-4 pt-6 border-t border-outline-variant">
                         {t.internTasks[lang].map((task, i) => (
                             <div key={i} className="flex gap-4 items-start">
