@@ -3,10 +3,6 @@ import { cookies } from "next/headers";
 
 const COOKIE_NAME = "bonds_session";
 const SESSION_SECONDS = 60 * 60 * 12;
-export const TEMPORARY_ADMIN_EMAIL = "orestegabo@icloud.com";
-const TEMPORARY_ADMIN_PASSWORD = "Muhirehonore@1*";
-const TEMPORARY_SESSION_SECRET =
-  "temporary-bonds-session-secret-replace-before-public-launch";
 
 type SessionPayload = {
   email: string;
@@ -17,21 +13,23 @@ function encode(value: string) {
   return Buffer.from(value).toString("base64url");
 }
 
-function sign(value: string) {
-  const secret = process.env.BONDS_SESSION_SECRET ?? TEMPORARY_SESSION_SECRET;
+function configuredSessionSecret() {
+  const secret = process.env.BONDS_SESSION_SECRET?.trim();
+  if (!secret) return null;
   if (secret.length < 32) {
     throw new Error("BONDS_SESSION_SECRET must contain at least 32 characters.");
   }
+  return secret;
+}
+
+function sign(value: string, secret: string) {
   return createHmac("sha256", secret).update(value).digest("base64url");
 }
 
 export function verifyPassword(password: string): boolean {
   const stored = process.env.BONDS_ADMIN_PASSWORD_HASH;
-  if (!stored) {
-    const actual = Buffer.from(password);
-    const expected = Buffer.from(TEMPORARY_ADMIN_PASSWORD);
-    return actual.length === expected.length && timingSafeEqual(actual, expected);
-  }
+  if (!stored) return false;
+
   const [salt, expectedHex] = stored.split(":");
   if (!salt || !expectedHex) return false;
 
@@ -41,20 +39,27 @@ export function verifyPassword(password: string): boolean {
 }
 
 export function createSessionToken(email: string): string {
+  const secret = configuredSessionSecret();
+  if (!secret) {
+    throw new Error("BONDS_SESSION_SECRET is not configured.");
+  }
+
   const payload = encode(
     JSON.stringify({
       email,
       expiresAt: Date.now() + SESSION_SECONDS * 1000,
     } satisfies SessionPayload),
   );
-  return `${payload}.${sign(payload)}`;
+  return `${payload}.${sign(payload, secret)}`;
 }
 
 export function readSessionToken(token: string | undefined): SessionPayload | null {
   if (!token) return null;
   const [payload, signature] = token.split(".");
   if (!payload || !signature) return null;
-  const expectedSignature = sign(payload);
+  const secret = configuredSessionSecret();
+  if (!secret) return null;
+  const expectedSignature = sign(payload, secret);
   const signatureBuffer = Buffer.from(signature);
   const expectedBuffer = Buffer.from(expectedSignature);
   if (
