@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 const COOKIE_NAME = "bonds_session";
 const SESSION_SECONDS = 60 * 60 * 12;
 export const TEMPORARY_ADMIN_EMAIL = "orestegabo@icloud.com";
-const TEMPORARY_ADMIN_PASSWORD = "Muhirehonore@1*";
+const TEMPORARY_ADMIN_PASSWORD_HASH =
+  "22176e6d36c0374353a59bc510c86773:98c0316c06edcd0d4a7c391df19148aa23c6ebdc0b4b8f866c04ae6eb6c62f538cebca99f93fab58eb51d8c83adc26a6c076adc0fdadc46ce71a436eb792319a";
 const TEMPORARY_SESSION_SECRET =
   "temporary-bonds-session-secret-replace-before-public-launch";
 
@@ -31,12 +32,9 @@ function sign(value: string, secret: string) {
 }
 
 export function verifyPassword(password: string): boolean {
-  const stored = process.env.BONDS_ADMIN_PASSWORD_HASH;
-  if (!stored) {
-    const actual = Buffer.from(password);
-    const expected = Buffer.from(TEMPORARY_ADMIN_PASSWORD);
-    return actual.length === expected.length && timingSafeEqual(actual, expected);
-  }
+  const stored =
+    process.env.BONDS_ADMIN_PASSWORD_HASH?.trim() ||
+    TEMPORARY_ADMIN_PASSWORD_HASH;
 
   const [salt, expectedHex] = stored.split(":");
   if (!salt || !expectedHex) return false;
