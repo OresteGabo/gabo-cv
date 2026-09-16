@@ -1,4 +1,7 @@
-import bondDocuments from "./bond-documents.json";
+import "server-only";
+
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { catalogEntryForPurchase } from "./catalog";
 import type { BondPurchase } from "./types";
 
@@ -38,7 +41,20 @@ export type BondDocumentSummary = Pick<
   downloadUrl: string;
 };
 
-const documents = bondDocuments as BondDocument[];
+function loadPrivateDocuments(): BondDocument[] {
+  try {
+    const raw = readFileSync(
+      join(process.cwd(), "private", "bonds", "bond-documents.json"),
+      "utf8",
+    );
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as BondDocument[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+const documents = loadPrivateDocuments();
 
 export function documentSummary(document: BondDocument): BondDocumentSummary {
   return {
