@@ -19,8 +19,12 @@ function encode(value: string) {
 }
 
 function configuredSessionSecret() {
-  const secret =
-    process.env.BONDS_SESSION_SECRET?.trim() || TEMPORARY_SESSION_SECRET;
+  const configured = process.env.BONDS_SESSION_SECRET?.trim();
+  if (process.env.NODE_ENV === "production" && !configured) {
+    throw new Error("BONDS_SESSION_SECRET is required in production.");
+  }
+
+  const secret = configured || TEMPORARY_SESSION_SECRET;
   if (secret.length < 32) {
     throw new Error("BONDS_SESSION_SECRET must contain at least 32 characters.");
   }
@@ -32,9 +36,12 @@ function sign(value: string, secret: string) {
 }
 
 export function verifyPassword(password: string): boolean {
+  const configured = process.env.BONDS_ADMIN_PASSWORD_HASH?.trim();
   const stored =
-    process.env.BONDS_ADMIN_PASSWORD_HASH?.trim() ||
-    TEMPORARY_ADMIN_PASSWORD_HASH;
+    process.env.NODE_ENV === "production"
+      ? configured
+      : configured || TEMPORARY_ADMIN_PASSWORD_HASH;
+  if (!stored) return false;
 
   const [salt, expectedHex] = stored.split(":");
   if (!salt || !expectedHex) return false;
