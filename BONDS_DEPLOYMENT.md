@@ -22,21 +22,38 @@ subdomain URL, preserving bookmarks while keeping one public bond-site address.
 
 ## Portfolio storage
 
-The portfolio API uses the JSON file database by default. The default file is
-`.data/bonds-portfolio.json`.
+The portfolio API uses the JSON file database by default. The tracked deployment
+files are `.data/bonds-portfolio.json` and `.data/equity-portfolio.json`, so a
+Git-based deployment can read the portfolio records without a separate database.
 
-The repository tracks `.data/bonds-portfolio.json` so the current file database
-is included when the code is pushed to GitHub and deployed. Other files inside
-`.data/` remain ignored.
+This is acceptable only when the repository and deployment project are private.
+The website still protects these records from public visitors through the
+authenticated API routes, but anyone with repository, build-artifact, or hosting
+filesystem access can read the JSON files. Other files inside `.data/` remain
+ignored.
 
 Set `BONDS_PORTFOLIO_DATABASE=database` only when you want the portfolio to use
 Postgres through `BONDS_DATABASE_URL`. Set `BONDS_FILE_DATABASE_NAME` only if you
 want a different file name inside `.data/`.
 
-On Vercel/serverless, the committed JSON file is useful as a deployed read
-source. Runtime writes to project files are not durable there, so production
-changes should be made locally and pushed, or moved later to a durable database
-such as Neon.
+On Vercel/serverless, runtime writes to project files are not durable. Treat the
+tracked JSON files as deploy-time data: update them locally, commit, and deploy.
+Use Neon later if you want durable in-app writes without committing portfolio
+data.
+
+## Private documents
+
+Authenticated document downloads read files from `private/bonds/documents/`
+using metadata from `private/bonds/bond-documents.json`. These files are not
+public static assets; visitors must pass the private session check before the
+API returns them.
+
+For the current Git-based deployment model, bundling those PDFs with the app is
+the simplest way for the website to serve them. This protects them from ordinary
+public visitors, but not from people who can access the repository, deployment
+artifact, or hosting project filesystem. If repository/build access is part of
+your threat model, move the PDFs to private object storage and have the
+authenticated API stream them from there instead of committing them.
 
 ## Neon setup
 
@@ -73,9 +90,9 @@ keep a durable record when the RSE bond-market page resets, schedule
 `/api/bonds/rse/snapshot` at least once per trading day and set
 `BONDS_MARKET_SNAPSHOT_SECRET`.
 
-The endpoint accepts either an `Authorization: Bearer <secret>` header or a
-`?secret=<secret>` query parameter, forces a fresh RSE fetch, and stores any
-observed bond-market rows in `bond_market_observations`.
+The endpoint accepts an `Authorization: Bearer <secret>` header, forces a fresh
+RSE fetch, and stores any observed bond-market rows in
+`bond_market_observations`. Do not pass this secret in a URL query string.
 
 ## Domain
 
@@ -94,6 +111,9 @@ project and continues serving the portfolio website.
 - Browser code never receives Neon credentials.
 - Purchase APIs require a valid signed owner session.
 - Session cookies are HTTP-only, SameSite Strict, and Secure in production.
+- Production must set `BONDS_ADMIN_EMAIL`, `BONDS_ADMIN_PASSWORD_HASH`, and
+  `BONDS_SESSION_SECRET`; development-only fallback credentials are not accepted
+  in production.
 - Login attempts are throttled per running server instance.
 - Database constraints validate financial values again at storage time.
 
