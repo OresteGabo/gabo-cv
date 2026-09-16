@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBondSession } from "@/lib/bonds/auth";
 import { createPurchase, listPurchases } from "@/lib/bonds/db";
-import { isSameOriginRequest } from "@/lib/bonds/request";
+import { isSameOriginRequest, readBoundedJsonBody } from "@/lib/bonds/request";
 import { parsePurchase } from "@/lib/bonds/validation";
 
 function unauthorized() {
@@ -25,13 +25,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   }
   if (!(await getBondSession())) return unauthorized();
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  const bodyResult = await readBoundedJsonBody(request, 32_768);
+  if (!bodyResult.ok) {
+    return NextResponse.json(
+      { error: bodyResult.error },
+      { status: bodyResult.status },
+    );
   }
-  const purchase = parsePurchase(body);
+  const purchase = parsePurchase(bodyResult.data);
   if (!purchase) {
     return NextResponse.json(
       { error: "Check the purchase details and try again." },
