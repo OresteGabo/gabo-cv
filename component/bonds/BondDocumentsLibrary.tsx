@@ -204,7 +204,6 @@ export function BondDocumentsLibrary() {
                 type="email"
                 required
                 autoComplete="username"
-                defaultValue="orestegabo@icloud.com"
                 className="mt-2 w-full rounded-xl border border-outline/10 bg-background px-4 py-3 text-on-surface outline-none focus:border-primary/60"
               />
             </label>
