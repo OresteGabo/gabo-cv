@@ -6,8 +6,7 @@ function isAuthorized(request: NextRequest) {
   if (!secret) return process.env.NODE_ENV !== "production";
 
   const authorization = request.headers.get("authorization");
-  const querySecret = request.nextUrl.searchParams.get("secret");
-  return authorization === `Bearer ${secret}` || querySecret === secret;
+  return authorization === `Bearer ${secret}`;
 }
 
 export async function GET(request: NextRequest) {
