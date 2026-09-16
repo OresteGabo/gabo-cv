@@ -2234,7 +2234,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               </div>
               <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)]">
                 Email
-                <input name="email" type="email" required autoComplete="username" defaultValue="orestegabo@icloud.com" className="mt-2 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-4 py-3 text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60" />
+                <input name="email" type="email" required autoComplete="username" className="mt-2 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-4 py-3 text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60" />
               </label>
               <label className="mt-4 block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)]">
                 Password
