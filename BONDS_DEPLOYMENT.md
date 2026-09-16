@@ -111,9 +111,10 @@ project and continues serving the portfolio website.
 - Browser code never receives Neon credentials.
 - Purchase APIs require a valid signed owner session.
 - Session cookies are HTTP-only, SameSite Strict, and Secure in production.
-- Production must set `BONDS_ADMIN_EMAIL`, `BONDS_ADMIN_PASSWORD_HASH`, and
-  `BONDS_SESSION_SECRET`; development-only fallback credentials are not accepted
-  in production.
+- Set `BONDS_ADMIN_EMAIL`, `BONDS_ADMIN_PASSWORD_HASH`, and
+  `BONDS_SESSION_SECRET` when you want to override the built-in owner account
+  and signing secret. The built-in password is stored as a one-way scrypt hash,
+  not plaintext.
 - Login attempts are throttled per running server instance.
 - Database constraints validate financial values again at storage time.
 
