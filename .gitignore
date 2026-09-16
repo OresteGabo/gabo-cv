@@ -24,8 +24,8 @@
 .DS_Store
 *.pem
 .data/*
-!.data/bonds-portfolio.json
-!.data/equity-portfolio.json
+private/bonds/*.json
+private/bonds/documents/*
 
 # debug
 npm-debug.log*
