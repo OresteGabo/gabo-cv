@@ -49,11 +49,9 @@ export async function POST(request: NextRequest) {
   const body = bodyResult.data as { email?: string; password?: string };
 
   const configuredEmail = (
-    process.env.NODE_ENV === "production"
-      ? process.env.BONDS_ADMIN_EMAIL
-      : process.env.BONDS_ADMIN_EMAIL ?? TEMPORARY_ADMIN_EMAIL
+    process.env.BONDS_ADMIN_EMAIL ?? TEMPORARY_ADMIN_EMAIL
   )
-    ?.trim()
+    .trim()
     .toLowerCase();
 
   const email = body.email?.trim().toLowerCase();
