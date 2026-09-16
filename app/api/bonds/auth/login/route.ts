@@ -5,7 +5,7 @@ import {
   TEMPORARY_ADMIN_EMAIL,
   verifyPassword,
 } from "@/lib/bonds/auth";
-import { isSameOriginRequest } from "@/lib/bonds/request";
+import { isSameOriginRequest, readBoundedJsonBody } from "@/lib/bonds/request";
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
 const WINDOW_MS = 15 * 60 * 1000;
@@ -39,17 +39,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { email?: string; password?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  const bodyResult = await readBoundedJsonBody(request, 4_096);
+  if (!bodyResult.ok) {
+    return NextResponse.json(
+      { error: bodyResult.error },
+      { status: bodyResult.status },
+    );
   }
+  const body = bodyResult.data as { email?: string; password?: string };
 
   const configuredEmail = (
-    process.env.BONDS_ADMIN_EMAIL ?? TEMPORARY_ADMIN_EMAIL
+    process.env.NODE_ENV === "production"
+      ? process.env.BONDS_ADMIN_EMAIL
+      : process.env.BONDS_ADMIN_EMAIL ?? TEMPORARY_ADMIN_EMAIL
   )
-    .trim()
+    ?.trim()
     .toLowerCase();
 
   const email = body.email?.trim().toLowerCase();
