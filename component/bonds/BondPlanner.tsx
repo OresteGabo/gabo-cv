@@ -122,11 +122,11 @@ function purchaseFromCatalogEntry(
   };
 }
 
-const JULY_2026_ACCEPTED_PURCHASE: BondPurchaseInput = purchaseFromCatalogEntry(
+const DEFAULT_CATALOG_PURCHASE: BondPurchaseInput = purchaseFromCatalogEntry(
   bondCatalog[0],
 );
 
-const EMPTY_PURCHASE = JULY_2026_ACCEPTED_PURCHASE;
+const EMPTY_PURCHASE = DEFAULT_CATALOG_PURCHASE;
 
 function generateSemiannualCouponDates(
   firstCouponDate: string,
@@ -1122,10 +1122,10 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     );
   }
 
-  function useAcceptedJulyResult() {
+  function resetToCatalogTemplate() {
     setEditingPurchaseId(null);
     setSelectedCatalogBondId(bondCatalog[0]?.id ?? "");
-    setPurchase({ ...JULY_2026_ACCEPTED_PURCHASE });
+    setPurchase({ ...DEFAULT_CATALOG_PURCHASE });
     setPurchasePanelOpen(true);
     document
       .getElementById("portfolio-transaction-form")
@@ -2458,19 +2458,19 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
-                              Accepted July 2026 result loaded
+                              Public issuance template loaded
                             </p>
                             <p className="mt-2 text-sm font-black text-on-surface">
-                              RWF 2.2M · FXD2/2026/7YR · 11.50%
+                              Start from BNR terms, then enter your confirmed allocation.
                             </p>
                           </div>
                           <button
                             type="button"
-                            onClick={useAcceptedJulyResult}
+                            onClick={resetToCatalogTemplate}
                             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-background/70 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary transition hover:bg-primary/10"
                           >
                             <RefreshCcw size={13} />
-                            Reload result
+                            Reset template
                           </button>
                         </div>
                       </div>
