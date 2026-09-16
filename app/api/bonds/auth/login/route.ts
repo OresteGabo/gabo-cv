@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   createSessionToken,
   sessionCookie,
-  TEMPORARY_ADMIN_EMAIL,
   verifyPassword,
 } from "@/lib/bonds/auth";
 import { isSameOriginRequest } from "@/lib/bonds/request";
@@ -46,11 +45,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const configuredEmail = (
-    process.env.BONDS_ADMIN_EMAIL ?? TEMPORARY_ADMIN_EMAIL
-  )
-    .trim()
-    .toLowerCase();
+  const configuredEmail = process.env.BONDS_ADMIN_EMAIL?.trim().toLowerCase();
+  if (!configuredEmail) {
+    return NextResponse.json(
+      { error: "Private bond authentication is not configured." },
+      { status: 503 },
+    );
+  }
+
   const email = body.email?.trim().toLowerCase();
   if (
     !configuredEmail ||
@@ -65,8 +67,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  let token: string;
+  try {
+    token = createSessionToken(email);
+  } catch {
+    return NextResponse.json(
+      { error: "Private bond authentication is not configured." },
+      { status: 503 },
+    );
+  }
+
   attempts.delete(key);
   const response = NextResponse.json({ authenticated: true, email });
-  response.cookies.set(sessionCookie(createSessionToken(email)));
+  response.cookies.set(sessionCookie(token));
   return response;
 }
