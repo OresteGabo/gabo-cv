@@ -28,8 +28,8 @@
     "pricePercent": 100,
     "broker": "BK Capital",
     "accountReference": "BNR-FXD2-2026-7YR",
-    "defaultFaceValue": 2200000,
-    "notes": "Accepted BNR July 15, 2026 7-year T-bond result. Applied RWF 2,200,000; allocated RWF 2,200,000; settlement RWF 2,200,000; gross coupon per payment RWF 126,500 before withholding tax."
+    "defaultFaceValue": 100000,
+    "notes": "Public BNR issuance terms. Replace face value, fees, and notes with the confirmed details from your own broker or investor result."
   },
   {
     "id": "fxd3-2026-10yr",
@@ -66,7 +66,7 @@
     "pricePercent": 100,
     "broker": "BK Capital",
     "accountReference": "BNR-FXD3-2026-10YR",
-    "defaultFaceValue": 1000000,
-    "notes": "Accepted BNR August 12, 2026 10-year T-bond result. Applied RWF 1,000,000; allocated RWF 1,000,000; settlement RWF 1,000,000; gross coupon per payment RWF 60,000 before withholding tax."
+    "defaultFaceValue": 100000,
+    "notes": "Public BNR issuance terms. Replace face value, fees, and notes with the confirmed details from your own broker or investor result."
   }
 ]
