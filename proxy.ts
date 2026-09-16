@@ -66,6 +66,10 @@ export function proxy(request: NextRequest) {
         "Content-Security-Policy",
         "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; upgrade-insecure-requests",
       );
+      response.headers.set(
+        "Strict-Transport-Security",
+        "max-age=31536000; includeSubDomains; preload",
+      );
     }
   }
 
