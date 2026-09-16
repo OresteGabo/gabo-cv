@@ -35,7 +35,7 @@ const steps = [
   {
     icon: Landmark,
     title: "Choose an issuance",
-    copy: "Review the NBR prospectus, tenor, coupon rate, auction dates, maturity date, and exact coupon schedule.",
+    copy: "Review the BNR prospectus, tenor, coupon rate, auction dates, maturity date, and exact coupon schedule.",
   },
   {
     icon: Banknote,
@@ -77,6 +77,37 @@ const facts = [
   },
 ];
 
+const labPaths = [
+  {
+    href: "/education",
+    icon: BookOpenText,
+    label: "Education",
+    title: "Learn the bond mechanics",
+    copy: "Face value, clean price, coupon tax, YTM, and reinvestment explained from first principles.",
+  },
+  {
+    href: "/calendar",
+    icon: CalendarClock,
+    label: "Calendar",
+    title: "Follow BNR issuance dates",
+    copy: "Track reopening windows, auction days, settlement timing, and maturity dates in one place.",
+  },
+  {
+    href: "/documents",
+    icon: FileText,
+    label: "Documents",
+    title: "Keep source files close",
+    copy: "Prospectuses, investor results, application records, and supporting PDFs for private review.",
+  },
+  {
+    href: "/portfolio",
+    icon: LockKeyhole,
+    label: "Private",
+    title: "Record owned positions",
+    copy: "Owner-only purchase history, coupon schedules, fees, and source evidence for real holdings.",
+  },
+];
+
 export async function BondLanding({
   forceMarketRefresh = false,
 }: {
@@ -90,6 +121,35 @@ export async function BondLanding({
         timeZone: "Africa/Kigali",
       }).format(new Date(marketData.fetchedAt))
     : null;
+  const rankedPreview = [...marketData.outstanding]
+    .sort(
+      (left, right) =>
+        right.strategyScore - left.strategyScore ||
+        right.netAnnualizedYield - left.netAnnualizedYield ||
+        right.yearsRemaining - left.yearsRemaining,
+    )
+    .slice(0, 3);
+  const topOpportunity = rankedPreview[0] ?? null;
+  const marketHighlights = [
+    {
+      label: "Top net annualized yield",
+      value: topOpportunity
+        ? formatPercent(topOpportunity.netAnnualizedYield, 2)
+        : "Awaiting feed",
+      detail: topOpportunity
+        ? `${topOpportunity.code} · ${topOpportunity.yearsRemaining.toFixed(1)} years left`
+        : "RSE data will appear when the source responds.",
+    },
+    {
+      label: "Yield records",
+      value:
+        marketData.outstanding.length > 0
+          ? String(marketData.outstanding.length)
+          : "0",
+      detail: `${marketData.treasuryRowsAnalyzed} Treasury rows analyzed from RSE.`,
+    },
+    ...facts.slice(0, 2),
+  ];
 
   return (
     <main className="bond-app relative min-h-screen overflow-x-hidden bg-background font-sans text-on-background">
@@ -125,51 +185,151 @@ export async function BondLanding({
         </div>
       </header>
 
-      <section className="relative mx-auto max-w-7xl px-6 pb-20 pt-20 md:px-8 md:pb-28 md:pt-28">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
+      <section className="relative mx-auto max-w-7xl px-6 pb-12 pt-16 md:px-8 md:pb-16 md:pt-24">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.02fr)_minmax(360px,0.98fr)] lg:items-center">
+          <div className="max-w-3xl">
             <p className="text-xs font-black uppercase tracking-[0.28em] text-primary">
-              Understand · Plan · Track
+              Rwanda fixed-income lab
             </p>
-            <h1 className="mt-6 max-w-4xl text-5xl font-black uppercase leading-[0.9] tracking-tighter sm:text-6xl md:text-7xl">
-              Rwanda Treasury
-              <span className="block text-primary">Bonds, clearly.</span>
+            <h1 className="mt-6 text-5xl font-black uppercase leading-[0.9] tracking-tighter sm:text-6xl md:text-7xl">
+              Treasury bonds,
+              <span className="block text-primary">without the fog.</span>
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-on-surface-variant">
-              Learn how coupon income, maturity, taxes, purchase price, and
-              reinvestment work. Then model a long-term strategy or privately track
-              every bond you actually own.
+              A focused workspace for understanding Rwanda Treasury Bonds,
+              reading live RSE signals, modeling long-term coupon income, and
+              keeping private purchase records behind owner-only access.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/simulator" className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-black text-on-primary shadow-lg shadow-primary/15 transition hover:-translate-y-0.5">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/simulator" className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-black text-on-primary shadow-lg shadow-primary/15 transition hover:-translate-y-0.5">
                 Run a simulation <ArrowRight size={17} />
               </Link>
-              <Link href="/portfolio" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
-                Open my portfolio <LockKeyhole size={16} />
+              <Link href="#rse-market" className="inline-flex items-center justify-center gap-2 rounded-xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
+                View market ranking <ChartNoAxesCombined size={17} />
               </Link>
-              <Link href="/calendar" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
-                View BNR calendar <CalendarClock size={16} />
+            </div>
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-bold text-on-surface-variant">
+              <Link href="/portfolio" className="inline-flex items-center gap-2 text-primary transition hover:opacity-75">
+                <LockKeyhole size={15} />
+                Private portfolio
               </Link>
-              <Link href="/documents" className="inline-flex items-center gap-2 rounded-2xl border border-outline/15 bg-surface-container-lowest/70 px-5 py-3.5 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary">
-                Open documents <FileText size={16} />
-              </Link>
-              <Link href="/education" className="inline-flex items-center gap-2 rounded-2xl px-3 py-3.5 text-sm font-black text-primary transition hover:bg-primary/10">
-                Learn bond mechanics <BookOpenText size={16} />
-              </Link>
+              <span>
+                {marketUpdated
+                  ? `RSE snapshot refreshed ${marketUpdated}`
+                  : "RSE source status shown below"}
+              </span>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {facts.map((fact) => (
-              <article key={fact.label} className="rounded-3xl border border-outline/10 bg-surface-container-lowest/75 p-5 backdrop-blur-xl">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
-                  {fact.label}
-                </p>
-                <p className="mt-3 text-2xl font-black text-primary">{fact.value}</p>
-                <p className="mt-2 text-xs leading-5 text-on-surface-variant">{fact.detail}</p>
-              </article>
-            ))}
-          </div>
+          <aside className="overflow-hidden rounded-2xl border border-outline/10 bg-surface-container-lowest/80 shadow-[0_28px_80px_rgba(0,0,0,0.08)] backdrop-blur-xl">
+            <div className="border-b border-outline/10 p-5 md:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-outline/10 bg-white p-1.5">
+                    <Image
+                      src="/brands/bnr-logo.png"
+                      alt="National Bank of Rwanda logo"
+                      width={42}
+                      height={42}
+                      className="h-full w-full object-contain"
+                    />
+                  </span>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">
+                      Live market board
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black tracking-tight">
+                      Current RSE signals
+                    </h2>
+                  </div>
+                </div>
+                <a
+                  href="https://www.bnr.rw/mminstruments"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-outline/10 text-on-surface-variant transition hover:border-primary/40 hover:text-primary"
+                  aria-label="Open BNR market instruments"
+                >
+                  <ExternalLink size={16} />
+                </a>
+              </div>
+            </div>
+
+            <div className="p-5 md:p-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {marketHighlights.map((fact) => (
+                  <div key={fact.label} className="rounded-xl border border-outline/10 bg-background/65 p-4">
+                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-on-surface-variant">
+                      {fact.label}
+                    </p>
+                    <p className="mt-2 text-2xl font-black text-primary">{fact.value}</p>
+                    <p className="mt-2 text-xs leading-5 text-on-surface-variant">{fact.detail}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 overflow-hidden rounded-xl border border-outline/10">
+                <div className="flex items-center justify-between gap-3 border-b border-outline/10 bg-surface-container-low/70 px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">
+                    Top ranked bonds
+                  </p>
+                  <span className="text-[10px] font-black text-primary">
+                    Score · Net yield
+                  </span>
+                </div>
+                {rankedPreview.length > 0 ? (
+                  <div className="divide-y divide-outline/10">
+                    {rankedPreview.map((bond, index) => (
+                      <div key={`${bond.code}-${bond.yieldToMaturity}`} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
+                        <span className="font-mono text-xs text-outline">0{index + 1}</span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-black text-on-surface">
+                            {bond.bond}
+                          </p>
+                          <p className="mt-1 text-[11px] font-bold text-on-surface-variant">
+                            {bond.code} · {bond.yearsRemaining.toFixed(1)} years
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-primary">{bond.strategyScore.toFixed(1)}</p>
+                          <p className="text-[11px] font-bold text-on-surface-variant">
+                            {formatPercent(bond.netAnnualizedYield, 2)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-4 py-6 text-sm font-bold text-on-surface-variant">
+                    Market data is unavailable right now. The full source table below
+                    will show a fallback state.
+                  </div>
+                )}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section className="border-y border-outline/10 bg-surface-container-low/60">
+        <div className="mx-auto grid max-w-7xl gap-3 px-6 py-5 md:grid-cols-2 md:px-8 xl:grid-cols-4">
+          {labPaths.map(({ href, icon: Icon, label, title, copy }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group rounded-xl border border-outline/10 bg-background/65 p-5 transition hover:border-primary/35 hover:bg-surface-container-lowest"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-primary">
+                  <Icon size={15} />
+                  {label}
+                </span>
+                <ArrowRight size={15} className="text-outline transition group-hover:translate-x-1 group-hover:text-primary" />
+              </div>
+              <h2 className="mt-4 text-lg font-black tracking-tight">{title}</h2>
+              <p className="mt-2 text-xs leading-5 text-on-surface-variant">{copy}</p>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -190,97 +350,62 @@ export async function BondLanding({
             </div>
           </div>
 
-          <article className="mt-7 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-6">
-            <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
-              <div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-primary-container/30 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--md-sys-color-primary)]">
-                  <span className="h-2 w-2 rounded-full bg-[var(--md-sys-color-primary)]" />
-                  Primary Source of Truth
+          <div className="mt-7 grid gap-3 lg:grid-cols-[1.2fr_repeat(3,minmax(0,1fr))]">
+            <a
+              href="https://www.bnr.rw/mminstruments"
+              target="_blank"
+              rel="noreferrer"
+              className="group rounded-xl border border-primary/20 bg-background/75 p-5 transition hover:border-primary/45"
+            >
+              <div className="flex items-start gap-4">
+                <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-outline/10 bg-white p-1.5">
+                  <Image
+                    src="/brands/bnr-logo.png"
+                    alt="National Bank of Rwanda logo"
+                    width={42}
+                    height={42}
+                    className="h-full w-full object-contain"
+                  />
                 </span>
-                <div className="mt-5 flex items-start gap-4">
-                  <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-outline/10 bg-white p-1.5 shadow-sm">
-                    <Image
-                      src="/brands/bnr-logo.png"
-                      alt="National Bank of Rwanda logo"
-                      width={44}
-                      height={44}
-                      className="h-full w-full object-contain"
-                    />
-                  </span>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
-                      Live BNR Market Feed
-                    </p>
-                    <h3 className="mt-1 text-2xl font-black tracking-tight text-on-surface">
-                      Official BNR Market Monitor
-                    </h3>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.16em] text-primary">
+                    Primary source
+                    <ExternalLink size={13} className="transition group-hover:translate-x-0.5" />
                   </div>
+                  <h3 className="mt-2 font-black">BNR market instruments</h3>
+                  <p className="mt-2 text-xs leading-5 text-on-surface-variant">
+                    Prospectus PDFs, application forms, investor results, and
+                    official auction publications.
+                  </p>
                 </div>
-                <p className="mt-5 max-w-3xl text-sm leading-7 text-on-surface-variant">
-                  Track newly issued bonds, active re-openings, official
-                  investor results, broker notes, and real-time market auction results
-                  directly from the central bank the exact minute they drop.
-                </p>
-                <p className="mt-3 text-xs font-bold text-on-surface">
-                  Prospectus PDFs · Application Forms · Auction Results
-                </p>
               </div>
-              <a
-                href="https://www.bnr.rw/mminstruments"
-                target="_blank"
-                rel="noreferrer"
-                className="block rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-center font-bold text-[var(--md-sys-color-on-primary)] shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--md-sys-color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 lg:min-w-72"
-              >
-                Go to Live BNR Instruments Board ↗
-              </a>
-            </div>
-          </article>
+            </a>
 
-          <div className="mt-7 grid gap-3 md:grid-cols-3">
             {[
-              {
-                title: "Bond market",
-                href: "https://rse.rw/bond-market",
-                copy: "Latest traded closing prices, previous prices, changes, volume, and value.",
-                status: "Live source",
-              },
-              {
-                title: "Fixed income board",
-                href: "https://rse.rw/fixed-income-board",
-                copy: "Security codes, issue and maturity dates, coupon rates, and yield to maturity.",
-                status: "Live source",
-              },
-              {
-                title: "Outstanding bonds",
-                href: "https://rse.rw/outstanding-bonds",
-                copy: "RSE market-statistics view of outstanding Treasury and other listed debt instruments.",
-                status: "Live source",
-              },
-            ].map((source) => (
+              ["Bond market", "https://rse.rw/bond-market", "Trades, prices, volume, and value."],
+              ["Fixed income board", "https://rse.rw/fixed-income-board", "Security codes, maturity, coupons, and YTM."],
+              ["Outstanding bonds", "https://rse.rw/outstanding-bonds", "Listed debt instruments and market statistics."],
+            ].map(([title, href, copy]) => (
               <a
-                key={source.href}
-                href={source.href}
+                key={href}
+                href={href}
                 target="_blank"
                 rel="noreferrer"
-                className="group rounded-2xl border border-outline/10 bg-background/75 p-5 transition hover:border-primary/35"
+                className="group rounded-xl border border-outline/10 bg-background/75 p-5 transition hover:border-primary/35"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-[9px] font-black uppercase tracking-wider text-primary">
-                    {source.status}
+                    RSE source
                   </span>
                   <ExternalLink size={14} className="text-outline transition group-hover:text-primary" />
                 </div>
-                <h3 className="mt-4 font-black">{source.title}</h3>
-                <p className="mt-2 text-xs leading-5 text-on-surface-variant">
-                  {source.copy}
-                </p>
+                <h3 className="mt-4 font-black">{title}</h3>
+                <p className="mt-2 text-xs leading-5 text-on-surface-variant">{copy}</p>
               </a>
             ))}
           </div>
 
           <div className="mt-6 space-y-6">
-
-
             <article className="overflow-hidden rounded-3xl border border-outline/10 bg-background/75">
               {marketData.outstanding.length > 0 ? (
                 <RseRankedBondTable
