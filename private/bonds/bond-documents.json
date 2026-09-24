@@ -1,5 +1,18 @@
 [
   {
+    "id": "bank-of-kigali-equity-contract-2026-09-24",
+    "label": "Equity purchase contract note",
+    "documentDate": "2026-09-24",
+    "category": "Equity contract",
+    "instrumentName": "Bank of Kigali",
+    "issuer": "Bank of Kigali",
+    "description": "BK Capital contract note for 500 Bank of Kigali shares purchased on the RSE at RWF 670.00 per share.",
+    "fileName": "bank-of-kigali-equity-contract-2026-09-24.pdf",
+    "originalFileName": "Contract-20260004454#01-Equity-24-Sep-2026.pdf",
+    "contentType": "application/pdf",
+    "storedPath": "private/bonds/documents/bank-of-kigali-equity-contract-2026-09-24.pdf"
+  },
+  {
     "id": "fxd2-2026-7yr-oreste-result",
     "purchaseMatcher": {
       "issuanceNumber": "FXD2/2026/7YR",
