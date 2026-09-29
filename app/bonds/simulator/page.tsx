@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BondPlanner } from "@/component/bonds/BondPlanner";
+import { BondSimulatorPlanner } from "@/component/bonds/BondSimulatorPlanner";
 
 export const metadata: Metadata = {
   title: "Treasury Bond Simulator | Gabo",
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function BondSimulatorPage() {
-  return <BondPlanner view="simulator" />;
+  return <BondSimulatorPlanner />;
 }
