@@ -1,23 +1,9 @@
 "use client";
 import React, { useEffect, useRef } from "react";
-import { useMotionValue, useSpring } from "framer-motion";
 
 export const ImigongoBackground = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
-
-    const smoothX = useSpring(mouseX, { damping: 50, stiffness: 400 });
-    const smoothY = useSpring(mouseY, { damping: 50, stiffness: 400 });
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            mouseX.set(e.clientX);
-            mouseY.set(e.clientY);
-        };
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, [mouseX, mouseY]);
+    const pointerRef = useRef({ x: -1000, y: -1000 });
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -25,31 +11,22 @@ export const ImigongoBackground = () => {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        let raf: number;
+        let raf: number | null = null;
 
         const getThemeColor = (varName: string) => {
             const style = getComputedStyle(document.documentElement);
             return style.getPropertyValue(varName).trim();
         };
 
-        const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        window.addEventListener("resize", resize);
-        resize();
-
         const draw = () => {
+            raf = null;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Using MD3 tokens for harmony
             const primary = getThemeColor("--md-sys-color-primary");
             const outline = getThemeColor("--md-sys-color-outline-variant");
 
-            // Increased step (120 instead of 80) to reduce pattern density
             const step = 120;
-            const mX = smoothX.get();
-            const mY = smoothY.get();
+            const { x: mX, y: mY } = pointerRef.current;
 
             for (let x = 0; x < canvas.width + step; x += step) {
                 for (let y = 0; y < canvas.height + step; y += step) {
@@ -103,15 +80,40 @@ export const ImigongoBackground = () => {
                     ctx.globalAlpha = 1.0;
                 }
             }
+        };
+
+        const requestDraw = () => {
+            if (raf !== null) return;
             raf = requestAnimationFrame(draw);
         };
 
-        draw();
-        return () => {
-            cancelAnimationFrame(raf);
-            window.removeEventListener("resize", resize);
+        const resize = () => {
+            const scale = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.round(window.innerWidth * scale);
+            canvas.height = Math.round(window.innerHeight * scale);
+            canvas.style.width = `${window.innerWidth}px`;
+            canvas.style.height = `${window.innerHeight}px`;
+            ctx.setTransform(scale, 0, 0, scale, 0, 0);
+            requestDraw();
         };
-    }, [smoothX, smoothY]);
+
+        const handlePointerMove = (event: PointerEvent) => {
+            pointerRef.current = { x: event.clientX, y: event.clientY };
+            requestDraw();
+        };
+
+        window.addEventListener("resize", resize);
+        window.addEventListener("pointermove", handlePointerMove, {
+            passive: true,
+        });
+        resize();
+
+        return () => {
+            if (raf !== null) cancelAnimationFrame(raf);
+            window.removeEventListener("resize", resize);
+            window.removeEventListener("pointermove", handlePointerMove);
+        };
+    }, []);
 
     return (
         <div className="fixed inset-0 -z-10 bg-background overflow-hidden pointer-events-none">
