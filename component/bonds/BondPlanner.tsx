@@ -61,6 +61,7 @@ import type {
   CashInjection,
   BondPurchase,
   BondPurchaseInput,
+  ContributionPeriod,
   EquityHolding,
 } from "@/lib/bonds/types";
 import bondCatalog from "@/lib/bonds/bond-catalog.json";
@@ -164,6 +165,75 @@ function generateSemiannualCouponDates(
 
 function validIsoDate(value: string | null) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+}
+
+function simulationMonthDate(
+  assumptions: Pick<BondAssumptions, "startMonth" | "startYear">,
+  month: number,
+) {
+  return new Date(
+    assumptions.startYear,
+    assumptions.startMonth - 1 + month - 1,
+    1,
+  );
+}
+
+function simulationMonthLabel(
+  assumptions: Pick<BondAssumptions, "startMonth" | "startYear">,
+  month: number,
+) {
+  const date = simulationMonthDate(assumptions, month);
+  return `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function normalizeContributionPeriods(
+  assumptions: BondAssumptions,
+): ContributionPeriod[] {
+  const totalMonths = Math.max(1, Math.round(assumptions.horizonYears * 12));
+  const source =
+    assumptions.contributionPeriods?.length > 0
+      ? assumptions.contributionPeriods
+      : [
+          {
+            id: "default",
+            amount: assumptions.monthlyContribution,
+            startMonth: 1,
+            endMonth: totalMonths,
+          },
+        ];
+
+  return source
+    .map((period, index) => {
+      const startMonth = Math.min(
+        totalMonths,
+        Math.max(1, Math.round(period.startMonth || 1)),
+      );
+      const endMonth = Math.min(
+        totalMonths,
+        Math.max(startMonth, Math.round(period.endMonth || totalMonths)),
+      );
+
+      return {
+        id: period.id || `period-${index + 1}`,
+        amount: Math.max(0, Math.round(period.amount || 0)),
+        startMonth,
+        endMonth,
+      };
+    })
+    .sort((a, b) => a.startMonth - b.startMonth || a.endMonth - b.endMonth);
+}
+
+function scheduledMonthlyContribution(
+  periods: ContributionPeriod[],
+  month: number,
+) {
+  return periods.reduce(
+    (total, period) =>
+      month >= period.startMonth && month <= period.endMonth
+        ? total + period.amount
+        : total,
+    0,
+  );
 }
 
 function purchaseFromCalendarPrefill(params: URLSearchParams): BondPurchaseInput | null {
@@ -607,6 +677,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [assumptions, setAssumptions] =
     useState<BondAssumptions>(DEFAULT_ASSUMPTIONS);
+  const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
   const [cashInjections, setCashInjections] = useState<CashInjection[]>([]);
   const [injectionDraft, setInjectionDraft] = useState({
     label: "",
@@ -652,7 +723,11 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
       try {
         const stored = window.localStorage.getItem(STORAGE_KEY);
         if (stored) {
-          setAssumptions({ ...DEFAULT_ASSUMPTIONS, ...JSON.parse(stored) });
+          const parsed = { ...DEFAULT_ASSUMPTIONS, ...JSON.parse(stored) };
+          setAssumptions({
+            ...parsed,
+            contributionPeriods: normalizeContributionPeriods(parsed),
+          });
         }
         const storedInjections = window.localStorage.getItem(INJECTIONS_STORAGE_KEY);
         if (storedInjections) {
@@ -752,21 +827,49 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     };
   }, [authenticated]);
 
-  const projection = useMemo(
-    () => calculateProjection(assumptions, cashInjections),
-    [assumptions, cashInjections],
-  );
-  const baselineProjection = useMemo(
-    () => calculateProjection(assumptions),
+  const contributionPeriods = useMemo(
+    () => normalizeContributionPeriods(assumptions),
     [assumptions],
   );
+  const currentMonthlyContribution = scheduledMonthlyContribution(
+    contributionPeriods,
+    1,
+  );
+  const contributionLabel =
+    contributionPeriods.length === 1
+      ? `${formatRwf(contributionPeriods[0].amount)} each month`
+      : `${contributionPeriods.length} contribution periods`;
+  const totalSimulationMonths = Math.max(
+    1,
+    Math.round(assumptions.horizonYears * 12),
+  );
+  const contributionGapCount = Array.from(
+    { length: totalSimulationMonths },
+    (_, index) => scheduledMonthlyContribution(contributionPeriods, index + 1),
+  ).filter((amount) => amount === 0).length;
+  const modeledAssumptions = useMemo(
+    () => ({
+      ...assumptions,
+      monthlyContribution: currentMonthlyContribution,
+      contributionPeriods,
+    }),
+    [assumptions, contributionPeriods, currentMonthlyContribution],
+  );
+  const projection = useMemo(
+    () => calculateProjection(modeledAssumptions, cashInjections),
+    [modeledAssumptions, cashInjections],
+  );
+  const baselineProjection = useMemo(
+    () => calculateProjection(modeledAssumptions),
+    [modeledAssumptions],
+  );
   const summary = useMemo(
-    () => summarizeProjection(projection, assumptions),
-    [projection, assumptions],
+    () => summarizeProjection(projection, modeledAssumptions),
+    [projection, modeledAssumptions],
   );
   const baselineSummary = useMemo(
-    () => summarizeProjection(baselineProjection, assumptions),
-    [baselineProjection, assumptions],
+    () => summarizeProjection(baselineProjection, modeledAssumptions),
+    [baselineProjection, modeledAssumptions],
   );
   const annualProjection = useMemo(
     () =>
@@ -906,7 +1009,110 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     key: K,
     value: BondAssumptions[K],
   ) {
-    setAssumptions((current) => ({ ...current, [key]: value }));
+    setAssumptions((current) => {
+      if (key !== "horizonYears") return { ...current, [key]: value };
+
+      const previousTotalMonths = Math.max(
+        1,
+        Math.round(current.horizonYears * 12),
+      );
+      const nextHorizonYears = Number(value);
+      const nextTotalMonths = Math.max(1, Math.round(nextHorizonYears * 12));
+      const nextPeriods = normalizeContributionPeriods(current).map(
+        (period) => ({
+          ...period,
+          endMonth:
+            period.startMonth === 1 && period.endMonth === previousTotalMonths
+              ? nextTotalMonths
+              : Math.min(period.endMonth, nextTotalMonths),
+          startMonth: Math.min(period.startMonth, nextTotalMonths),
+        }),
+      );
+
+      return {
+        ...current,
+        horizonYears: nextHorizonYears,
+        contributionPeriods: nextPeriods.map((period) => ({
+          ...period,
+          endMonth: Math.max(period.startMonth, period.endMonth),
+        })),
+      };
+    });
+  }
+
+  function updateContributionPeriod(
+    id: string,
+    updates: Partial<Omit<ContributionPeriod, "id">>,
+  ) {
+    setAssumptions((current) => {
+      const totalMonths = Math.max(1, Math.round(current.horizonYears * 12));
+      const nextPeriods = normalizeContributionPeriods(current).map((period) => {
+        if (period.id !== id) return period;
+
+        const amount =
+          updates.amount === undefined
+            ? period.amount
+            : Math.max(0, Math.round(updates.amount));
+        const startMonth =
+          updates.startMonth === undefined
+            ? period.startMonth
+            : Math.min(totalMonths, Math.max(1, Math.round(updates.startMonth)));
+        const endMonth =
+          updates.endMonth === undefined
+            ? period.endMonth
+            : Math.min(totalMonths, Math.max(1, Math.round(updates.endMonth)));
+
+        return {
+          ...period,
+          amount,
+          startMonth: Math.min(startMonth, endMonth),
+          endMonth: Math.max(startMonth, endMonth),
+        };
+      });
+      const primaryPeriod = nextPeriods[0];
+
+      return {
+        ...current,
+        monthlyContribution: primaryPeriod?.amount ?? 0,
+        contributionPeriods: nextPeriods,
+      };
+    });
+  }
+
+  function addContributionPeriod() {
+    setAssumptions((current) => {
+      const totalMonths = Math.max(1, Math.round(current.horizonYears * 12));
+      const periods = normalizeContributionPeriods(current);
+      const lastPeriod = periods.at(-1);
+      const startMonth = lastPeriod
+        ? Math.min(totalMonths, lastPeriod.endMonth + 1)
+        : 1;
+      const nextPeriod = {
+        id: crypto.randomUUID(),
+        amount: lastPeriod?.amount ?? current.monthlyContribution,
+        startMonth,
+        endMonth: totalMonths,
+      };
+
+      return {
+        ...current,
+        contributionPeriods: [...periods, nextPeriod],
+      };
+    });
+  }
+
+  function removeContributionPeriod(id: string) {
+    setAssumptions((current) => {
+      const periods = normalizeContributionPeriods(current);
+      if (periods.length <= 1) return current;
+
+      const nextPeriods = periods.filter((period) => period.id !== id);
+      return {
+        ...current,
+        monthlyContribution: nextPeriods[0]?.amount ?? 0,
+        contributionPeriods: nextPeriods,
+      };
+    });
   }
 
   function resetScenario() {
@@ -920,6 +1126,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
     });
     setExpandedYears(new Set([1]));
     setExpandedMonths(new Set());
+    setAdvancedSettingsOpen(false);
     window.localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify(DEFAULT_ASSUMPTIONS),
@@ -1349,7 +1556,7 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                 Current scenario · Live model
               </p>
               <p className="mt-3 text-xl font-black leading-snug md:text-2xl">
-                Invest {formatRwf(assumptions.monthlyContribution)} each month for{" "}
+                Invest {contributionLabel} for{" "}
                 {assumptions.horizonYears} years
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--md-sys-color-on-surface-variant)]">
@@ -1443,7 +1650,111 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
               </button>
             </div>
             <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <NumberControl label="Monthly contribution" value={assumptions.monthlyContribution} onChange={(value) => update("monthlyContribution", value)} min={0} max={2_000_000} step={50_000} prefix="RWF " />
+              <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4 md:col-span-2 xl:col-span-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                      Monthly contribution schedule
+                    </span>
+                    <p className="mt-1 text-[11px] leading-5 text-[var(--md-sys-color-outline)]">
+                      Default is one amount for the full horizon. Add periods for salary changes,
+                      school fees seasons, pauses, or temporary boosts.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addContributionPeriod}
+                    className="inline-flex w-fit items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-black text-on-primary transition hover:opacity-90"
+                  >
+                    <Plus size={15} />
+                    Add period
+                  </button>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {contributionPeriods.map((period, index) => (
+                    <div
+                      key={period.id}
+                      className="grid gap-3 rounded-xl border border-outline/10 bg-surface-container/45 p-3 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end"
+                    >
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-outline)]">
+                        Amount
+                        <input
+                          type="number"
+                          min={0}
+                          step={50_000}
+                          value={period.amount}
+                          onChange={(event) =>
+                            updateContributionPeriod(period.id, {
+                              amount: Number(event.target.value),
+                            })
+                          }
+                          className="mt-1.5 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
+                        />
+                      </label>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-outline)]">
+                        From
+                        <select
+                          value={period.startMonth}
+                          onChange={(event) =>
+                            updateContributionPeriod(period.id, {
+                              startMonth: Number(event.target.value),
+                            })
+                          }
+                          className="mt-1.5 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
+                        >
+                          {Array.from({ length: totalSimulationMonths }, (_, monthIndex) => monthIndex + 1).map((month) => (
+                            <option key={month} value={month}>
+                              {simulationMonthLabel(assumptions, month)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-outline)]">
+                        Until
+                        <select
+                          value={period.endMonth}
+                          onChange={(event) =>
+                            updateContributionPeriod(period.id, {
+                              endMonth: Number(event.target.value),
+                            })
+                          }
+                          className="mt-1.5 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
+                        >
+                          {Array.from({ length: totalSimulationMonths }, (_, monthIndex) => monthIndex + 1).map((month) => (
+                            <option key={month} value={month}>
+                              {simulationMonthLabel(assumptions, month)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="flex items-center justify-between gap-3 lg:justify-end">
+                        <span className="text-[11px] font-bold text-on-surface-variant">
+                          {index === 0 ? "Base" : "Period"} ·{" "}
+                          {period.endMonth - period.startMonth + 1} mo.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeContributionPeriod(period.id)}
+                          disabled={contributionPeriods.length <= 1}
+                          aria-label="Remove contribution period"
+                          className="inline-grid h-10 w-10 place-items-center rounded-xl border border-error/10 text-error transition hover:border-error/25 hover:bg-error-container/30 disabled:cursor-not-allowed disabled:opacity-35"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-on-surface-variant">
+                  <span>Current month: {formatRwf(currentMonthlyContribution)}</span>
+                  <span>Total periods: {contributionPeriods.length}</span>
+                  <span>
+                    {contributionGapCount > 0
+                      ? `${contributionGapCount} months with no scheduled contribution`
+                      : "Every month has a scheduled contribution"}
+                  </span>
+                </div>
+              </div>
               <NumberControl
                 label="Investment horizon"
                 value={assumptions.horizonYears}
@@ -1528,28 +1839,54 @@ export function BondPlanner({ view = "simulator" }: { view?: PlannerView }) {
                   Reference
                 </span>
               </p>
-              <NumberControl label="Coupon reinvestment" value={Math.round(assumptions.reinvestmentRate * 100)} onChange={(value) => update("reinvestmentRate", value / 100)} min={0} max={100} step={5} suffix="%" />
-              <NumberControl
-                label="Expected auction fill"
-                value={Math.round(assumptions.auctionFillRate * 100)}
-                onChange={(value) => update("auctionFillRate", value / 100)}
-                min={0}
-                max={100}
-                step={5}
-                suffix="%"
-                help="Estimated share of your intended Treasury bond bid that actually gets allocated. BNR history since 2008 implies roughly 67% market-wide sold/applied, while recent periods can be lower."
-              />
-              <NumberControl
-                label="Aguka idle cash return"
-                value={Math.round(assumptions.agukaAnnualRate * 10_000) / 100}
-                onChange={(value) => update("agukaAnnualRate", value / 100)}
-                min={0}
-                max={15}
-                step={0.25}
-                suffix="% p.a."
-                help="Tax-exempt annual return assumption for unallocated cash parked in Aguka between bond bids. Update this when BK Capital changes the quoted rate."
-              />
-              <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
+              <div className="xl:col-span-3">
+                <button
+                  type="button"
+                  onClick={() => setAdvancedSettingsOpen((open) => !open)}
+                  aria-expanded={advancedSettingsOpen}
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-outline/10 bg-surface-container-lowest/70 px-4 py-3 text-left transition hover:border-[var(--md-sys-color-primary)]/35"
+                >
+                  <span className="flex items-center gap-2 text-xs font-black text-on-surface">
+                    <Settings size={16} />
+                    More assumptions
+                  </span>
+                  <span className="flex items-center gap-3 text-[11px] text-on-surface-variant">
+                    <span className="hidden sm:inline">
+                      Reinvestment, fill rate, Aguka, starting portfolio
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform ${advancedSettingsOpen ? "rotate-180" : ""}`}
+                    />
+                  </span>
+                </button>
+                {advancedSettingsOpen && (
+                  <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <NumberControl label="Coupon reinvestment" value={Math.round(assumptions.reinvestmentRate * 100)} onChange={(value) => update("reinvestmentRate", value / 100)} min={0} max={100} step={5} suffix="%" />
+                    <NumberControl
+                      label="Expected auction fill"
+                      value={Math.round(assumptions.auctionFillRate * 100)}
+                      onChange={(value) => update("auctionFillRate", value / 100)}
+                      min={0}
+                      max={100}
+                      step={5}
+                      suffix="%"
+                      help="Estimated share of your intended Treasury bond bid that actually gets allocated. BNR history since 2008 implies roughly 67% market-wide sold/applied, while recent periods can be lower."
+                    />
+                    <NumberControl
+                      label="Aguka idle cash return"
+                      value={Math.round(assumptions.agukaAnnualRate * 10_000) / 100}
+                      onChange={(value) => update("agukaAnnualRate", value / 100)}
+                      min={0}
+                      max={15}
+                      step={0.25}
+                      suffix="% p.a."
+                      help="Tax-exempt annual return assumption for unallocated cash parked in Aguka between bond bids. Update this when BK Capital changes the quoted rate."
+                    />
+                    <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="mt-6 rounded-3xl border border-[var(--md-sys-color-tertiary)]/20 bg-[var(--md-sys-color-tertiary)]/[0.05] p-4">
