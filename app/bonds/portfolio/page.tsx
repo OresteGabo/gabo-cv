@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BondPlanner } from "@/component/bonds/BondPlanner";
+import { BondPortfolioPlanner } from "@/component/bonds/BondPortfolioPlanner";
 
 export const metadata: Metadata = {
   title: "Private Bond Portfolio | Gabo",
@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function BondPortfolioPage() {
-  return <BondPlanner view="portfolio" />;
+  return <BondPortfolioPlanner view="portfolio" />;
 }
