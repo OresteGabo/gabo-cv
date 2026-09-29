@@ -1,5 +1,6 @@
 export type BondAssumptions = {
   monthlyContribution: number;
+  contributionPeriods: ContributionPeriod[];
   horizonYears: number;
   startMonth: number;
   startYear: number;
@@ -11,6 +12,13 @@ export type BondAssumptions = {
   agukaAnnualRate: number;
   startingPortfolio: number;
   purchaseMinimum: number;
+};
+
+export type ContributionPeriod = {
+  id: string;
+  amount: number;
+  startMonth: number;
+  endMonth: number;
 };
 
 export type CashInjection = {
