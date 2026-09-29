@@ -9,6 +9,14 @@ import type {
 
 export const DEFAULT_ASSUMPTIONS: BondAssumptions = {
   monthlyContribution: 300_000,
+  contributionPeriods: [
+    {
+      id: "default",
+      amount: 300_000,
+      startMonth: 1,
+      endMonth: 240,
+    },
+  ],
   horizonYears: 20,
   startMonth: 7,
   startYear: 2026,
@@ -33,6 +41,17 @@ export function calculateProjection(
   cashInjections: CashInjection[] = [],
 ): MonthlyProjection[] {
   const totalMonths = Math.max(1, Math.round(assumptions.horizonYears * 12));
+  const contributionPeriods =
+    assumptions.contributionPeriods?.length > 0
+      ? assumptions.contributionPeriods
+      : [
+          {
+            id: "legacy-monthly-contribution",
+            amount: assumptions.monthlyContribution,
+            startMonth: 1,
+            endMonth: totalMonths,
+          },
+        ];
   const paymentsPerYear = Math.max(1, assumptions.couponPaymentsPerYear);
   const paymentInterval = 12 / paymentsPerYear;
   const auctionFillRate = Math.max(0, Math.min(1, assumptions.auctionFillRate));
@@ -102,7 +121,13 @@ export function calculateProjection(
       Math.round(openingCashBalance * agukaMonthlyRate * 100) / 100;
     const agukaDistribution =
       month % 6 === 0 ? agukaInterest : 0;
-    const personalContribution = assumptions.monthlyContribution;
+    const personalContribution = contributionPeriods.reduce(
+      (total, period) =>
+        month >= period.startMonth && month <= period.endMonth
+          ? total + Math.max(0, period.amount)
+          : total,
+      0,
+    );
     const monthlyInjections = cashInjections.filter(
       (injection) => injection.month === month,
     );
@@ -229,10 +254,9 @@ export function summarizeProjection(
   const final = projection.at(-1);
   const firstMonthAt = (amount: number) =>
     projection.find((row) => row.totalAccountValue >= amount)?.month ?? null;
-  const annualContributions = assumptions.monthlyContribution * 12;
   const crossoverMonth =
     projection.find(
-      (row) => row.annualPassiveIncome > annualContributions,
+      (row) => row.annualPassiveIncome > row.personalContribution * 12,
     )?.month ?? null;
 
   return {
