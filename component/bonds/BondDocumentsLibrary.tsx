@@ -99,6 +99,14 @@ export function BondDocumentsLibrary() {
     () => [...new Set(documents.map((document) => document.category))],
     [documents],
   );
+  const documentGroups = useMemo(
+    () =>
+      categories.map((category) => ({
+        category,
+        documents: documents.filter((document) => document.category === category),
+      })),
+    [categories, documents],
+  );
 
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -222,52 +230,66 @@ export function BondDocumentsLibrary() {
               Open documents <FileText size={16} />
             </button>
           </form>
-        ) : (
-          <div className="mt-8 grid gap-3">
-            {documents.map((document) => (
-              <article
-                key={document.id}
-                className="rounded-3xl border border-outline/10 bg-surface-container-lowest/75 p-5 md:p-6"
-              >
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase text-primary">
-                        <CalendarDays size={12} />
-                        {displayDate(document.documentDate)}
-                      </span>
-                      <span className="rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant">
-                        {document.category}
-                      </span>
-                    </div>
-                    <h2 className="mt-4 text-xl font-black text-on-surface">
-                      {document.label}
-                    </h2>
-                    <p className="mt-1 text-sm font-bold text-on-surface">
-                      {document.instrumentName}
-                    </p>
-                    <p className="mt-3 max-w-3xl text-sm leading-6 text-on-surface-variant">
-                      {document.description}
-                    </p>
-                    <p className="mt-3 break-all text-[11px] font-bold text-on-surface-variant">
-                      {document.originalFileName}
-                    </p>
-                  </div>
-                  <a
-                    href={document.downloadUrl}
-                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90"
-                  >
-                    <Download size={16} />
-                    Download
-                  </a>
+        ) : documents.length > 0 ? (
+          <div className="mt-8 space-y-8">
+            {documentGroups.map(({ category, documents: groupDocuments }) => (
+              <section key={category}>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h2 className="text-sm font-black uppercase tracking-[0.18em] text-on-surface">
+                    {category}
+                  </h2>
+                  <span className="rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant">
+                    {groupDocuments.length}{" "}
+                    {groupDocuments.length === 1 ? "file" : "files"}
+                  </span>
                 </div>
-              </article>
+                <div className="grid gap-3">
+                  {groupDocuments.map((document) => (
+                    <article
+                      key={document.id}
+                      className="rounded-3xl border border-outline/10 bg-surface-container-lowest/75 p-5 md:p-6"
+                    >
+                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase text-primary">
+                              <CalendarDays size={12} />
+                              {displayDate(document.documentDate)}
+                            </span>
+                            <span className="rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant">
+                              {document.issuer}
+                            </span>
+                          </div>
+                          <h3 className="mt-4 text-xl font-black text-on-surface">
+                            {document.label}
+                          </h3>
+                          <p className="mt-1 text-sm font-bold text-on-surface">
+                            {document.instrumentName}
+                          </p>
+                          <p className="mt-3 max-w-3xl text-sm leading-6 text-on-surface-variant">
+                            {document.description}
+                          </p>
+                          <p className="mt-3 break-all text-[11px] font-bold text-on-surface-variant">
+                            {document.originalFileName}
+                          </p>
+                        </div>
+                        <a
+                          href={document.downloadUrl}
+                          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90"
+                        >
+                          <Download size={16} />
+                          Download
+                        </a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
             ))}
-            {documents.length === 0 && (
-              <div className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-8 text-sm text-on-surface-variant">
-                No documents saved.
-              </div>
-            )}
+          </div>
+        ) : (
+          <div className="mt-8 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-8 text-sm text-on-surface-variant">
+            No documents saved.
           </div>
         )}
 
