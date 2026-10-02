@@ -7,6 +7,35 @@
     "instrumentName": "Equity and bonds account",
     "issuer": "BK Capital Limited",
     "description": "BK Capital client statement for 01 Jul 2026 to 30 Sep 2026 showing bond settlements, equity purchases, fees, charges, and closing cash balance.",
+    "details": {
+      "summary": "This statement confirms the four payments, the exact amounts used, and the small RWF 200.90 credit left in the brokerage account.",
+      "facts": [
+        { "label": "Statement period", "value": "01 Jul 2026 to 30 Sep 2026" },
+        { "label": "Opening balance", "value": "RWF 0.00" },
+        { "label": "Closing balance", "value": "RWF 200.90 credit" },
+        { "label": "Account", "value": "Equity and bonds" }
+      ],
+      "sections": [
+        {
+          "title": "Payments confirmed",
+          "items": [
+            { "label": "14 Jul 2026", "value": "RWF 2,211,000 received for 7-year bond settlement" },
+            { "label": "22 Jul 2026", "value": "RWF 36,616 received for I&M Bank Rwanda purchase" },
+            { "label": "11 Aug 2026", "value": "RWF 1,011,000 received for 10-year bond settlement" },
+            { "label": "23 Sep 2026", "value": "RWF 340,729 received for BK Group purchase" }
+          ]
+        },
+        {
+          "title": "Amounts used",
+          "items": [
+            { "label": "7-year bond", "value": "RWF 2,210,900 used, leaving RWF 100 credit" },
+            { "label": "I&M Bank Rwanda", "value": "RWF 36,615.60 used, leaving RWF 0.40 credit" },
+            { "label": "10-year bond", "value": "RWF 1,010,900 used, leaving RWF 100 credit" },
+            { "label": "BK Group", "value": "RWF 340,728.50 used, leaving RWF 0.50 credit" }
+          ]
+        }
+      ]
+    },
     "fileName": "client-statement-2026-10-01.pdf",
     "originalFileName": "ClientStatement.pdf",
     "contentType": "application/pdf",
@@ -20,6 +49,30 @@
     "instrumentName": "Bank of Kigali",
     "issuer": "Bank of Kigali",
     "description": "BK Capital contract note for 500 Bank of Kigali shares purchased on the RSE at RWF 670.00 per share.",
+    "details": {
+      "summary": "This contract note shows the share price, all market charges, and the final amount payable for the BK Group purchase.",
+      "facts": [
+        { "label": "Trade date", "value": "24 Sep 2026" },
+        { "label": "Settlement date", "value": "28 Sep 2026" },
+        { "label": "Shares", "value": "500" },
+        { "label": "Price per share", "value": "RWF 670.00" },
+        { "label": "Gross share cost", "value": "RWF 335,000.00" },
+        { "label": "Total charges", "value": "RWF 5,728.50" },
+        { "label": "Net amount payable", "value": "RWF 340,728.50" },
+        { "label": "CDS reference", "value": "2364S46293H" }
+      ],
+      "charges": [
+        { "label": "Brokerage commission 1.50%", "value": "RWF 5,025.00" },
+        { "label": "RSE transaction fee 0.14%", "value": "RWF 469.00" },
+        { "label": "CSD transaction levy 0.05%", "value": "RWF 167.50" },
+        { "label": "CMA transaction fee 0.02%", "value": "RWF 67.00" }
+      ],
+      "flow": [
+        { "label": "Shares", "value": "RWF 335,000.00" },
+        { "label": "Charges", "value": "RWF 5,728.50" },
+        { "label": "Total payable", "value": "RWF 340,728.50" }
+      ]
+    },
     "fileName": "bank-of-kigali-equity-contract-2026-09-24.pdf",
     "originalFileName": "Contract-20260004454#01-Equity-24-Sep-2026.pdf",
     "contentType": "application/pdf",
@@ -39,6 +92,30 @@
     "instrumentName": "FXD2/2026/7YR",
     "issuer": "Government of Rwanda",
     "description": "Accepted July 2026 7-year Treasury bond investor result showing full RWF 2,200,000 allocation.",
+    "details": {
+      "summary": "This result confirms the RWF 2,200,000 7-year Treasury bond allocation. The statement later shows the settlement fees and charges.",
+      "facts": [
+        { "label": "Bond", "value": "FXD2/2026/7YR" },
+        { "label": "Face value allocated", "value": "RWF 2,200,000" },
+        { "label": "Settlement date", "value": "17 Jul 2026" },
+        { "label": "Maturity date", "value": "08 Jul 2033" },
+        { "label": "Gross coupon rate", "value": "11.50%" },
+        { "label": "Coupon tax", "value": "5% withholding" },
+        { "label": "Net annual coupon rate", "value": "10.925%" },
+        { "label": "Estimated net coupon per payment", "value": "RWF 120,175" }
+      ],
+      "charges": [
+        { "label": "Bond fee", "value": "RWF 5,000" },
+        { "label": "Bank charges", "value": "RWF 5,900" },
+        { "label": "Total fees and charges used", "value": "RWF 10,900" }
+      ],
+      "flow": [
+        { "label": "Cash paid", "value": "RWF 2,211,000" },
+        { "label": "Principal", "value": "RWF 2,200,000" },
+        { "label": "Fees/charges", "value": "RWF 10,900" },
+        { "label": "Left as credit", "value": "RWF 100" }
+      ]
+    },
     "fileName": "fxd2-2026-7yr-oreste-result.pdf",
     "originalFileName": "ORESTE BOND RESULTS.pdf",
     "contentType": "application/pdf",
@@ -58,6 +135,40 @@
     "instrumentName": "FXD3/2026/10YR",
     "issuer": "Government of Rwanda",
     "description": "Accepted August 2026 10-year Treasury bond result showing 100% allocation, 12.00% coupon, and confirmed coupon dates.",
+    "details": {
+      "summary": "This result confirms the RWF 1,000,000 10-year Treasury bond allocation, coupon rate, settlement date, and future coupon schedule.",
+      "facts": [
+        { "label": "Bond", "value": "FXD3/2026/10YR" },
+        { "label": "Face value allocated", "value": "RWF 1,000,000" },
+        { "label": "Settlement date", "value": "14 Aug 2026" },
+        { "label": "Maturity date", "value": "01 Aug 2036" },
+        { "label": "Gross coupon rate", "value": "12.00%" },
+        { "label": "Coupon tax", "value": "5% withholding" },
+        { "label": "Net annual coupon rate", "value": "11.40%" },
+        { "label": "Net coupon per payment", "value": "RWF 57,000" }
+      ],
+      "charges": [
+        { "label": "Bond fee", "value": "RWF 5,000" },
+        { "label": "Custody fee", "value": "RWF 5,900" },
+        { "label": "Total fees and charges used", "value": "RWF 10,900" }
+      ],
+      "flow": [
+        { "label": "Cash paid", "value": "RWF 1,011,000" },
+        { "label": "Principal", "value": "RWF 1,000,000" },
+        { "label": "Fees/charges", "value": "RWF 10,900" },
+        { "label": "Left as credit", "value": "RWF 100" }
+      ],
+      "sections": [
+        {
+          "title": "Coupon schedule",
+          "items": [
+            { "label": "First coupon", "value": "12 Feb 2027" },
+            { "label": "Frequency", "value": "Twice per year" },
+            { "label": "Final coupon and principal", "value": "01 Aug 2036" }
+          ]
+        }
+      ]
+    },
     "fileName": "fxd3-2026-10yr-oreste-result.pdf",
     "originalFileName": "GABO ORESTE MUHIRWA BOND RESULT.pdf",
     "contentType": "application/pdf",
@@ -71,6 +182,30 @@
     "instrumentName": "I&M Bank Rwanda Limited",
     "issuer": "I&M Bank Rwanda Limited",
     "description": "BK Capital contract note for 400 I&M Bank Rwanda shares purchased on the RSE at RWF 90.00 per share.",
+    "details": {
+      "summary": "This contract note shows the share price, all market charges, and the final amount payable for the I&M Bank Rwanda purchase.",
+      "facts": [
+        { "label": "Trade date", "value": "22 Jul 2026" },
+        { "label": "Settlement date", "value": "24 Jul 2026" },
+        { "label": "Shares", "value": "400" },
+        { "label": "Price per share", "value": "RWF 90.00" },
+        { "label": "Gross share cost", "value": "RWF 36,000.00" },
+        { "label": "Total charges", "value": "RWF 615.60" },
+        { "label": "Net amount payable", "value": "RWF 36,615.60" },
+        { "label": "CDS reference", "value": "6676R46227F" }
+      ],
+      "charges": [
+        { "label": "Brokerage commission 1.50%", "value": "RWF 540.00" },
+        { "label": "RSE transaction fee 0.14%", "value": "RWF 50.40" },
+        { "label": "CSD transaction levy 0.05%", "value": "RWF 18.00" },
+        { "label": "CMA transaction fee 0.02%", "value": "RWF 7.20" }
+      ],
+      "flow": [
+        { "label": "Shares", "value": "RWF 36,000.00" },
+        { "label": "Charges", "value": "RWF 615.60" },
+        { "label": "Total payable", "value": "RWF 36,615.60" }
+      ]
+    },
     "fileName": "im-bank-rwanda-equity-contract-2026-07-22.pdf",
     "originalFileName": "Contract-20260002941#01-Equity-22-Jul-2026-2.pdf",
     "contentType": "application/pdf",
