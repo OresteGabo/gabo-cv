@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   CalendarDays,
+  ChevronDown,
   Download,
   FileText,
   LockKeyhole,
@@ -22,7 +23,6 @@ type DocumentSummary = {
   instrumentName: string;
   issuer: string;
   description: string;
-  originalFileName: string;
   downloadUrl: string;
 };
 
@@ -243,45 +243,50 @@ export function BondDocumentsLibrary() {
                     {groupDocuments.length === 1 ? "file" : "files"}
                   </span>
                 </div>
-                <div className="grid gap-3">
+                <div className="overflow-hidden rounded-2xl border border-outline/10 bg-surface-container-lowest/75">
                   {groupDocuments.map((document) => (
-                    <article
+                    <details
                       key={document.id}
-                      className="rounded-3xl border border-outline/10 bg-surface-container-lowest/75 p-5 md:p-6"
+                      className="group border-b border-outline/10 last:border-b-0"
                     >
-                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                      <summary className="grid cursor-pointer list-none grid-cols-1 gap-3 px-4 py-3 transition hover:bg-surface-container/60 marker:hidden md:grid-cols-[8.5rem_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] md:items-center md:px-5 [&::-webkit-details-marker]:hidden">
+                        <div className="flex items-center gap-2 text-[11px] font-black uppercase text-primary md:text-xs">
+                          <CalendarDays size={13} />
+                          {displayDate(document.documentDate)}
+                        </div>
                         <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase text-primary">
-                              <CalendarDays size={12} />
-                              {displayDate(document.documentDate)}
-                            </span>
-                            <span className="rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant">
-                              {document.issuer}
-                            </span>
-                          </div>
-                          <h3 className="mt-4 text-xl font-black text-on-surface">
+                          <h3 className="truncate text-sm font-black text-on-surface">
                             {document.label}
                           </h3>
-                          <p className="mt-1 text-sm font-bold text-on-surface">
+                          <p className="mt-0.5 truncate text-xs font-bold text-on-surface-variant">
                             {document.instrumentName}
                           </p>
-                          <p className="mt-3 max-w-3xl text-sm leading-6 text-on-surface-variant">
-                            {document.description}
-                          </p>
-                          <p className="mt-3 break-all text-[11px] font-bold text-on-surface-variant">
-                            {document.originalFileName}
-                          </p>
                         </div>
+                        <p className="truncate text-xs font-bold text-on-surface-variant md:text-sm">
+                          {document.issuer}
+                        </p>
+                        <span className="inline-flex w-fit items-center rounded-full bg-surface-container px-2.5 py-1 text-[10px] font-black uppercase text-on-surface-variant">
+                          Details
+                          <ChevronDown
+                            size={13}
+                            className="ml-1 transition group-open:rotate-180"
+                          />
+                        </span>
                         <a
                           href={document.downloadUrl}
-                          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90"
+                          className="inline-flex w-fit shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-black text-on-primary transition hover:opacity-90"
+                          onClick={(event) => event.stopPropagation()}
                         >
-                          <Download size={16} />
+                          <Download size={14} />
                           Download
                         </a>
+                      </summary>
+                      <div className="border-t border-outline/10 bg-surface-container-low/45 px-4 py-3 md:px-5">
+                        <p className="max-w-4xl text-sm leading-6 text-on-surface-variant">
+                          {document.description}
+                        </p>
                       </div>
-                    </article>
+                    </details>
                   ))}
                 </div>
               </section>
