@@ -12,6 +12,24 @@ export type DocumentPurchaseMatcher = {
   faceValue: number;
 };
 
+export type DocumentDetailItem = {
+  label: string;
+  value: string;
+};
+
+export type DocumentDetailSection = {
+  title: string;
+  items: DocumentDetailItem[];
+};
+
+export type DocumentDetails = {
+  summary?: string;
+  facts?: DocumentDetailItem[];
+  charges?: DocumentDetailItem[];
+  flow?: DocumentDetailItem[];
+  sections?: DocumentDetailSection[];
+};
+
 export type BondDocument = {
   id: string;
   purchaseMatcher?: DocumentPurchaseMatcher;
@@ -21,6 +39,7 @@ export type BondDocument = {
   instrumentName: string;
   issuer: string;
   description: string;
+  details?: DocumentDetails;
   fileName: string;
   originalFileName: string;
   contentType: string;
@@ -36,6 +55,7 @@ export type BondDocumentSummary = Pick<
   | "instrumentName"
   | "issuer"
   | "description"
+  | "details"
   | "originalFileName"
 > & {
   downloadUrl: string;
@@ -65,6 +85,7 @@ export function documentSummary(document: BondDocument): BondDocumentSummary {
     instrumentName: document.instrumentName,
     issuer: document.issuer,
     description: document.description,
+    details: document.details,
     originalFileName: document.originalFileName,
     downloadUrl: `/api/bonds/documents/${document.id}`,
   };
