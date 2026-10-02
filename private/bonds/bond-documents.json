@@ -1,5 +1,18 @@
 [
   {
+    "id": "client-statement-2026-10-01",
+    "label": "Broker account statement",
+    "documentDate": "2026-10-01",
+    "category": "Portfolio statement",
+    "instrumentName": "Equity and bonds account",
+    "issuer": "BK Capital Limited",
+    "description": "BK Capital client statement for 01 Jul 2026 to 30 Sep 2026 showing bond settlements, equity purchases, fees, charges, and closing cash balance.",
+    "fileName": "client-statement-2026-10-01.pdf",
+    "originalFileName": "ClientStatement.pdf",
+    "contentType": "application/pdf",
+    "storedPath": "private/bonds/documents/client-statement-2026-10-01.pdf"
+  },
+  {
     "id": "bank-of-kigali-equity-contract-2026-09-24",
     "label": "Equity purchase contract note",
     "documentDate": "2026-09-24",
