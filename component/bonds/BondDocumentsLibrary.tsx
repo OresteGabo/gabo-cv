@@ -23,6 +23,16 @@ type DocumentSummary = {
   instrumentName: string;
   issuer: string;
   description: string;
+  details?: {
+    summary?: string;
+    facts?: { label: string; value: string }[];
+    charges?: { label: string; value: string }[];
+    flow?: { label: string; value: string }[];
+    sections?: {
+      title: string;
+      items: { label: string; value: string }[];
+    }[];
+  };
   downloadUrl: string;
 };
 
@@ -58,11 +68,82 @@ function NavLink({
   );
 }
 
+function DetailGrid({
+  title,
+  items,
+}: {
+  title: string;
+  items?: { label: string; value: string }[];
+}) {
+  if (!items?.length) return null;
+
+  return (
+    <section>
+      <h4 className="text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
+        {title}
+      </h4>
+      <dl className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map((item) => (
+          <div
+            key={`${item.label}-${item.value}`}
+            className="rounded-xl bg-surface-container-lowest px-3 py-2"
+          >
+            <dt className="text-[10px] font-bold uppercase text-on-surface-variant">
+              {item.label}
+            </dt>
+            <dd className="mt-1 text-sm font-black text-on-surface">
+              {item.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+function MoneyFlow({
+  items,
+}: {
+  items?: { label: string; value: string }[];
+}) {
+  if (!items?.length) return null;
+
+  return (
+    <section>
+      <h4 className="text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
+        Money flow
+      </h4>
+      <div className="mt-2 grid gap-2 md:grid-cols-4">
+        {items.map((item, index) => (
+          <div
+            key={`${item.label}-${item.value}`}
+            className="relative rounded-xl border border-outline/10 bg-surface-container-lowest px-3 py-3"
+          >
+            <div className="mb-2 inline-grid h-6 w-6 place-items-center rounded-full bg-primary text-[10px] font-black text-on-primary">
+              {index + 1}
+            </div>
+            <p className="text-[10px] font-black uppercase text-on-surface-variant">
+              {item.label}
+            </p>
+            <p className="mt-1 text-sm font-black text-on-surface">
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function BondDocumentsLibrary() {
   const [authenticated, setAuthenticated] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [error, setError] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedYear, setSelectedYear] = useState(() =>
+    String(new Date().getFullYear()),
+  );
 
   useEffect(() => {
     fetch("/api/bonds/auth/session", { cache: "no-store" })
@@ -95,17 +176,55 @@ export function BondDocumentsLibrary() {
     };
   }, [authenticated]);
 
+  const years = useMemo(
+    () => [
+      ...new Set(
+        documents.map((document) => document.documentDate.slice(0, 4)),
+      ),
+    ],
+    [documents],
+  );
+  const documentsForYear = useMemo(
+    () =>
+      selectedYear === "All"
+        ? documents
+        : documents.filter((document) =>
+            document.documentDate.startsWith(selectedYear),
+          ),
+    [documents, selectedYear],
+  );
   const categories = useMemo(
     () => [...new Set(documents.map((document) => document.category))],
     [documents],
   );
+  const categoriesForYear = useMemo(
+    () => [...new Set(documentsForYear.map((document) => document.category))],
+    [documentsForYear],
+  );
+  const effectiveCategory =
+    selectedCategory === "All" || categoriesForYear.includes(selectedCategory)
+      ? selectedCategory
+      : "All";
+  const visibleDocuments = useMemo(
+    () =>
+      effectiveCategory === "All"
+        ? documentsForYear
+        : documentsForYear.filter(
+            (document) => document.category === effectiveCategory,
+          ),
+    [documentsForYear, effectiveCategory],
+  );
   const documentGroups = useMemo(
     () =>
-      categories.map((category) => ({
-        category,
-        documents: documents.filter((document) => document.category === category),
-      })),
-    [categories, documents],
+      (effectiveCategory === "All" ? categoriesForYear : [effectiveCategory])
+        .map((category) => ({
+          category,
+          documents: visibleDocuments.filter(
+            (document) => document.category === category,
+          ),
+        }))
+        .filter((group) => group.documents.length > 0),
+    [categoriesForYear, effectiveCategory, visibleDocuments],
   );
 
   async function login(event: FormEvent<HTMLFormElement>) {
@@ -169,15 +288,8 @@ export function BondDocumentsLibrary() {
             </h1>
           </div>
           {authenticated && (
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <span
-                  key={category}
-                  className="rounded-full bg-surface-container px-3 py-1.5 text-[10px] font-black uppercase text-on-surface-variant"
-                >
-                  {category}
-                </span>
-              ))}
+            <div className="rounded-full bg-surface-container px-3 py-1.5 text-[10px] font-black uppercase text-on-surface-variant">
+              {documents.length} {documents.length === 1 ? "file" : "files"}
             </div>
           )}
         </div>
@@ -231,7 +343,80 @@ export function BondDocumentsLibrary() {
             </button>
           </form>
         ) : documents.length > 0 ? (
-          <div className="mt-8 space-y-8">
+          <div className="mt-8 space-y-6">
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedYear("All")}
+                  className={`rounded-xl px-3 py-2 text-xs font-black transition ${
+                    selectedYear === "All"
+                      ? "bg-primary text-on-primary"
+                      : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                  }`}
+                >
+                  All years
+                </button>
+                {years.map((year) => (
+                  <button
+                    key={year}
+                    type="button"
+                    onClick={() => setSelectedYear(year)}
+                    className={`rounded-xl px-3 py-2 text-xs font-black transition ${
+                      selectedYear === year
+                        ? "bg-primary text-on-primary"
+                        : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                    }`}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory("All")}
+                  className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black transition ${
+                    effectiveCategory === "All"
+                      ? "bg-primary text-on-primary"
+                      : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                  }`}
+                >
+                  All
+                  <span className="ml-2 opacity-70">
+                    {documentsForYear.length}
+                  </span>
+                </button>
+                {categories.map((category) => {
+                  const count = documentsForYear.filter(
+                    (document) => document.category === category,
+                  ).length;
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => setSelectedCategory(category)}
+                      disabled={count === 0}
+                      className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                        effectiveCategory === category
+                          ? "bg-primary text-on-primary"
+                          : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                      }`}
+                    >
+                      {category}
+                      <span className="ml-2 opacity-70">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {visibleDocuments.length === 0 ? (
+              <div className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-8 text-sm text-on-surface-variant">
+                No documents match this view.
+              </div>
+            ) : (
+              <div className="space-y-8">
             {documentGroups.map(({ category, documents: groupDocuments }) => (
               <section key={category}>
                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -282,15 +467,36 @@ export function BondDocumentsLibrary() {
                         </a>
                       </summary>
                       <div className="border-t border-outline/10 bg-surface-container-low/45 px-4 py-3 md:px-5">
-                        <p className="max-w-4xl text-sm leading-6 text-on-surface-variant">
-                          {document.description}
-                        </p>
+                        <div className="space-y-4">
+                          <p className="max-w-4xl text-sm leading-6 text-on-surface-variant">
+                            {document.details?.summary ??
+                              document.description}
+                          </p>
+                          <MoneyFlow items={document.details?.flow} />
+                          <DetailGrid
+                            title="Key details"
+                            items={document.details?.facts}
+                          />
+                          <DetailGrid
+                            title="Charges"
+                            items={document.details?.charges}
+                          />
+                          {document.details?.sections?.map((section) => (
+                            <DetailGrid
+                              key={section.title}
+                              title={section.title}
+                              items={section.items}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </details>
                   ))}
                 </div>
               </section>
             ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="mt-8 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-8 text-sm text-on-surface-variant">
