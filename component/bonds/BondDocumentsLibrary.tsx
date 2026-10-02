@@ -135,6 +135,48 @@ function MoneyFlow({
   );
 }
 
+function FilterTab({
+  active,
+  children,
+  count,
+  disabled = false,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  count?: number;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      disabled={disabled}
+      onClick={onClick}
+      className={`group inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg px-3 text-xs font-black transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-35 ${
+        active
+          ? "bg-primary text-on-primary shadow-sm ring-1 ring-primary/35"
+          : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+      }`}
+    >
+      {children}
+      {typeof count === "number" && (
+        <span
+          className={`ml-2 rounded-full px-2 py-0.5 text-[10px] ${
+            active
+              ? "bg-on-primary/18 text-on-primary"
+              : "bg-surface-container-high text-on-surface-variant group-hover:bg-surface-container-highest"
+          }`}
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
 export function BondDocumentsLibrary() {
   const [authenticated, setAuthenticated] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -344,70 +386,69 @@ export function BondDocumentsLibrary() {
           </form>
         ) : documents.length > 0 ? (
           <div className="mt-8 space-y-6">
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedYear("All")}
-                  className={`rounded-xl px-3 py-2 text-xs font-black transition ${
-                    selectedYear === "All"
-                      ? "bg-primary text-on-primary"
-                      : "bg-surface-container text-on-surface-variant hover:text-on-surface"
-                  }`}
-                >
-                  All years
-                </button>
-                {years.map((year) => (
-                  <button
-                    key={year}
-                    type="button"
-                    onClick={() => setSelectedYear(year)}
-                    className={`rounded-xl px-3 py-2 text-xs font-black transition ${
-                      selectedYear === year
-                        ? "bg-primary text-on-primary"
-                        : "bg-surface-container text-on-surface-variant hover:text-on-surface"
-                    }`}
+            <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/75 p-2 shadow-sm">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)]">
+                <section>
+                  <p className="px-1 pb-1 text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
+                    Year
+                  </p>
+                  <div
+                    role="tablist"
+                    aria-label="Document year"
+                    className="flex gap-1 overflow-x-auto rounded-xl bg-surface-container-low p-1"
                   >
-                    {year}
-                  </button>
-                ))}
-              </div>
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory("All")}
-                  className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black transition ${
-                    effectiveCategory === "All"
-                      ? "bg-primary text-on-primary"
-                      : "bg-surface-container text-on-surface-variant hover:text-on-surface"
-                  }`}
-                >
-                  All
-                  <span className="ml-2 opacity-70">
-                    {documentsForYear.length}
-                  </span>
-                </button>
-                {categories.map((category) => {
-                  const count = documentsForYear.filter(
-                    (document) => document.category === category,
-                  ).length;
-                  return (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => setSelectedCategory(category)}
-                      disabled={count === 0}
-                      className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                        effectiveCategory === category
-                          ? "bg-primary text-on-primary"
-                          : "bg-surface-container text-on-surface-variant hover:text-on-surface"
-                      }`}
+                    <FilterTab
+                      active={selectedYear === "All"}
+                      onClick={() => setSelectedYear("All")}
                     >
-                      {category}
-                      <span className="ml-2 opacity-70">{count}</span>
-                    </button>
-                  );
-                })}
+                      All years
+                    </FilterTab>
+                    {years.map((year) => (
+                      <FilterTab
+                        key={year}
+                        active={selectedYear === year}
+                        onClick={() => setSelectedYear(year)}
+                      >
+                        {year}
+                      </FilterTab>
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <p className="px-1 pb-1 text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
+                    Document type
+                  </p>
+                  <div
+                    role="tablist"
+                    aria-label="Document category"
+                    className="flex gap-1 overflow-x-auto rounded-xl bg-surface-container-low p-1"
+                  >
+                    <FilterTab
+                      active={effectiveCategory === "All"}
+                      count={documentsForYear.length}
+                      onClick={() => setSelectedCategory("All")}
+                    >
+                      All
+                    </FilterTab>
+                    {categories.map((category) => {
+                      const count = documentsForYear.filter(
+                        (document) => document.category === category,
+                      ).length;
+                      return (
+                        <FilterTab
+                          key={category}
+                          active={effectiveCategory === category}
+                          count={count}
+                          disabled={count === 0}
+                          onClick={() => setSelectedCategory(category)}
+                        >
+                          {category}
+                        </FilterTab>
+                      );
+                    })}
+                  </div>
+                </section>
               </div>
             </div>
 
