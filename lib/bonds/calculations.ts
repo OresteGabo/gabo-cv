@@ -1,5 +1,6 @@
 import type {
   BondAssumptions,
+  BondPurchase,
   CashInjection,
   ModeledBondPurchase,
   ModeledCouponPayment,
@@ -47,6 +48,56 @@ export const REPEATING_ISSUANCE_TENOR_CYCLE = [
   7, 10, 15, 20, 5, 7, 10, 25, 15, 10, 20, 7,
 ] as const;
 export const SECONDARY_MARKET_COMMISSION_RATE = 0.00049;
+
+function monthIndexFromIsoDate(
+  assumptions: Pick<BondAssumptions, "startMonth" | "startYear">,
+  isoDate: string,
+) {
+  const [year, month] = isoDate.split("-").map(Number);
+  if (!year || !month) return null;
+
+  return (year - assumptions.startYear) * 12 + month - assumptions.startMonth + 1;
+}
+
+export function purchaseToStartingLot(
+  purchase: BondPurchase,
+  assumptions: Pick<BondAssumptions, "startMonth" | "startYear">,
+): ModeledBondPurchase | null {
+  if (
+    purchase.status !== "active" ||
+    purchase.faceValue <= 0 ||
+    purchase.couponRate <= 0
+  ) {
+    return null;
+  }
+
+  const maturityMonth = monthIndexFromIsoDate(assumptions, purchase.maturityDate);
+  if (!maturityMonth || maturityMonth < 1) return null;
+
+  const purchaseMonth =
+    monthIndexFromIsoDate(
+      assumptions,
+      purchase.settlementDate || purchase.purchaseDate,
+    ) ?? 0;
+  const couponMonths = purchase.couponDates
+    .map((date) => monthIndexFromIsoDate(assumptions, date))
+    .filter((month): month is number => Boolean(month && month >= 1))
+    .filter((month) => month <= maturityMonth);
+
+  return {
+    id: `actual-${purchase.id}`,
+    purchaseMonth,
+    purchaseDate: purchase.settlementDate || purchase.purchaseDate,
+    maturityMonth,
+    maturityDate: purchase.maturityDate,
+    amount: purchase.faceValue,
+    tenorYears: purchase.tenorYears,
+    annualCouponRate: purchase.couponRate,
+    netAnnualCouponRate: purchase.couponRate * (1 - purchase.withholdingTaxRate),
+    couponFrequency: Math.max(1, purchase.couponFrequency || 2),
+    couponMonths,
+  };
+}
 
 function modulo(value: number, divisor: number) {
   return ((value % divisor) + divisor) % divisor;
