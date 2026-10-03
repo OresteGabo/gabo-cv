@@ -1303,6 +1303,34 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     }, 0);
   }
 
+  function updateRealPortfolioMonthlyContribution(amount: number) {
+    setAssumptions((current) => {
+      const totalMonths = Math.max(1, Math.round(current.horizonYears * 12));
+      const monthlyContribution = Math.max(0, Math.round(amount || 0));
+      const periods = normalizeContributionPeriods(current);
+      const primaryPeriod = periods[0] ?? {
+        id: "real-portfolio-monthly",
+        amount: monthlyContribution,
+        startMonth: 1,
+        endMonth: totalMonths,
+      };
+
+      return {
+        ...current,
+        monthlyContribution,
+        contributionPeriods: [
+          {
+            ...primaryPeriod,
+            amount: monthlyContribution,
+            startMonth: 1,
+            endMonth: totalMonths,
+          },
+          ...periods.slice(1),
+        ],
+      };
+    });
+  }
+
   function removeCashInjection(id: string) {
     const next = cashInjections.filter((injection) => injection.id !== id);
     setCashInjections(next);
@@ -2821,9 +2849,47 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         running a real-data simulation.
                       </p>
                     )}
+                    {realPortfolioSimulationEnabled && (
+                      <label className="mt-5 block rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <span className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-black text-on-surface">
+                            Monthly contribution for this plan
+                          </span>
+                          <span className="rounded-lg bg-surface-container px-2.5 py-1 font-mono text-xs font-black text-primary">
+                            {formatRwf(currentMonthlyContribution)}
+                          </span>
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={50_000}
+                          value={currentMonthlyContribution}
+                          onChange={(event) =>
+                            updateRealPortfolioMonthlyContribution(
+                              Number(event.target.value),
+                            )
+                          }
+                          className="mt-3 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm font-bold text-on-surface outline-none focus:border-primary/60"
+                        />
+                        <span className="mt-2 block text-[11px] leading-5 text-on-surface-variant">
+                          This starts from the inferred amount, then updates the
+                          projection immediately when you change it.
+                        </span>
+                      </label>
+                    )}
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2">
+                    <Metric
+                      label="Monthly contribution"
+                      value={formatRwf(currentMonthlyContribution)}
+                      detail={
+                        realPortfolioSimulationEnabled
+                          ? "Amount used by the real-portfolio projection"
+                          : `${formatRwf(inferredMonthlyContribution)} inferred from saved bond buys`
+                      }
+                      accent={realPortfolioSimulationEnabled}
+                    />
                     <Metric
                       label="Scenario source"
                       value={
@@ -2836,7 +2902,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                           ? "Opening lots come from saved purchases"
                           : "Enable real records to seed this model"
                       }
-                      accent={realPortfolioSimulationEnabled}
                     />
                     <Metric
                       label="Projected account value"
@@ -2855,7 +2920,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                     <Metric
                       label="Projected monthly income"
                       value={formatRwf(summary.monthlyPassiveIncome)}
-                      detail={`${formatRwf(currentMonthlyContribution)} planned contribution now`}
+                      detail="Potential passive income at the end of the horizon"
                     />
                   </div>
                 </div>
