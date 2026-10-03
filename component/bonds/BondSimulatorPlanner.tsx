@@ -912,6 +912,7 @@ export function BondSimulatorPlanner() {
       "Intended Bond Bid",
       "Unfilled Bond Bid",
       "New Bond Purchase",
+      "Purchase Charge",
       "Active Bond Lots",
       "Closing Cash Balance",
       "Closing Portfolio",
@@ -939,6 +940,7 @@ export function BondSimulatorPlanner() {
       row.intendedBondBid,
       row.unfilledBondBid,
       row.newBondPurchase,
+      row.purchaseCharge,
       row.activeBondCount,
       row.closingCashBalance,
       row.closingPortfolio,
@@ -1341,6 +1343,16 @@ export function BondSimulatorPlanner() {
                     suffix="%"
                   />
                   <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
+                  <NumberControl
+                    label="Purchase charges"
+                    value={assumptions.purchaseCharge}
+                    onChange={(value) => update("purchaseCharge", value)}
+                    min={0}
+                    max={100_000}
+                    step={1_000}
+                    prefix="RWF "
+                    help="Extra cash paid whenever the model successfully buys a new bond. It is counted in total contributions, but it does not earn coupons or become principal."
+                  />
                   <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4 md:col-span-2 xl:col-span-3">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -1532,8 +1544,8 @@ export function BondSimulatorPlanner() {
                 value={formatRwf(summary.totalContributions)}
                 detail={
                   actualStartingLots.length > 0
-                    ? "Saved bonds plus monthly plan and one-time injections"
-                    : "Monthly plan plus one-time injections"
+                    ? "Saved bonds, charges, monthly plan, and one-time injections"
+                    : "Monthly plan, charges, and one-time injections"
                 }
               />
               <Metric label="Modeled bond purchases" value={String(projection.filter((row) => row.newBondPurchaseLot).length)} detail="Each monthly pooled purchase is tracked as one lot" />
@@ -1696,7 +1708,14 @@ export function BondSimulatorPlanner() {
                                       {MONTH_NAMES[month.calendarMonth - 1].slice(0, 3)}{" "}
                                       {month.calendarYear}
                                     </td>
-                                    <td className="px-3 py-3">{formatRwf(month.personalContribution + month.cashInjection + month.realBondPurchase)}</td>
+                                    <td className="px-3 py-3">
+                                      {formatRwf(month.personalContribution + month.cashInjection + month.realBondPurchase + month.purchaseCharge)}
+                                      {month.purchaseCharge > 0 && (
+                                        <span className="mt-1 block text-[9px] font-bold text-on-surface-variant">
+                                          {formatRwf(month.purchaseCharge)} charges
+                                        </span>
+                                      )}
+                                    </td>
                                     <td className="px-3 py-3 font-black text-primary">
                                       {formatRwf(month.newBondPurchase + month.realBondPurchase)}
                                       <span className="mt-1 block text-[9px] font-bold text-on-surface-variant">
