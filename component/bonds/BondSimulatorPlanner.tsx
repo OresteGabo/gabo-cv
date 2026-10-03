@@ -1709,7 +1709,17 @@ export function BondSimulatorPlanner() {
                                             }`}
                                       </span>
                                     </td>
-                                    <td className="px-3 py-3">{formatRwf(month.couponPayment)}</td>
+                                    <td className="px-3 py-3">
+                                      {formatRwf(month.couponPayment)}
+                                      {month.couponPayments.some((payment) => payment.couponDate) && (
+                                        <span className="mt-1 block text-[9px] font-bold text-on-surface-variant">
+                                          {month.couponPayments
+                                            .map((payment) => payment.couponDate)
+                                            .filter(Boolean)
+                                            .join(", ")}
+                                        </span>
+                                      )}
+                                    </td>
                                     <td className="px-3 py-3">{formatRwf(month.closingCashBalance)}</td>
                                     <td className="px-3 py-3 font-black">{formatRwf(month.totalAccountValue)}</td>
                                   </tr>
