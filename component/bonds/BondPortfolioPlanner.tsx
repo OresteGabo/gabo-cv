@@ -986,6 +986,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     actualStartingLots.length > 0
       ? actualStartingLots.reduce((total, lot) => total + lot.amount, 0)
       : assumptions.startingPortfolio;
+  const growthStartingPrincipal =
+    actualStartingLots.length > 0 ? 0 : assumptions.startingPortfolio;
   const purchaseCashCost =
     Math.round(
       (purchase.faceValue * (purchase.pricePercent / 100) +
@@ -2157,7 +2159,15 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
           <div className="mt-8 min-w-0">
             <GrowthChart values={chartProjection} />
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-              <Metric label="Total cash invested" value={formatRwf(summary.totalContributions)} detail="Monthly plan plus one-time injections" />
+              <Metric
+                label="Total cash invested"
+                value={formatRwf(summary.totalContributions)}
+                detail={
+                  actualStartingLots.length > 0
+                    ? "Saved bonds plus monthly plan and one-time injections"
+                    : "Monthly plan plus one-time injections"
+                }
+              />
               <Metric
                 label="Modeled bond purchases"
                 value={String(
@@ -2167,7 +2177,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
               />
               <Metric label="Net coupons earned" value={formatRwf(summary.totalCoupons)} detail={`${formatPercent(netAnnualRate)} net annual rate`} />
               <Metric label="Coupons reinvested" value={formatRwf(summary.totalReinvested)} detail={`${formatPercent(assumptions.reinvestmentRate)} reinvested`} />
-              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - projectionStartingPrincipal)} accent />
+              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - growthStartingPrincipal)} accent />
             </div>
             {cashInjections.length > 0 && (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -2469,6 +2479,13 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                                 {String(month.month).padStart(3, "0")}
                                               </span>
                                             </Link>
+                                          ) : month.realBondPurchase > 0 ? (
+                                            <>
+                                              {formatRwf(month.realBondPurchase)}
+                                              <span className="mt-1 block text-[9px] font-bold text-on-surface-variant">
+                                                saved bond
+                                              </span>
+                                            </>
                                           ) : (
                                             formatRwf(0)
                                           )}
