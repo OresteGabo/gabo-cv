@@ -36,6 +36,7 @@ import {
   formatRwf,
   MAX_ANNUAL_COUPON_RATE,
   MIN_ANNUAL_COUPON_RATE,
+  purchaseToStartingLot,
   SECONDARY_MARKET_COMMISSION_RATE,
   SIMULATION_TREASURY_BOND_TENORS,
   summarizeProjection,
@@ -44,8 +45,10 @@ import {
 } from "@/lib/bonds/calculations";
 import type {
   BondAssumptions,
+  BondPurchase,
   CashInjection,
   ContributionPeriod,
+  ModeledBondPurchase,
 } from "@/lib/bonds/types";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 
@@ -446,6 +449,7 @@ export function BondSimulatorPlanner() {
     useState<BondAssumptions>(DEFAULT_ASSUMPTIONS);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
   const [cashInjections, setCashInjections] = useState<CashInjection[]>([]);
+  const [realPurchases, setRealPurchases] = useState<BondPurchase[]>([]);
   const [injectionDraft, setInjectionDraft] = useState({
     label: "",
     amount: 1_000_000,
@@ -493,6 +497,29 @@ export function BondSimulatorPlanner() {
     );
   }, [cashInjections]);
 
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/bonds/purchases", { cache: "no-store" })
+      .then(async (response) => {
+        if (response.status === 401) return [];
+        if (!response.ok) return [];
+
+        const data = await response.json().catch(() => ({}));
+        return Array.isArray(data.purchases) ? data.purchases : [];
+      })
+      .then((purchases) => {
+        if (active) setRealPurchases(purchases);
+      })
+      .catch(() => {
+        if (active) setRealPurchases([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const contributionPeriods = useMemo(
     () => normalizeContributionPeriods(assumptions),
     [assumptions],
@@ -521,13 +548,30 @@ export function BondSimulatorPlanner() {
     }),
     [assumptions, contributionPeriods, currentMonthlyContribution],
   );
+  const actualStartingLots = useMemo(
+    () =>
+      realPurchases
+        .map((item) => purchaseToStartingLot(item, modeledAssumptions))
+        .filter((lot): lot is ModeledBondPurchase => Boolean(lot)),
+    [modeledAssumptions, realPurchases],
+  );
   const projection = useMemo(
-    () => calculateProjection(modeledAssumptions, cashInjections),
-    [modeledAssumptions, cashInjections],
+    () =>
+      calculateProjection(
+        modeledAssumptions,
+        cashInjections,
+        actualStartingLots.length > 0 ? actualStartingLots : undefined,
+      ),
+    [actualStartingLots, modeledAssumptions, cashInjections],
   );
   const baselineProjection = useMemo(
-    () => calculateProjection(modeledAssumptions),
-    [modeledAssumptions],
+    () =>
+      calculateProjection(
+        modeledAssumptions,
+        [],
+        actualStartingLots.length > 0 ? actualStartingLots : undefined,
+      ),
+    [actualStartingLots, modeledAssumptions],
   );
   const summary = useMemo(
     () => summarizeProjection(projection, modeledAssumptions),
@@ -587,6 +631,10 @@ export function BondSimulatorPlanner() {
     (total, injection) => total + injection.amount,
     0,
   );
+  const projectionStartingPrincipal =
+    actualStartingLots.length > 0
+      ? actualStartingLots.reduce((total, lot) => total + lot.amount, 0)
+      : assumptions.startingPortfolio;
   const injectionFinalImpact =
     summary.finalAccountValue - baselineSummary.finalAccountValue;
   const simulationEnd = projection.at(-1);
@@ -987,6 +1035,11 @@ export function BondSimulatorPlanner() {
                 coupons reinvested and {formatPercent(assumptions.auctionFillRate)} expected
                 auction fill. Uninvested cash is held at 0% return.
               </p>
+              {actualStartingLots.length > 0 && (
+                <p className="mt-3 inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-[11px] font-black text-primary">
+                  Using {actualStartingLots.length} saved bond lots as the opening portfolio
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 p-6 md:p-7">
@@ -1453,7 +1506,14 @@ export function BondSimulatorPlanner() {
               <Metric label="Modeled bond purchases" value={String(projection.filter((row) => row.newBondPurchaseLot).length)} detail="Each monthly pooled purchase is tracked as one lot" />
               <Metric label="Net coupons earned" value={formatRwf(summary.totalCoupons)} detail={`${formatPercent(netAnnualRate)} net annual rate`} />
               <Metric label="Coupons reinvested" value={formatRwf(summary.totalReinvested)} detail={`${formatPercent(assumptions.reinvestmentRate)} reinvested`} />
-              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - assumptions.startingPortfolio)} accent />
+              {actualStartingLots.length > 0 && (
+                <Metric
+                  label="Opening real bonds"
+                  value={formatRwf(projectionStartingPrincipal)}
+                  detail={`${actualStartingLots.length} saved active lots`}
+                />
+              )}
+              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - projectionStartingPrincipal)} accent />
             </div>
             {cashInjections.length > 0 && (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
