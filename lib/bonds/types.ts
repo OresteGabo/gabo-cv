@@ -36,17 +36,23 @@ export type ModeledBondPurchase = {
   maturityMonth: number;
   maturityDate: string;
   amount: number;
+  cashCost?: number;
   tenorYears: number;
   annualCouponRate: number;
   netAnnualCouponRate: number;
   couponFrequency: number;
   couponMonths?: number[];
+  couponSchedule?: { month: number; date: string }[];
+  grossCouponAmount?: number;
+  netCouponAmount?: number;
 };
 
 export type ModeledCouponPayment = {
   lotId: string;
   purchaseDate: string;
+  couponDate?: string;
   amountInvested: number;
+  grossCouponAmount?: number;
   couponAmount: number;
 };
 
