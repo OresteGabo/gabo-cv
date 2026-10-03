@@ -83,6 +83,19 @@ export function purchaseToStartingLot(
     .map((date) => monthIndexFromIsoDate(assumptions, date))
     .filter((month): month is number => Boolean(month && month >= 1))
     .filter((month) => month <= maturityMonth);
+  const couponSchedule = purchase.couponDates
+    .map((date) => ({
+      date,
+      month: monthIndexFromIsoDate(assumptions, date),
+    }))
+    .filter(
+      (payment): payment is { date: string; month: number } =>
+        Boolean(payment.month && payment.month >= 1),
+    )
+    .filter((payment) => payment.month <= maturityMonth);
+  const grossCouponAmount = purchase.faceValue * purchase.couponRate /
+    Math.max(1, purchase.couponFrequency || 2);
+  const netCouponAmount = grossCouponAmount * (1 - purchase.withholdingTaxRate);
 
   return {
     id: `actual-${purchase.id}`,
@@ -91,11 +104,15 @@ export function purchaseToStartingLot(
     maturityMonth,
     maturityDate: purchase.maturityDate,
     amount: purchase.faceValue,
+    cashCost: purchase.amountInvested,
     tenorYears: purchase.tenorYears,
     annualCouponRate: purchase.couponRate,
     netAnnualCouponRate: purchase.couponRate * (1 - purchase.withholdingTaxRate),
     couponFrequency: Math.max(1, purchase.couponFrequency || 2),
     couponMonths,
+    couponSchedule,
+    grossCouponAmount,
+    netCouponAmount,
   };
 }
 
@@ -207,8 +224,8 @@ export function calculateProjection(
   const openingRealLots = realLots
     ? realLots.filter((lot) => lot.purchaseMonth <= 1)
     : [];
-  const openingRealPrincipal = openingRealLots.reduce(
-    (total, lot) => total + lot.amount,
+  const openingRealCashCost = openingRealLots.reduce(
+    (total, lot) => total + (lot.cashCost ?? lot.amount),
     0,
   );
   let activeLots: ModeledBondPurchase[] = realLots
@@ -237,8 +254,11 @@ export function calculateProjection(
     }
     const realBondPurchase =
       month === 1
-        ? openingRealPrincipal
-        : realLotsStartingThisMonth.reduce((total, lot) => total + lot.amount, 0);
+        ? openingRealCashCost
+        : realLotsStartingThisMonth.reduce(
+            (total, lot) => total + (lot.cashCost ?? lot.amount),
+            0,
+          );
     const calendarDate = new Date(
       assumptions.startYear,
       assumptions.startMonth - 1 + index,
@@ -269,26 +289,49 @@ export function calculateProjection(
       0,
     );
     const couponPayments: ModeledCouponPayment[] = activeLots
-      .filter((lot) => {
-        if (lot.couponMonths) {
-          return lot.couponMonths.includes(month) && month <= lot.maturityMonth;
+      .map((lot) => {
+        const scheduledCoupon = lot.couponSchedule?.find(
+          (payment) => payment.month === month,
+        );
+        if (lot.couponSchedule) {
+          return scheduledCoupon && month <= lot.maturityMonth
+            ? { lot, scheduledCoupon }
+            : null;
         }
 
-        return (
+        const modeledCouponDue =
           Number.isInteger(paymentInterval) &&
           month > lot.purchaseMonth &&
           month <= lot.maturityMonth &&
-          (month - lot.purchaseMonth) % paymentInterval === 0
-        );
+          (month - lot.purchaseMonth) % paymentInterval === 0;
+
+        return modeledCouponDue ? { lot, scheduledCoupon: null } : null;
       })
-      .map((lot) => ({
-        lotId: lot.id,
-        purchaseDate: lot.purchaseDate,
-        amountInvested: lot.amount,
-        couponAmount:
-          lot.amount *
-          (lot.netAnnualCouponRate / lot.couponFrequency),
-      }));
+      .filter(
+        (
+          payment,
+        ): payment is {
+          lot: ModeledBondPurchase;
+          scheduledCoupon: { month: number; date: string } | null;
+        } => Boolean(payment),
+      )
+      .map(({ lot, scheduledCoupon }) => {
+        const grossCouponAmount =
+          lot.grossCouponAmount ??
+          lot.amount * (lot.annualCouponRate / lot.couponFrequency);
+        const couponAmount =
+          lot.netCouponAmount ??
+          lot.amount * (lot.netAnnualCouponRate / lot.couponFrequency);
+
+        return {
+          lotId: lot.id,
+          purchaseDate: lot.purchaseDate,
+          couponDate: scheduledCoupon?.date,
+          amountInvested: lot.amount,
+          grossCouponAmount,
+          couponAmount,
+        };
+      });
     const couponPayment = couponPayments.reduce(
       (total, payment) => total + payment.couponAmount,
       0,
