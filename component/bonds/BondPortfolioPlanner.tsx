@@ -982,12 +982,10 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
         : 0),
     0,
   );
-  const projectionStartingPrincipal =
-    actualStartingLots.length > 0
-      ? actualStartingLots.reduce((total, lot) => total + lot.amount, 0)
-      : assumptions.startingPortfolio;
-  const growthStartingPrincipal =
-    actualStartingLots.length > 0 ? 0 : assumptions.startingPortfolio;
+  const projectionStartingPrincipal = actualStartingLots.reduce(
+    (total, lot) => total + lot.amount,
+    0,
+  );
   const purchaseCashCost =
     Math.round(
       (purchase.faceValue * (purchase.pricePercent / 100) +
@@ -1928,7 +1926,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       suffix="%"
                       help="Estimated share of your intended Treasury bond bid that actually gets allocated. BNR history since 2008 implies roughly 67% market-wide sold/applied, while recent periods can be lower."
                     />
-                    <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
                     <NumberControl
                       label="Purchase charges"
                       value={assumptions.purchaseCharge}
@@ -2189,7 +2186,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
               />
               <Metric label="Net coupons earned" value={formatRwf(summary.totalCoupons)} detail={`${formatPercent(netAnnualRate)} net annual rate`} />
               <Metric label="Coupons reinvested" value={formatRwf(summary.totalReinvested)} detail={`${formatPercent(assumptions.reinvestmentRate)} reinvested`} />
-              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - growthStartingPrincipal)} accent />
+              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - projectionStartingPrincipal)} accent />
             </div>
             {cashInjections.length > 0 && (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
