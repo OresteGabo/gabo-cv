@@ -9,7 +9,6 @@ export type BondAssumptions = {
   couponPaymentsPerYear: number;
   reinvestmentRate: number;
   auctionFillRate: number;
-  agukaAnnualRate: number;
   startingPortfolio: number;
   purchaseMinimum: number;
 };
@@ -63,8 +62,6 @@ export type MonthlyProjection = {
   couponPayment: number;
   couponPayments: ModeledCouponPayment[];
   reinvestedCoupon: number;
-  agukaInterest: number;
-  agukaDistribution: number;
   maturedPrincipal: number;
   availableCash: number;
   intendedBondBid: number;
@@ -78,9 +75,7 @@ export type MonthlyProjection = {
   totalContributions: number;
   totalCoupons: number;
   totalReinvested: number;
-  totalAgukaInterest: number;
   annualBondPassiveIncome: number;
-  annualAgukaIncome: number;
   annualPassiveIncome: number;
   monthlyPassiveIncome: number;
 };
@@ -92,9 +87,7 @@ export type ProjectionSummary = {
   totalContributions: number;
   totalCoupons: number;
   totalReinvested: number;
-  totalAgukaInterest: number;
   annualBondPassiveIncome: number;
-  annualAgukaIncome: number;
   annualPassiveIncome: number;
   monthlyPassiveIncome: number;
   milestone50m: number | null;

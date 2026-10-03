@@ -556,9 +556,7 @@ export function BondSimulatorPlanner() {
               (index > 0 ? projection[index * 12 - 1].totalContributions : 0),
             annualIncome:
               row.totalCoupons -
-              (index > 0 ? projection[index * 12 - 1].totalCoupons : 0) +
-              row.totalAgukaInterest -
-              (index > 0 ? projection[index * 12 - 1].totalAgukaInterest : 0),
+              (index > 0 ? projection[index * 12 - 1].totalCoupons : 0),
             passiveIncome: row.annualPassiveIncome,
           };
         }),
@@ -798,7 +796,6 @@ export function BondSimulatorPlanner() {
       "Personal Contribution",
       "Extra Cash Injection",
       "Coupon Payment",
-      "Aguka Interest",
       "Matured Principal",
       "Reinvested Coupon",
       "Available Cash",
@@ -806,12 +803,11 @@ export function BondSimulatorPlanner() {
       "Unfilled Bond Bid",
       "New Bond Purchase",
       "Active Bond Lots",
-      "Closing Aguka Balance",
+      "Closing Cash Balance",
       "Closing Portfolio",
       "Total Account Value",
       "Total Contributions",
       "Total Coupons",
-      "Total Aguka Interest",
       "Annual Passive Income",
       "Monthly Passive Income",
     ];
@@ -825,7 +821,6 @@ export function BondSimulatorPlanner() {
       row.personalContribution,
       row.cashInjection,
       row.couponPayment,
-      row.agukaInterest,
       row.maturedPrincipal,
       row.reinvestedCoupon,
       row.availableCash,
@@ -838,7 +833,6 @@ export function BondSimulatorPlanner() {
       row.totalAccountValue,
       row.totalContributions,
       row.totalCoupons,
-      row.totalAgukaInterest,
       row.annualPassiveIncome,
       row.monthlyPassiveIncome,
     ]);
@@ -951,8 +945,8 @@ export function BondSimulatorPlanner() {
                 Starting {MONTH_NAMES[assumptions.startMonth - 1]}{" "}
                 {assumptions.startYear}, at a {formatPercent(modeledCouponRate)} annual
                 coupon rate with {formatPercent(assumptions.reinvestmentRate)} of net
-                coupons reinvested, {formatPercent(assumptions.auctionFillRate)} expected
-                auction fill, and idle cash earning {formatPercent(assumptions.agukaAnnualRate)} p.a.
+                coupons reinvested and {formatPercent(assumptions.auctionFillRate)} expected
+                auction fill. Uninvested cash is held at 0% return.
               </p>
             </div>
 
@@ -978,7 +972,7 @@ export function BondSimulatorPlanner() {
                 </p>
                 <p className="mt-1 text-xs text-[var(--md-sys-color-outline)]">
                   {simulationEnd
-                    ? `${formatRwf(summary.finalPortfolio, true)} in bonds + ${formatRwf(summary.finalCashBalance, true)} in Aguka by ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
+                    ? `${formatRwf(summary.finalPortfolio, true)} in bonds + ${formatRwf(summary.finalCashBalance, true)} in Cash by ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
                     : "At the end of the plan"}
                 </p>
               </div>
@@ -1219,7 +1213,7 @@ export function BondSimulatorPlanner() {
                 />
               </button>
               {advancedSettingsOpen && (
-                <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   <NumberControl label="Coupon reinvestment" value={Math.round(assumptions.reinvestmentRate * 100)} onChange={(value) => update("reinvestmentRate", value / 100)} min={0} max={100} step={5} suffix="%" />
                   <NumberControl
                     label="Expected auction fill"
@@ -1229,15 +1223,6 @@ export function BondSimulatorPlanner() {
                     max={100}
                     step={5}
                     suffix="%"
-                  />
-                  <NumberControl
-                    label="Aguka idle cash return"
-                    value={Math.round(assumptions.agukaAnnualRate * 10_000) / 100}
-                    onChange={(value) => update("agukaAnnualRate", value / 100)}
-                    min={0}
-                    max={15}
-                    step={0.25}
-                    suffix="% p.a."
                   />
                   <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
                 </div>
@@ -1313,13 +1298,13 @@ export function BondSimulatorPlanner() {
             </form>
             <div className="mt-3 grid gap-2 rounded-xl border border-[var(--md-sys-color-tertiary)]/15 bg-surface-container-lowest p-3 text-[10px] leading-4 text-on-surface-variant sm:grid-cols-2">
               <span>
-                Aguka balance already waiting
+                Cash balance already waiting
                 <strong className="mt-0.5 block text-on-surface">
                   {formatRwf(waitingCash)}
                 </strong>
               </span>
               <span>
-                Aguka after draft
+                Cash after draft
                 <strong className="mt-0.5 block text-on-surface">
                   {formatRwf(cashAfterDraftInjection)}
                 </strong>
@@ -1361,7 +1346,6 @@ export function BondSimulatorPlanner() {
               <Metric label="Modeled bond purchases" value={String(projection.filter((row) => row.newBondPurchaseLot).length)} detail="Each monthly pooled purchase is tracked as one lot" />
               <Metric label="Net coupons earned" value={formatRwf(summary.totalCoupons)} detail={`${formatPercent(netAnnualRate)} net annual rate`} />
               <Metric label="Coupons reinvested" value={formatRwf(summary.totalReinvested)} detail={`${formatPercent(assumptions.reinvestmentRate)} reinvested`} />
-              <Metric label="Aguka interest earned" value={formatRwf(summary.totalAgukaInterest)} detail={`${formatPercent(assumptions.agukaAnnualRate, 1)} p.a. on idle cash`} />
               <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - assumptions.startingPortfolio)} accent />
             </div>
             {cashInjections.length > 0 && (
@@ -1461,7 +1445,7 @@ export function BondSimulatorPlanner() {
                         {row.cashBalance > 0 && (
                           <span className="mt-1 block text-[9px] text-on-surface-variant">
                             {formatRwf(row.bondHoldings)} bonds ·{" "}
-                            {formatRwf(row.cashBalance)} Aguka
+                            {formatRwf(row.cashBalance)} Cash
                           </span>
                         )}
                       </td>
@@ -1494,7 +1478,7 @@ export function BondSimulatorPlanner() {
                                   <th className="px-3 py-2">Contribution</th>
                                   <th className="px-3 py-2">Bond purchase</th>
                                   <th className="px-3 py-2">Coupons</th>
-                                  <th className="px-3 py-2">Aguka</th>
+                                  <th className="px-3 py-2">Cash</th>
                                   <th className="px-3 py-2">Account value</th>
                                 </tr>
                               </thead>
@@ -1540,7 +1524,7 @@ export function BondSimulatorPlanner() {
             <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Useful, transparent, intentionally conservative.</h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-[var(--md-sys-color-on-surface-variant)]">
               This planner models monthly contributions, partial Treasury bond
-              auction allocation, and Aguka as the idle-cash parking layer.
+              auction allocation, and uninvested cash at 0% return.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -1549,7 +1533,7 @@ export function BondSimulatorPlanner() {
               ["Holding to maturity", "Holding to maturity avoids market-price loss if the issuer pays as agreed."],
               ["Coupon and tenor", `BK Capital states tenors of ${TREASURY_BOND_TENORS.join(", ")} years and annual coupon rates from ${formatPercent(MIN_ANNUAL_COUPON_RATE, 2)} to ${formatPercent(MAX_ANNUAL_COUPON_RATE, 2)}, depending on the issuance.`],
               ["Auction fill risk", `The model defaults to ${formatPercent(DEFAULT_ASSUMPTIONS.auctionFillRate, 0)} allocation based on the BNR historical sold/applied pattern, not 100% allocation.`],
-              ["Aguka idle cash", `Unfilled bond money is modeled in Aguka at ${formatPercent(DEFAULT_ASSUMPTIONS.agukaAnnualRate, 1)} tax-exempt annual return until it is used for another bid.`],
+              ["Uninvested cash", "Unfilled bond money stays as cash at 0% return until it is used for another bid."],
               ["Secondary market", `Buying or selling before maturity carries a ${formatPercent(SECONDARY_MARKET_COMMISSION_RATE, 3)} commission on turnover on each side.`],
             ].map(([title, copy], index) => (
               <article key={title} className="rounded-2xl border border-outline/10 bg-surface-container-low p-5">

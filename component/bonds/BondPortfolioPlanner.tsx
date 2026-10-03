@@ -976,7 +976,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
             portfolio: row.totalAccountValue,
             bondHoldings: row.closingPortfolio,
             cashBalance: row.closingCashBalance,
-            agukaInterest: row.totalAgukaInterest,
             contributions: row.totalContributions,
             annualContributions:
               row.totalContributions -
@@ -985,12 +984,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
             annualCoupons:
               row.totalCoupons -
               (index > 0 ? projection[index * 12 - 1].totalCoupons : 0),
-            annualAgukaInterest:
-              row.totalAgukaInterest -
-              (index > 0 ? projection[index * 12 - 1].totalAgukaInterest : 0),
             passiveIncome: row.annualPassiveIncome,
             bondPassiveIncome: row.annualBondPassiveIncome,
-            agukaPassiveIncome: row.annualAgukaIncome,
           };
         }),
     [projection],
@@ -1591,8 +1586,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       "Personal Contribution",
       "Extra Cash Injection",
       "Coupon Payment",
-      "Aguka Interest",
-      "Aguka Distribution",
       "Matured Principal",
       "Reinvested Coupon",
       "Available Cash",
@@ -1601,12 +1594,11 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       "New Bond Purchase",
       "Modeled Purchase Lot",
       "Active Bond Lots",
-      "Closing Aguka Balance",
+      "Closing Cash Balance",
       "Closing Portfolio",
       "Total Account Value",
       "Total Contributions",
       "Total Coupons",
-      "Total Aguka Interest",
       "Annual Passive Income",
       "Monthly Passive Income",
     ];
@@ -1620,8 +1612,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       row.personalContribution,
       row.cashInjection,
       row.couponPayment,
-      row.agukaInterest,
-      row.agukaDistribution,
       row.maturedPrincipal,
       row.reinvestedCoupon,
       row.availableCash,
@@ -1635,7 +1625,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       row.totalAccountValue,
       row.totalContributions,
       row.totalCoupons,
-      row.totalAgukaInterest,
       row.annualPassiveIncome,
       row.monthlyPassiveIncome,
     ]);
@@ -1760,8 +1749,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 Starting {MONTH_NAMES[assumptions.startMonth - 1]}{" "}
                 {assumptions.startYear}, at a {formatPercent(modeledCouponRate)} annual
                 coupon rate with {formatPercent(assumptions.reinvestmentRate)} of net
-                coupons reinvested, {formatPercent(assumptions.auctionFillRate)} expected
-                auction fill, and idle cash earning {formatPercent(assumptions.agukaAnnualRate)} p.a.
+                coupons reinvested and {formatPercent(assumptions.auctionFillRate)} expected
+                auction fill. Uninvested cash is held at 0% return.
               </p>
             </div>
 
@@ -1787,7 +1776,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 </p>
                 <p className="mt-1 text-xs text-[var(--md-sys-color-outline)]">
                   {simulationEnd
-                    ? `${formatRwf(summary.finalPortfolio, true)} in bonds + ${formatRwf(summary.finalCashBalance, true)} in Aguka by ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
+                    ? `${formatRwf(summary.finalPortfolio, true)} in bonds + ${formatRwf(summary.finalCashBalance, true)} in Cash by ${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
                     : "At the end of the plan"}
                 </p>
               </div>
@@ -1817,7 +1806,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[var(--md-sys-color-outline)]">
           <span>Net coupon rate: {formatPercent(netAnnualRate, 2)}</span>
           <span>Expected auction fill: {formatPercent(assumptions.auctionFillRate, 0)}</span>
-          <span>Aguka idle return: {formatPercent(assumptions.agukaAnnualRate, 1)} tax-exempt p.a.</span>
+          <span>Uninvested cash return: 0%</span>
           <span>Government withholding tax: {formatPercent(WITHHOLDING_TAX_RATE, 0)}</span>
           <span>Projection, not a guaranteed return</span>
         </div>
@@ -1832,7 +1821,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 <h2 className="mt-2 text-3xl font-black tracking-tight">Tune the model</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">
                   Set the core strategy once, then use extra cash separately
-                  when gifts, bonuses, coupons, or idle Aguka balances change
+                  when gifts, bonuses, coupons, or idle Cash balances change
                   your next bid.
                 </p>
               </div>
@@ -2049,7 +2038,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   </span>
                   <span className="flex items-center gap-3 text-[11px] text-on-surface-variant">
                     <span className="hidden sm:inline">
-                      Reinvestment, fill rate, Aguka, starting portfolio
+                      Reinvestment, fill rate, starting portfolio
                     </span>
                     <ChevronDown
                       size={16}
@@ -2058,7 +2047,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   </span>
                 </button>
                 {advancedSettingsOpen && (
-                  <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <NumberControl label="Coupon reinvestment" value={Math.round(assumptions.reinvestmentRate * 100)} onChange={(value) => update("reinvestmentRate", value / 100)} min={0} max={100} step={5} suffix="%" />
                     <NumberControl
                       label="Expected auction fill"
@@ -2069,16 +2058,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       step={5}
                       suffix="%"
                       help="Estimated share of your intended Treasury bond bid that actually gets allocated. BNR history since 2008 implies roughly 67% market-wide sold/applied, while recent periods can be lower."
-                    />
-                    <NumberControl
-                      label="Aguka idle cash return"
-                      value={Math.round(assumptions.agukaAnnualRate * 10_000) / 100}
-                      onChange={(value) => update("agukaAnnualRate", value / 100)}
-                      min={0}
-                      max={15}
-                      step={0.25}
-                      suffix="% p.a."
-                      help="Tax-exempt annual return assumption for unallocated cash parked in Aguka between bond bids. Update this when BK Capital changes the quoted rate."
                     />
                     <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
                   </div>
@@ -2155,7 +2134,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 </div>
                 <div className="rounded-xl border border-[var(--md-sys-color-tertiary)]/15 bg-surface-container-lowest p-3 text-[10px] leading-4 text-on-surface-variant lg:col-span-4">
                   <div className="flex items-center justify-between gap-3">
-                    <span>Aguka balance already waiting</span>
+                    <span>Cash balance already waiting</span>
                     <strong className="text-on-surface">
                       {formatRwf(waitingCash)}
                     </strong>
@@ -2183,7 +2162,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       </strong>
                     </span>
                     <span>
-                      Aguka after draft
+                      Cash after draft
                       <strong className="mt-0.5 block text-on-surface">
                         {formatRwf(cashAfterDraftInjection)}
                       </strong>
@@ -2192,7 +2171,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   <p className="mt-2">
                     Deposits can be any positive amount. Only the resulting
                     bond purchase is constrained by the auction-fill assumption;
-                    unallocated money remains in Aguka.
+                    unallocated money remains in Cash.
                   </p>
                 </div>
                 <button className="flex h-full min-h-12 items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-tertiary)] px-4 py-3 text-xs font-black text-[var(--md-sys-color-on-primary)] hover:bg-[var(--md-sys-color-primary)]">
@@ -2254,7 +2233,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
               />
               <Metric label="Net coupons earned" value={formatRwf(summary.totalCoupons)} detail={`${formatPercent(netAnnualRate)} net annual rate`} />
               <Metric label="Coupons reinvested" value={formatRwf(summary.totalReinvested)} detail={`${formatPercent(assumptions.reinvestmentRate)} reinvested`} />
-              <Metric label="Aguka interest earned" value={formatRwf(summary.totalAgukaInterest)} detail={`${formatPercent(assumptions.agukaAnnualRate, 1)} tax-exempt p.a. on idle cash`} />
               <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - assumptions.startingPortfolio)} accent />
             </div>
             {cashInjections.length > 0 && (
@@ -2424,13 +2402,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       </td>
                       <td className="px-5 py-4">{formatRwf(row.annualContributions)}</td>
                       <td className="px-5 py-4 text-[var(--md-sys-color-on-surface-variant)]">
-                        {formatRwf(row.annualCoupons + row.annualAgukaInterest)}
-                        {row.annualAgukaInterest > 0 && (
-                          <span className="mt-1 block text-[9px] text-on-surface-variant">
-                            {formatRwf(row.annualCoupons)} coupons ·{" "}
-                            {formatRwf(row.annualAgukaInterest)} Aguka
-                          </span>
-                        )}
+                        {formatRwf(row.annualCoupons)}
                       </td>
                       <td className="px-5 py-4">
                         <span className="block font-bold">
@@ -2439,18 +2411,12 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         {row.cashBalance > 0 && (
                           <span className="mt-1 block text-[9px] text-on-surface-variant">
                             {formatRwf(row.bondHoldings)} bonds ·{" "}
-                            {formatRwf(row.cashBalance)} Aguka
+                            {formatRwf(row.cashBalance)} Cash
                           </span>
                         )}
                       </td>
                       <td className="px-5 py-4 text-[var(--md-sys-color-tertiary)]">
                         {formatRwf(row.passiveIncome)}
-                        {row.agukaPassiveIncome > 0 && (
-                          <span className="mt-1 block text-[9px] text-on-surface-variant">
-                            {formatRwf(row.bondPassiveIncome)} bonds ·{" "}
-                            {formatRwf(row.agukaPassiveIncome)} Aguka
-                          </span>
-                        )}
                       </td>
                       <td className="px-5 py-4 text-right">
                         <button
@@ -2478,7 +2444,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                   <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Month</th>
                                   <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Bid result</th>
                                   <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Bond purchase</th>
-                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Aguka balance</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Cash balance</th>
                                   <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Account value</th>
                                   <th className="sticky top-[53px] z-20 w-14 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 text-right shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">More</th>
                                 </tr>
@@ -2607,7 +2573,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                                   )}
                                                 />
                                                 <DetailLine
-                                                  label="Opening Aguka"
+                                                  label="Opening Cash"
                                                   value={formatRwf(
                                                     month.openingCashBalance,
                                                   )}
@@ -2616,12 +2582,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                                   label="Extra cash"
                                                   value={formatRwf(
                                                     month.cashInjection,
-                                                  )}
-                                                />
-                                                <DetailLine
-                                                  label="Aguka interest"
-                                                  value={formatRwf(
-                                                    month.agukaInterest,
                                                   )}
                                                 />
                                               </DetailPanel>
@@ -2693,7 +2653,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                                   value={`${month.activeBondCount}`}
                                                 />
                                                 <DetailLine
-                                                  label="Closing Aguka"
+                                                  label="Closing Cash"
                                                   value={formatRwf(
                                                     month.closingCashBalance,
                                                   )}
@@ -2915,7 +2875,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                     <Metric
                       label="Projected annual income"
                       value={formatRwf(summary.annualPassiveIncome)}
-                      detail="Bonds plus modeled Aguka income"
+                      detail="Bond coupon income only"
                     />
                     <Metric
                       label="Projected monthly income"
@@ -3652,8 +3612,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
             <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Useful, transparent, intentionally conservative.</h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-[var(--md-sys-color-on-surface-variant)]">
               This planner models monthly contributions, partial Treasury bond
-              auction allocation, and Aguka as the idle-cash parking layer. Coupons,
-              unfilled bids, Aguka returns, and matured principal are pooled into
+              auction allocation, and uninvested cash at 0% return. Coupons,
+              unfilled bids, and matured principal are pooled into
               future bid attempts.
             </p>
           </div>
@@ -3663,7 +3623,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
               ["Holding to maturity", "Holding to maturity avoids market-price loss if the issuer pays as agreed."],
               ["Coupon and tenor", `BK Capital states tenors of ${TREASURY_BOND_TENORS.join(", ")} years and annual coupon rates from ${formatPercent(MIN_ANNUAL_COUPON_RATE, 2)} to ${formatPercent(MAX_ANNUAL_COUPON_RATE, 2)}, depending on the issuance.`],
               ["Auction fill risk", `The model defaults to ${formatPercent(DEFAULT_ASSUMPTIONS.auctionFillRate, 0)} allocation based on the BNR historical sold/applied pattern, not 100% allocation.`],
-              ["Aguka idle cash", `Unfilled bond money is modeled in Aguka at ${formatPercent(DEFAULT_ASSUMPTIONS.agukaAnnualRate, 1)} tax-exempt annual return until it is used for another bid.`],
+              ["Uninvested cash", "Unfilled bond money stays as cash at 0% return until it is used for another bid."],
               ["Secondary market", `Buying or selling before maturity carries a ${formatPercent(SECONDARY_MARKET_COMMISSION_RATE, 3)} commission on turnover on each side, according to BK Capital.`],
               ["Projection only", "This model is educational and does not guarantee future returns."],
               ["Privacy boundary", "Simulation inputs remain on your device; only authenticated purchases are stored in the private portfolio database."],

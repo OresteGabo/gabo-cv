@@ -25,7 +25,6 @@ export const DEFAULT_ASSUMPTIONS: BondAssumptions = {
   couponPaymentsPerYear: 2,
   reinvestmentRate: 1,
   auctionFillRate: 0.67,
-  agukaAnnualRate: 0.1,
   startingPortfolio: 2_200_000,
   purchaseMinimum: 100_000,
 };
@@ -56,8 +55,6 @@ export function calculateProjection(
   const paymentsPerYear = Math.max(1, assumptions.couponPaymentsPerYear);
   const paymentInterval = 12 / paymentsPerYear;
   const auctionFillRate = Math.max(0, Math.min(1, assumptions.auctionFillRate));
-  const agukaAnnualRate = Math.max(0, assumptions.agukaAnnualRate);
-  const agukaMonthlyRate = (1 + agukaAnnualRate) ** (1 / 12) - 1;
   const annualCouponRate = Math.min(
     MAX_ANNUAL_COUPON_RATE,
     Math.max(MIN_ANNUAL_COUPON_RATE, assumptions.annualCouponRate),
@@ -107,7 +104,6 @@ export function calculateProjection(
   let totalContributions = 0;
   let totalCoupons = 0;
   let totalReinvested = 0;
-  let totalAgukaInterest = 0;
 
   return Array.from({ length: totalMonths }, (_, index) => {
     const month = index + 1;
@@ -121,10 +117,6 @@ export function calculateProjection(
       0,
     );
     const openingCashBalance = cashBalance;
-    const agukaInterest =
-      Math.round(openingCashBalance * agukaMonthlyRate * 100) / 100;
-    const agukaDistribution =
-      month % 6 === 0 ? agukaInterest : 0;
     const personalContribution = contributionPeriods.reduce(
       (total, period) =>
         month >= period.startMonth && month <= period.endMonth
@@ -176,7 +168,6 @@ export function calculateProjection(
     const availableCash =
       Math.round(
         (openingCashBalance +
-          agukaInterest +
           personalContribution +
           cashInjection +
           reinvestedCoupon +
@@ -208,12 +199,10 @@ export function calculateProjection(
     totalContributions += personalContribution + cashInjection;
     totalCoupons += couponPayment;
     totalReinvested += reinvestedCoupon;
-    totalAgukaInterest += agukaInterest;
     const annualBondPassiveIncome = activeLots.reduce(
       (total, lot) => total + lot.amount * lot.netAnnualCouponRate,
       0,
     );
-    const annualAgukaIncome = cashBalance * agukaAnnualRate;
 
     return {
       month,
@@ -229,8 +218,6 @@ export function calculateProjection(
       couponPayment,
       couponPayments,
       reinvestedCoupon,
-      agukaInterest,
-      agukaDistribution,
       maturedPrincipal,
       availableCash,
       intendedBondBid,
@@ -244,11 +231,9 @@ export function calculateProjection(
       totalContributions,
       totalCoupons,
       totalReinvested,
-      totalAgukaInterest,
       annualBondPassiveIncome,
-      annualAgukaIncome,
-      annualPassiveIncome: annualBondPassiveIncome + annualAgukaIncome,
-      monthlyPassiveIncome: (annualBondPassiveIncome + annualAgukaIncome) / 12,
+      annualPassiveIncome: annualBondPassiveIncome,
+      monthlyPassiveIncome: annualBondPassiveIncome / 12,
     };
   });
 }
@@ -273,9 +258,7 @@ export function summarizeProjection(
     totalContributions: final?.totalContributions ?? 0,
     totalCoupons: final?.totalCoupons ?? 0,
     totalReinvested: final?.totalReinvested ?? 0,
-    totalAgukaInterest: final?.totalAgukaInterest ?? 0,
     annualBondPassiveIncome: final?.annualBondPassiveIncome ?? 0,
-    annualAgukaIncome: final?.annualAgukaIncome ?? 0,
     annualPassiveIncome: final?.annualPassiveIncome ?? 0,
     monthlyPassiveIncome: final?.monthlyPassiveIncome ?? 0,
     milestone50m: firstMonthAt(50_000_000),

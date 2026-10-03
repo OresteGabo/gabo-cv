@@ -390,7 +390,7 @@ export function BondIssuanceCalendar() {
             <p className="mt-5 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base">
               Official FY 2026/2027 auction dates extracted from the BNR PDF:
               announcement, book opening, book closing, settlement, tenor, and
-              maturity. Use this to plan when cash should leave Aguka and move
+              maturity. Use this to plan when cash should leave Cash and move
               into a bond bid.
             </p>
             <button
