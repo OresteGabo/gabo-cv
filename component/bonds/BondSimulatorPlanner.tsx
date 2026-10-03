@@ -1577,7 +1577,7 @@ export function BondSimulatorPlanner() {
                     {isExpanded && (
                       <tr className="border-t border-[var(--md-sys-color-primary)]/10 bg-[var(--md-sys-color-surface-container-lowest)]">
                         <td colSpan={6} className="p-0">
-                          <div className="bond-scrollbar overflow-x-auto px-4 py-4 md:px-6">
+                          <div className="px-4 py-4 md:px-6">
                             <table className="w-full min-w-[720px] border-collapse text-left">
                               <thead className="text-[9px] uppercase tracking-[0.14em] text-[var(--md-sys-color-outline)]">
                                 <tr>
