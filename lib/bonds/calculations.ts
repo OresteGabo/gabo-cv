@@ -37,6 +37,7 @@ export const DEFAULT_ASSUMPTIONS: BondAssumptions = {
   auctionFillRate: 0.67,
   startingPortfolio: 2_200_000,
   purchaseMinimum: 100_000,
+  purchaseCharge: 11_000,
 };
 
 export const WITHHOLDING_TAX_RATE = 0.05;
@@ -199,6 +200,7 @@ export function calculateProjection(
     id: string,
     tenorYears = assumptions.tenorYears,
     couponRate = assumptions.annualCouponRate,
+    cashCost = amount,
   ): ModeledBondPurchase => {
     const annualCouponRate = sanitizeCouponRate(couponRate);
     const maturityMonth = purchaseMonth + tenorYears * 12;
@@ -209,6 +211,7 @@ export function calculateProjection(
       maturityMonth,
       maturityDate: modeledPurchaseDate(maturityMonth),
       amount,
+      cashCost,
       tenorYears,
       annualCouponRate,
       netAnnualCouponRate: annualCouponRate * (1 - WITHHOLDING_TAX_RATE),
@@ -364,6 +367,8 @@ export function calculateProjection(
           assumptions.purchaseMinimum,
       ) * assumptions.purchaseMinimum;
     const newBondPurchase = Math.min(intendedBondBid, filledBondPurchase);
+    const purchaseCharge =
+      newBondPurchase > 0 ? Math.max(0, assumptions.purchaseCharge ?? 0) : 0;
     const unfilledBondBid = intendedBondBid - newBondPurchase;
 
     const newBondPurchaseLot =
@@ -374,6 +379,7 @@ export function calculateProjection(
             `modeled-${month}`,
             auctionTenorYears,
             couponRateForTenor(assumptions, auctionTenorYears),
+            newBondPurchase + purchaseCharge,
           )
         : null;
     if (newBondPurchaseLot) activeLots.push(newBondPurchaseLot);
@@ -383,7 +389,8 @@ export function calculateProjection(
       (total, lot) => total + lot.amount,
       0,
     );
-    totalContributions += personalContribution + cashInjection + realBondPurchase;
+    totalContributions +=
+      personalContribution + cashInjection + realBondPurchase + purchaseCharge;
     totalCoupons += couponPayment;
     totalReinvested += reinvestedCoupon;
     const annualBondPassiveIncome = activeLots.reduce(
@@ -403,6 +410,7 @@ export function calculateProjection(
       cashInjection,
       cashInjectionLabels: monthlyInjections.map((injection) => injection.label),
       realBondPurchase,
+      purchaseCharge,
       auctionTenorYears,
       auctionEligible,
       couponPayment,
