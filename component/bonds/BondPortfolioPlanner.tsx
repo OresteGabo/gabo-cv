@@ -529,10 +529,10 @@ function GrowthChart({
     ? point(activeValue.contributions, activeIndex)
     : null;
   const activeMonthLabel = activeValue
-    ? `${MONTH_NAMES[activeValue.calendarMonth - 1]} ${activeValue.calendarYear}`
+    ? `${MONTH_NAMES[activeValue.calendarMonth - 1]} ${activeValue.calendarYear} (${Math.max(0, (activeValue.month - 1) / 12).toFixed(1)}Y)`
     : "";
   const tooltipX = activePortfolioPoint
-    ? Math.min(Math.max(activePortfolioPoint.x - 88, 36), width - 214)
+    ? Math.min(Math.max(activePortfolioPoint.x - 104, 36), width - 246)
     : 0;
   const tooltipY = activePortfolioPoint
     ? Math.max(34, Math.min(activePortfolioPoint.y - 92, height - 112))
@@ -630,7 +630,7 @@ function GrowthChart({
             />
             <g transform={`translate(${tooltipX} ${tooltipY})`}>
               <rect
-                width="178"
+                width="210"
                 height="82"
                 rx="14"
                 fill="var(--md-sys-color-surface-container-lowest)"
