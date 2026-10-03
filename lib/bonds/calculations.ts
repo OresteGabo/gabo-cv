@@ -35,7 +35,6 @@ export const DEFAULT_ASSUMPTIONS: BondAssumptions = {
   couponPaymentsPerYear: 2,
   reinvestmentRate: 1,
   auctionFillRate: 0.67,
-  startingPortfolio: 2_200_000,
   purchaseMinimum: 100_000,
   purchaseCharge: 11_000,
 };
@@ -231,11 +230,7 @@ export function calculateProjection(
     (total, lot) => total + (lot.cashCost ?? lot.amount),
     0,
   );
-  let activeLots: ModeledBondPurchase[] = realLots
-    ? openingRealLots
-    : assumptions.startingPortfolio > 0
-      ? [makeLot(0, assumptions.startingPortfolio, "starting-portfolio")]
-      : [];
+  let activeLots: ModeledBondPurchase[] = realLots ? openingRealLots : [];
   let pendingRealLots = realLots
     ? realLots.filter((lot) => lot.purchaseMonth > 1)
     : [];
@@ -449,10 +444,9 @@ export function summarizeProjection(
     )?.month ?? null;
 
   return {
-    finalPortfolio: final?.closingPortfolio ?? assumptions.startingPortfolio,
+    finalPortfolio: final?.closingPortfolio ?? 0,
     finalCashBalance: final?.closingCashBalance ?? 0,
-    finalAccountValue:
-      final?.totalAccountValue ?? assumptions.startingPortfolio,
+    finalAccountValue: final?.totalAccountValue ?? 0,
     totalContributions: final?.totalContributions ?? 0,
     totalCoupons: final?.totalCoupons ?? 0,
     totalReinvested: final?.totalReinvested ?? 0,
