@@ -61,6 +61,7 @@ export type MonthlyProjection = {
   personalContribution: number;
   cashInjection: number;
   cashInjectionLabels: string[];
+  realBondPurchase: number;
   auctionTenorYears: number;
   auctionEligible: boolean;
   couponPayment: number;
