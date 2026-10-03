@@ -63,6 +63,7 @@ import type {
   BondPurchaseInput,
   ContributionPeriod,
   EquityHolding,
+  ModeledBondPurchase,
 } from "@/lib/bonds/types";
 import bondCatalog from "@/lib/bonds/bond-catalog.json";
 import {
@@ -81,6 +82,8 @@ const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+const REAL_PORTFOLIO_SIMULATION_STORAGE_KEY =
+  "rwanda-bond-planner-real-portfolio-v1";
 
 function purchaseFromCatalogEntry(
   entry: BondCatalogEntry,
@@ -234,6 +237,56 @@ function scheduledMonthlyContribution(
         : total,
     0,
   );
+}
+
+function monthIndexFromIsoDate(
+  assumptions: Pick<BondAssumptions, "startMonth" | "startYear">,
+  isoDate: string,
+) {
+  const [year, month] = isoDate.split("-").map(Number);
+  if (!year || !month) return null;
+
+  return (year - assumptions.startYear) * 12 + month - assumptions.startMonth + 1;
+}
+
+function purchaseToStartingLot(
+  purchase: BondPurchase,
+  assumptions: Pick<BondAssumptions, "startMonth" | "startYear">,
+): ModeledBondPurchase | null {
+  if (
+    purchase.status !== "active" ||
+    purchase.faceValue <= 0 ||
+    purchase.couponRate <= 0
+  ) {
+    return null;
+  }
+
+  const maturityMonth = monthIndexFromIsoDate(assumptions, purchase.maturityDate);
+  if (!maturityMonth || maturityMonth < 1) return null;
+
+  const purchaseMonth =
+    monthIndexFromIsoDate(
+      assumptions,
+      purchase.settlementDate || purchase.purchaseDate,
+    ) ?? 0;
+  const couponMonths = purchase.couponDates
+    .map((date) => monthIndexFromIsoDate(assumptions, date))
+    .filter((month): month is number => Boolean(month && month >= 1))
+    .filter((month) => month <= maturityMonth);
+
+  return {
+    id: `actual-${purchase.id}`,
+    purchaseMonth,
+    purchaseDate: purchase.settlementDate || purchase.purchaseDate,
+    maturityMonth,
+    maturityDate: purchase.maturityDate,
+    amount: purchase.faceValue,
+    tenorYears: purchase.tenorYears,
+    annualCouponRate: purchase.couponRate,
+    netAnnualCouponRate: purchase.couponRate * (1 - purchase.withholdingTaxRate),
+    couponFrequency: Math.max(1, purchase.couponFrequency || 2),
+    couponMonths,
+  };
 }
 
 function purchaseFromCalendarPrefill(params: URLSearchParams): BondPurchaseInput | null {
@@ -679,6 +732,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     useState<BondAssumptions>(DEFAULT_ASSUMPTIONS);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
   const [cashInjections, setCashInjections] = useState<CashInjection[]>([]);
+  const [realPortfolioSimulationEnabled, setRealPortfolioSimulationEnabled] =
+    useState(false);
   const [injectionDraft, setInjectionDraft] = useState({
     label: "",
     amount: 1_000_000,
@@ -733,6 +788,10 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
         if (storedInjections) {
           setCashInjections(JSON.parse(storedInjections));
         }
+        setRealPortfolioSimulationEnabled(
+          window.localStorage.getItem(REAL_PORTFOLIO_SIMULATION_STORAGE_KEY) ===
+            "true",
+        );
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);
       } finally {
@@ -753,6 +812,14 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       JSON.stringify(cashInjections),
     );
   }, [cashInjections]);
+
+  useEffect(() => {
+    if (!assumptionsHydrated.current) return;
+    window.localStorage.setItem(
+      REAL_PORTFOLIO_SIMULATION_STORAGE_KEY,
+      String(realPortfolioSimulationEnabled),
+    );
+  }, [realPortfolioSimulationEnabled]);
 
   useEffect(() => {
     if (view !== "portfolio" || editingPurchaseId) return;
@@ -855,13 +922,35 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     }),
     [assumptions, contributionPeriods, currentMonthlyContribution],
   );
+  const actualStartingLots = useMemo(
+    () =>
+      purchases
+        .map((item) => purchaseToStartingLot(item, modeledAssumptions))
+        .filter((lot): lot is ModeledBondPurchase => Boolean(lot)),
+    [modeledAssumptions, purchases],
+  );
   const projection = useMemo(
-    () => calculateProjection(modeledAssumptions, cashInjections),
-    [modeledAssumptions, cashInjections],
+    () =>
+      calculateProjection(
+        modeledAssumptions,
+        cashInjections,
+        realPortfolioSimulationEnabled ? actualStartingLots : undefined,
+      ),
+    [
+      actualStartingLots,
+      modeledAssumptions,
+      cashInjections,
+      realPortfolioSimulationEnabled,
+    ],
   );
   const baselineProjection = useMemo(
-    () => calculateProjection(modeledAssumptions),
-    [modeledAssumptions],
+    () =>
+      calculateProjection(
+        modeledAssumptions,
+        [],
+        realPortfolioSimulationEnabled ? actualStartingLots : undefined,
+      ),
+    [actualStartingLots, modeledAssumptions, realPortfolioSimulationEnabled],
   );
   const summary = useMemo(
     () => summarizeProjection(projection, modeledAssumptions),
@@ -963,6 +1052,28 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
         : 0),
     0,
   );
+  const activeBondPurchases = purchases.filter(
+    (item) =>
+      item.status === "active" && item.faceValue > 0 && item.couponRate > 0,
+  );
+  const inferredMonthlyContribution = (() => {
+    if (activeBondPurchases.length === 0) return currentMonthlyContribution;
+    const purchaseMonths = new Set(
+      activeBondPurchases.map((item) =>
+        (item.settlementDate || item.purchaseDate).slice(0, 7),
+      ),
+    );
+    const monthlyAverage =
+      activeBondPurchases.reduce((total, item) => total + item.faceValue, 0) /
+      Math.max(1, purchaseMonths.size);
+
+    return Math.max(0, Math.round(monthlyAverage / 50_000) * 50_000);
+  })();
+  const realSimulationStartingPrincipal = actualStartingLots.reduce(
+    (total, lot) => total + lot.amount,
+    0,
+  );
+  const realSimulationReady = actualStartingLots.length > 0;
   const purchaseCashCost =
     Math.round(
       (purchase.faceValue * (purchase.pricePercent / 100) +
@@ -1118,6 +1229,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   function resetScenario() {
     setAssumptions(DEFAULT_ASSUMPTIONS);
     setCashInjections([]);
+    setRealPortfolioSimulationEnabled(false);
     setInjectionDraft({
       label: "",
       amount: 1_000_000,
@@ -1132,6 +1244,63 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       JSON.stringify(DEFAULT_ASSUMPTIONS),
     );
     window.localStorage.removeItem(INJECTIONS_STORAGE_KEY);
+    window.localStorage.removeItem(REAL_PORTFOLIO_SIMULATION_STORAGE_KEY);
+  }
+
+  function applyRealPortfolioSimulation() {
+    if (activeBondPurchases.length === 0) return;
+
+    const now = new Date();
+    const totalFaceValue = activeBondPurchases.reduce(
+      (total, item) => total + item.faceValue,
+      0,
+    );
+    const weightedCouponRate =
+      totalFaceValue > 0
+        ? activeBondPurchases.reduce(
+            (total, item) => total + item.faceValue * item.couponRate,
+            0,
+          ) / totalFaceValue
+        : assumptions.annualCouponRate;
+    const latestPurchase = activeBondPurchases
+      .slice()
+      .sort((a, b) =>
+        (b.settlementDate || b.purchaseDate).localeCompare(
+          a.settlementDate || a.purchaseDate,
+        ),
+      )[0];
+
+    setAssumptions((current) => {
+      const totalMonths = Math.max(1, Math.round(current.horizonYears * 12));
+      const monthlyContribution = inferredMonthlyContribution;
+
+      return {
+        ...current,
+        startMonth: now.getMonth() + 1,
+        startYear: now.getFullYear(),
+        startingPortfolio: totalFaceValue,
+        monthlyContribution,
+        contributionPeriods: [
+          {
+            id: "real-portfolio-monthly",
+            amount: monthlyContribution,
+            startMonth: 1,
+            endMonth: totalMonths,
+          },
+        ],
+        annualCouponRate: Math.min(
+          MAX_ANNUAL_COUPON_RATE,
+          Math.max(MIN_ANNUAL_COUPON_RATE, weightedCouponRate),
+        ),
+        tenorYears: latestPurchase?.tenorYears ?? current.tenorYears,
+      };
+    });
+    setRealPortfolioSimulationEnabled(true);
+    window.setTimeout(() => {
+      document
+        .getElementById("real-portfolio-simulation")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
   }
 
   function removeCashInjection(id: string) {
@@ -2589,6 +2758,113 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 <Metric label="Total cash cost" value={formatRwf(actualInvestmentCashCost)} />
                 <Metric label="Saved annual net coupons" value={formatRwf(actualAnnualIncome)} />
               </div>
+              <section
+                id="real-portfolio-simulation"
+                className="mt-4 overflow-hidden rounded-3xl border border-primary/15 bg-surface-container-lowest/75"
+              >
+                <div className="grid gap-5 p-5 lg:grid-cols-[1fr_1.35fr] lg:p-6">
+                  <div>
+                    <div className="flex items-center gap-2 text-primary">
+                      <Sparkles size={16} />
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em]">
+                        Personal data simulation
+                      </p>
+                    </div>
+                    <h3 className="mt-2 text-xl font-black">
+                      Run the model from your real bond records
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+                      Use active saved purchases as opening bond lots, preserve
+                      their coupon dates and maturities, then continue with an
+                      editable monthly contribution schedule.
+                    </p>
+                    <div className="mt-4 grid gap-2 text-xs text-on-surface-variant">
+                      <DetailLine
+                        label="Opening real lots"
+                        value={`${actualStartingLots.length}`}
+                      />
+                      <DetailLine
+                        label="Opening principal"
+                        value={formatRwf(realSimulationStartingPrincipal)}
+                      />
+                      <DetailLine
+                        label="Inferred monthly contribution"
+                        value={formatRwf(inferredMonthlyContribution)}
+                      />
+                    </div>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={applyRealPortfolioSimulation}
+                        disabled={!realSimulationReady}
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        <BarChart3 size={17} />
+                        Use my real portfolio
+                      </button>
+                      {realPortfolioSimulationEnabled && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRealPortfolioSimulationEnabled(false)
+                          }
+                          className="inline-flex items-center gap-2 rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
+                        >
+                          <RefreshCcw size={16} />
+                          Use manual start
+                        </button>
+                      )}
+                    </div>
+                    {!realSimulationReady && (
+                      <p className="mt-3 text-[11px] leading-5 text-on-surface-variant">
+                        Add an active bond purchase with a coupon rate before
+                        running a real-data simulation.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Metric
+                      label="Scenario source"
+                      value={
+                        realPortfolioSimulationEnabled
+                          ? "Real records"
+                          : "Manual start"
+                      }
+                      detail={
+                        realPortfolioSimulationEnabled
+                          ? "Opening lots come from saved purchases"
+                          : "Enable real records to seed this model"
+                      }
+                      accent={realPortfolioSimulationEnabled}
+                    />
+                    <Metric
+                      label="Projected account value"
+                      value={formatRwf(summary.finalAccountValue)}
+                      detail={
+                        simulationEnd
+                          ? `${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
+                          : "End of horizon"
+                      }
+                    />
+                    <Metric
+                      label="Projected annual income"
+                      value={formatRwf(summary.annualPassiveIncome)}
+                      detail="Bonds plus modeled Aguka income"
+                    />
+                    <Metric
+                      label="Projected monthly income"
+                      value={formatRwf(summary.monthlyPassiveIncome)}
+                      detail={`${formatRwf(currentMonthlyContribution)} planned contribution now`}
+                    />
+                  </div>
+                </div>
+                {realPortfolioSimulationEnabled && (
+                  <div className="border-t border-outline/10 p-5 lg:p-6">
+                    <GrowthChart values={chartProjection} />
+                  </div>
+                )}
+              </section>
               {equities.length > 0 && (
                 <section className="mt-4 overflow-hidden rounded-3xl border border-outline/10 bg-surface-container-lowest/75">
                   <div className="flex flex-col gap-2 border-b border-outline/10 p-5 sm:flex-row sm:items-end sm:justify-between">
