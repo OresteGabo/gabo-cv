@@ -2564,6 +2564,21 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                                   label="Coupon lots"
                                                   value={`${month.couponPayments.length}`}
                                                 />
+                                                {month.couponPayments.some(
+                                                  (payment) =>
+                                                    payment.couponDate,
+                                                ) && (
+                                                  <DetailLine
+                                                    label="Coupon dates"
+                                                    value={month.couponPayments
+                                                      .map(
+                                                        (payment) =>
+                                                          payment.couponDate,
+                                                      )
+                                                      .filter(Boolean)
+                                                      .join(", ")}
+                                                  />
+                                                )}
                                               </DetailPanel>
                                               <DetailPanel title="Auction">
                                                 <DetailLine
