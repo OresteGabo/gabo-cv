@@ -13,6 +13,7 @@ export type BondAssumptions = {
   auctionFillRate: number;
   startingPortfolio: number;
   purchaseMinimum: number;
+  purchaseCharge: number;
 };
 
 export type ContributionPeriod = {
@@ -68,6 +69,7 @@ export type MonthlyProjection = {
   cashInjection: number;
   cashInjectionLabels: string[];
   realBondPurchase: number;
+  purchaseCharge: number;
   auctionTenorYears: number;
   auctionEligible: boolean;
   couponPayment: number;
