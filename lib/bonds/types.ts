@@ -11,7 +11,6 @@ export type BondAssumptions = {
   couponPaymentsPerYear: number;
   reinvestmentRate: number;
   auctionFillRate: number;
-  startingPortfolio: number;
   purchaseMinimum: number;
   purchaseCharge: number;
 };
