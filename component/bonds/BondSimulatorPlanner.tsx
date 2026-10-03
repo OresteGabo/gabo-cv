@@ -654,12 +654,10 @@ export function BondSimulatorPlanner() {
     (total, injection) => total + injection.amount,
     0,
   );
-  const projectionStartingPrincipal =
-    actualStartingLots.length > 0
-      ? actualStartingLots.reduce((total, lot) => total + lot.amount, 0)
-      : assumptions.startingPortfolio;
-  const growthStartingPrincipal =
-    actualStartingLots.length > 0 ? 0 : assumptions.startingPortfolio;
+  const projectionStartingPrincipal = actualStartingLots.reduce(
+    (total, lot) => total + lot.amount,
+    0,
+  );
   const injectionFinalImpact =
     summary.finalAccountValue - baselineSummary.finalAccountValue;
   const simulationEnd = projection.at(-1);
@@ -1342,7 +1340,6 @@ export function BondSimulatorPlanner() {
                     step={5}
                     suffix="%"
                   />
-                  <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
                   <NumberControl
                     label="Purchase charges"
                     value={assumptions.purchaseCharge}
@@ -1558,7 +1555,7 @@ export function BondSimulatorPlanner() {
                   detail={`${actualStartingLots.length} saved active lots`}
                 />
               )}
-              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - growthStartingPrincipal)} accent />
+              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - projectionStartingPrincipal)} accent />
             </div>
             {cashInjections.length > 0 && (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
