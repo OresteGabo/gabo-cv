@@ -1581,12 +1581,12 @@ export function BondSimulatorPlanner() {
                             <table className="w-full min-w-[720px] border-collapse text-left">
                               <thead className="text-[9px] uppercase tracking-[0.14em] text-[var(--md-sys-color-outline)]">
                                 <tr>
-                                  <th className="px-3 py-2">Month</th>
-                                  <th className="px-3 py-2">Contribution</th>
-                                  <th className="px-3 py-2">Bond purchase</th>
-                                  <th className="px-3 py-2">Coupons</th>
-                                  <th className="px-3 py-2">Cash</th>
-                                  <th className="px-3 py-2">Account value</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Month</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Contribution</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Bond purchase</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Coupons</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Cash</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Account value</th>
                                 </tr>
                               </thead>
                               <tbody>
