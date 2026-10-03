@@ -39,6 +39,7 @@ export const SECONDARY_MARKET_COMMISSION_RATE = 0.00049;
 export function calculateProjection(
   assumptions: BondAssumptions,
   cashInjections: CashInjection[] = [],
+  startingLots?: ModeledBondPurchase[],
 ): MonthlyProjection[] {
   const totalMonths = Math.max(1, Math.round(assumptions.horizonYears * 12));
   const contributionPeriods =
@@ -95,8 +96,11 @@ export function calculateProjection(
     };
   };
 
-  let activeLots: ModeledBondPurchase[] =
-    assumptions.startingPortfolio > 0
+  let activeLots: ModeledBondPurchase[] = startingLots
+    ? startingLots
+        .filter((lot) => lot.amount > 0 && lot.maturityMonth >= 1)
+        .map((lot) => ({ ...lot }))
+    : assumptions.startingPortfolio > 0
       ? [makeLot(0, assumptions.startingPortfolio, "starting-portfolio")]
       : [];
   let cashBalance = 0;
@@ -135,25 +139,27 @@ export function calculateProjection(
       (total, injection) => total + injection.amount,
       0,
     );
-    const couponPayments: ModeledCouponPayment[] = Number.isInteger(
-      paymentInterval,
-    )
-      ? activeLots
-          .filter(
-            (lot) =>
-              month > lot.purchaseMonth &&
-              month <= lot.maturityMonth &&
-              (month - lot.purchaseMonth) % paymentInterval === 0,
-          )
-          .map((lot) => ({
-            lotId: lot.id,
-            purchaseDate: lot.purchaseDate,
-            amountInvested: lot.amount,
-            couponAmount:
-              lot.amount *
-              (lot.netAnnualCouponRate / lot.couponFrequency),
-          }))
-      : [];
+    const couponPayments: ModeledCouponPayment[] = activeLots
+      .filter((lot) => {
+        if (lot.couponMonths) {
+          return lot.couponMonths.includes(month) && month <= lot.maturityMonth;
+        }
+
+        return (
+          Number.isInteger(paymentInterval) &&
+          month > lot.purchaseMonth &&
+          month <= lot.maturityMonth &&
+          (month - lot.purchaseMonth) % paymentInterval === 0
+        );
+      })
+      .map((lot) => ({
+        lotId: lot.id,
+        purchaseDate: lot.purchaseDate,
+        amountInvested: lot.amount,
+        couponAmount:
+          lot.amount *
+          (lot.netAnnualCouponRate / lot.couponFrequency),
+      }));
     const couponPayment = couponPayments.reduce(
       (total, payment) => total + payment.couponAmount,
       0,
