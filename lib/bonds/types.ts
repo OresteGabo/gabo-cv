@@ -39,6 +39,7 @@ export type ModeledBondPurchase = {
   annualCouponRate: number;
   netAnnualCouponRate: number;
   couponFrequency: number;
+  couponMonths?: number[];
 };
 
 export type ModeledCouponPayment = {
