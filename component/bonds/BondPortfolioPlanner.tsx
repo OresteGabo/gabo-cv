@@ -1457,6 +1457,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       "Intended Bond Bid",
       "Unfilled Bond Bid",
       "New Bond Purchase",
+      "Purchase Charge",
       "Modeled Purchase Lot",
       "Active Bond Lots",
       "Closing Cash Balance",
@@ -1485,6 +1486,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       row.intendedBondBid,
       row.unfilledBondBid,
       row.newBondPurchase,
+      row.purchaseCharge,
       row.newBondPurchaseLot?.id ?? "",
       row.activeBondCount,
       row.closingCashBalance,
@@ -1927,6 +1929,16 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       help="Estimated share of your intended Treasury bond bid that actually gets allocated. BNR history since 2008 implies roughly 67% market-wide sold/applied, while recent periods can be lower."
                     />
                     <NumberControl label="Starting portfolio" value={assumptions.startingPortfolio} onChange={(value) => update("startingPortfolio", value)} min={0} max={15_000_000} step={50_000} prefix="RWF " />
+                    <NumberControl
+                      label="Purchase charges"
+                      value={assumptions.purchaseCharge}
+                      onChange={(value) => update("purchaseCharge", value)}
+                      min={0}
+                      max={100_000}
+                      step={1_000}
+                      prefix="RWF "
+                      help="Extra cash paid whenever the model successfully buys a new bond. It is counted in total contributions, but it does not earn coupons or become principal."
+                    />
                     <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4 md:col-span-2 xl:col-span-3">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
@@ -2164,8 +2176,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 value={formatRwf(summary.totalContributions)}
                 detail={
                   actualStartingLots.length > 0
-                    ? "Saved bonds plus monthly plan and one-time injections"
-                    : "Monthly plan plus one-time injections"
+                    ? "Saved bonds, charges, monthly plan, and one-time injections"
+                    : "Monthly plan, charges, and one-time injections"
                 }
               />
               <Metric
@@ -2603,6 +2615,12 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                                   label="Allocated"
                                                   value={formatRwf(
                                                     month.newBondPurchase,
+                                                  )}
+                                                />
+                                                <DetailLine
+                                                  label="Charges"
+                                                  value={formatRwf(
+                                                    month.purchaseCharge,
                                                   )}
                                                 />
                                                 <DetailLine
