@@ -99,6 +99,25 @@ export function purchaseToStartingLot(
   };
 }
 
+export function earliestActivePurchaseMonth(purchases: BondPurchase[]) {
+  return purchases
+    .filter(
+      (purchase) =>
+        purchase.status === "active" &&
+        purchase.faceValue > 0 &&
+        purchase.couponRate > 0,
+    )
+    .map((purchase) => {
+      const [year, month] = (
+        purchase.settlementDate || purchase.purchaseDate
+      ).split("-").map(Number);
+
+      return year && month ? { year, month } : null;
+    })
+    .filter((date): date is { year: number; month: number } => Boolean(date))
+    .sort((a, b) => a.year - b.year || a.month - b.month)[0] ?? null;
+}
+
 function modulo(value: number, divisor: number) {
   return ((value % divisor) + divisor) % divisor;
 }
@@ -180,13 +199,26 @@ export function calculateProjection(
     };
   };
 
-  let activeLots: ModeledBondPurchase[] = startingLots
+  const realLots = startingLots
     ? startingLots
         .filter((lot) => lot.amount > 0 && lot.maturityMonth >= 1)
         .map((lot) => ({ ...lot }))
+    : null;
+  const openingRealLots = realLots
+    ? realLots.filter((lot) => lot.purchaseMonth <= 1)
+    : [];
+  const openingRealPrincipal = openingRealLots.reduce(
+    (total, lot) => total + lot.amount,
+    0,
+  );
+  let activeLots: ModeledBondPurchase[] = realLots
+    ? openingRealLots
     : assumptions.startingPortfolio > 0
       ? [makeLot(0, assumptions.startingPortfolio, "starting-portfolio")]
       : [];
+  let pendingRealLots = realLots
+    ? realLots.filter((lot) => lot.purchaseMonth > 1)
+    : [];
   let cashBalance = 0;
   let totalContributions = 0;
   let totalCoupons = 0;
@@ -194,6 +226,19 @@ export function calculateProjection(
 
   return Array.from({ length: totalMonths }, (_, index) => {
     const month = index + 1;
+    const realLotsStartingThisMonth = pendingRealLots.filter(
+      (lot) => lot.purchaseMonth === month,
+    );
+    if (realLotsStartingThisMonth.length > 0) {
+      activeLots.push(...realLotsStartingThisMonth);
+      pendingRealLots = pendingRealLots.filter(
+        (lot) => lot.purchaseMonth !== month,
+      );
+    }
+    const realBondPurchase =
+      month === 1
+        ? openingRealPrincipal
+        : realLotsStartingThisMonth.reduce((total, lot) => total + lot.amount, 0);
     const calendarDate = new Date(
       assumptions.startYear,
       assumptions.startMonth - 1 + index,
@@ -295,7 +340,7 @@ export function calculateProjection(
       (total, lot) => total + lot.amount,
       0,
     );
-    totalContributions += personalContribution + cashInjection;
+    totalContributions += personalContribution + cashInjection + realBondPurchase;
     totalCoupons += couponPayment;
     totalReinvested += reinvestedCoupon;
     const annualBondPassiveIncome = activeLots.reduce(
@@ -314,6 +359,7 @@ export function calculateProjection(
       personalContribution,
       cashInjection,
       cashInjectionLabels: monthlyInjections.map((injection) => injection.label),
+      realBondPurchase,
       auctionTenorYears,
       auctionEligible,
       couponPayment,
