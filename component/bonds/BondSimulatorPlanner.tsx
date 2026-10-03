@@ -32,6 +32,7 @@ import {
 import {
   calculateProjection,
   DEFAULT_ASSUMPTIONS,
+  earliestActivePurchaseMonth,
   formatPercent,
   formatRwf,
   MAX_ANNUAL_COUPON_RATE,
@@ -460,6 +461,7 @@ export function BondSimulatorPlanner() {
     () => new Set(),
   );
   const assumptionsHydrated = useRef(false);
+  const realPurchaseStartApplied = useRef(false);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -519,6 +521,27 @@ export function BondSimulatorPlanner() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (realPurchaseStartApplied.current || realPurchases.length === 0) return;
+
+    const realStart = earliestActivePurchaseMonth(realPurchases);
+    if (!realStart) return;
+
+    realPurchaseStartApplied.current = true;
+    setAssumptions((current) => {
+      const currentStartIndex = current.startYear * 12 + current.startMonth;
+      const realStartIndex = realStart.year * 12 + realStart.month;
+
+      if (currentStartIndex <= realStartIndex) return current;
+
+      return {
+        ...current,
+        startMonth: realStart.month,
+        startYear: realStart.year,
+      };
+    });
+  }, [realPurchases]);
 
   const contributionPeriods = useMemo(
     () => normalizeContributionPeriods(assumptions),
@@ -635,6 +658,8 @@ export function BondSimulatorPlanner() {
     actualStartingLots.length > 0
       ? actualStartingLots.reduce((total, lot) => total + lot.amount, 0)
       : assumptions.startingPortfolio;
+  const growthStartingPrincipal =
+    actualStartingLots.length > 0 ? 0 : assumptions.startingPortfolio;
   const injectionFinalImpact =
     summary.finalAccountValue - baselineSummary.finalAccountValue;
   const simulationEnd = projection.at(-1);
@@ -1502,7 +1527,15 @@ export function BondSimulatorPlanner() {
           <div className="mt-8 min-w-0">
             <GrowthChart values={chartProjection} />
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-              <Metric label="Total cash invested" value={formatRwf(summary.totalContributions)} detail="Monthly plan plus one-time injections" />
+              <Metric
+                label="Total cash invested"
+                value={formatRwf(summary.totalContributions)}
+                detail={
+                  actualStartingLots.length > 0
+                    ? "Saved bonds plus monthly plan and one-time injections"
+                    : "Monthly plan plus one-time injections"
+                }
+              />
               <Metric label="Modeled bond purchases" value={String(projection.filter((row) => row.newBondPurchaseLot).length)} detail="Each monthly pooled purchase is tracked as one lot" />
               <Metric label="Net coupons earned" value={formatRwf(summary.totalCoupons)} detail={`${formatPercent(netAnnualRate)} net annual rate`} />
               <Metric label="Coupons reinvested" value={formatRwf(summary.totalReinvested)} detail={`${formatPercent(assumptions.reinvestmentRate)} reinvested`} />
@@ -1513,7 +1546,7 @@ export function BondSimulatorPlanner() {
                   detail={`${actualStartingLots.length} saved active lots`}
                 />
               )}
-              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - projectionStartingPrincipal)} accent />
+              <Metric label="Growth above contributions" value={formatRwf(summary.finalAccountValue - summary.totalContributions - growthStartingPrincipal)} accent />
             </div>
             {cashInjections.length > 0 && (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -1663,14 +1696,17 @@ export function BondSimulatorPlanner() {
                                       {MONTH_NAMES[month.calendarMonth - 1].slice(0, 3)}{" "}
                                       {month.calendarYear}
                                     </td>
-                                    <td className="px-3 py-3">{formatRwf(month.personalContribution + month.cashInjection)}</td>
+                                    <td className="px-3 py-3">{formatRwf(month.personalContribution + month.cashInjection + month.realBondPurchase)}</td>
                                     <td className="px-3 py-3 font-black text-primary">
-                                      {formatRwf(month.newBondPurchase)}
+                                      {formatRwf(month.newBondPurchase + month.realBondPurchase)}
                                       <span className="mt-1 block text-[9px] font-bold text-on-surface-variant">
-                                        {month.auctionTenorYears}Y{" "}
-                                        {month.auctionEligible
-                                          ? "allowed"
-                                          : "skipped"}
+                                        {month.realBondPurchase > 0
+                                          ? "saved bond"
+                                          : `${month.auctionTenorYears}Y ${
+                                              month.auctionEligible
+                                                ? "allowed"
+                                                : "skipped"
+                                            }`}
                                       </span>
                                     </td>
                                     <td className="px-3 py-3">{formatRwf(month.couponPayment)}</td>
