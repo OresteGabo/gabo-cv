@@ -21,6 +21,15 @@ export const DEFAULT_ASSUMPTIONS: BondAssumptions = {
   startMonth: 7,
   startYear: 2026,
   tenorYears: 7,
+  allowedTenors: [5, 7, 10, 15, 20, 25],
+  tenorCouponRates: {
+    "5": 0.11,
+    "7": 0.115,
+    "10": 0.12,
+    "15": 0.129,
+    "20": 0.131,
+    "25": 0.1325,
+  },
   annualCouponRate: 0.115,
   couponPaymentsPerYear: 2,
   reinvestmentRate: 1,
@@ -32,8 +41,31 @@ export const DEFAULT_ASSUMPTIONS: BondAssumptions = {
 export const WITHHOLDING_TAX_RATE = 0.05;
 export const MIN_ANNUAL_COUPON_RATE = 0.1065;
 export const MAX_ANNUAL_COUPON_RATE = 0.135;
-export const TREASURY_BOND_TENORS = [3, 5, 7, 10, 15, 20] as const;
+export const TREASURY_BOND_TENORS = [3, 5, 7, 10, 15, 20, 25] as const;
+export const SIMULATION_TREASURY_BOND_TENORS = [5, 7, 10, 15, 20, 25] as const;
+export const REPEATING_ISSUANCE_TENOR_CYCLE = [
+  7, 10, 15, 20, 5, 7, 10, 25, 15, 10, 20, 7,
+] as const;
 export const SECONDARY_MARKET_COMMISSION_RATE = 0.00049;
+
+function modulo(value: number, divisor: number) {
+  return ((value % divisor) + divisor) % divisor;
+}
+
+function repeatingAuctionTenor(calendarYear: number, calendarMonth: number) {
+  const monthOffset = (calendarYear - 2026) * 12 + (calendarMonth - 7);
+  return REPEATING_ISSUANCE_TENOR_CYCLE[
+    modulo(monthOffset, REPEATING_ISSUANCE_TENOR_CYCLE.length)
+  ];
+}
+
+function couponRateForTenor(assumptions: BondAssumptions, tenorYears: number) {
+  const configured = assumptions.tenorCouponRates?.[String(tenorYears)];
+  if (Number.isFinite(configured) && configured > 0) return configured;
+  if (tenorYears === assumptions.tenorYears) return assumptions.annualCouponRate;
+  return DEFAULT_ASSUMPTIONS.tenorCouponRates[String(tenorYears)] ??
+    assumptions.annualCouponRate;
+}
 
 export function calculateProjection(
   assumptions: BondAssumptions,
@@ -55,11 +87,12 @@ export function calculateProjection(
   const paymentsPerYear = Math.max(1, assumptions.couponPaymentsPerYear);
   const paymentInterval = 12 / paymentsPerYear;
   const auctionFillRate = Math.max(0, Math.min(1, assumptions.auctionFillRate));
-  const annualCouponRate = Math.min(
-    MAX_ANNUAL_COUPON_RATE,
-    Math.max(MIN_ANNUAL_COUPON_RATE, assumptions.annualCouponRate),
-  );
-  const netAnnualRate = annualCouponRate * (1 - WITHHOLDING_TAX_RATE);
+  const allowedTenors =
+    assumptions.allowedTenors?.length > 0
+      ? assumptions.allowedTenors
+      : DEFAULT_ASSUMPTIONS.allowedTenors;
+  const sanitizeCouponRate = (rate: number) =>
+    Math.min(MAX_ANNUAL_COUPON_RATE, Math.max(MIN_ANNUAL_COUPON_RATE, rate));
 
   const modeledPurchaseDate = (month: number) => {
     const date = new Date(
@@ -77,8 +110,11 @@ export function calculateProjection(
     purchaseMonth: number,
     amount: number,
     id: string,
+    tenorYears = assumptions.tenorYears,
+    couponRate = assumptions.annualCouponRate,
   ): ModeledBondPurchase => {
-    const maturityMonth = purchaseMonth + assumptions.tenorYears * 12;
+    const annualCouponRate = sanitizeCouponRate(couponRate);
+    const maturityMonth = purchaseMonth + tenorYears * 12;
     return {
       id,
       purchaseMonth,
@@ -86,9 +122,9 @@ export function calculateProjection(
       maturityMonth,
       maturityDate: modeledPurchaseDate(maturityMonth),
       amount,
-      tenorYears: assumptions.tenorYears,
+      tenorYears,
       annualCouponRate,
-      netAnnualCouponRate: netAnnualRate,
+      netAnnualCouponRate: annualCouponRate * (1 - WITHHOLDING_TAX_RATE),
       couponFrequency: paymentsPerYear,
     };
   };
@@ -112,6 +148,11 @@ export function calculateProjection(
       assumptions.startMonth - 1 + index,
       1,
     );
+    const auctionTenorYears = repeatingAuctionTenor(
+      calendarDate.getFullYear(),
+      calendarDate.getMonth() + 1,
+    );
+    const auctionEligible = allowedTenors.includes(auctionTenorYears);
     const openingPortfolio = activeLots.reduce(
       (total, lot) => total + lot.amount,
       0,
@@ -174,9 +215,10 @@ export function calculateProjection(
           maturedPrincipal) *
           100,
       ) / 100;
-    const intendedBondBid =
-      Math.floor((availableCash + 0.001) / assumptions.purchaseMinimum) *
-      assumptions.purchaseMinimum;
+    const intendedBondBid = auctionEligible
+      ? Math.floor((availableCash + 0.001) / assumptions.purchaseMinimum) *
+        assumptions.purchaseMinimum
+      : 0;
     const filledBondPurchase =
       Math.floor(
         (intendedBondBid * auctionFillRate + 0.001) /
@@ -187,7 +229,13 @@ export function calculateProjection(
 
     const newBondPurchaseLot =
       newBondPurchase > 0
-        ? makeLot(month, newBondPurchase, `modeled-${month}`)
+        ? makeLot(
+            month,
+            newBondPurchase,
+            `modeled-${month}`,
+            auctionTenorYears,
+            couponRateForTenor(assumptions, auctionTenorYears),
+          )
         : null;
     if (newBondPurchaseLot) activeLots.push(newBondPurchaseLot);
     cashBalance =
@@ -215,6 +263,8 @@ export function calculateProjection(
       personalContribution,
       cashInjection,
       cashInjectionLabels: monthlyInjections.map((injection) => injection.label),
+      auctionTenorYears,
+      auctionEligible,
       couponPayment,
       couponPayments,
       reinvestedCoupon,

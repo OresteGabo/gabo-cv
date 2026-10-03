@@ -45,6 +45,7 @@ import {
   MAX_ANNUAL_COUPON_RATE,
   MIN_ANNUAL_COUPON_RATE,
   SECONDARY_MARKET_COMMISSION_RATE,
+  SIMULATION_TREASURY_BOND_TENORS,
   summarizeProjection,
   TREASURY_BOND_TENORS,
   WITHHOLDING_TAX_RATE,
@@ -1006,6 +1007,10 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     Math.max(MIN_ANNUAL_COUPON_RATE, assumptions.annualCouponRate),
   );
   const netAnnualRate = modeledCouponRate * (1 - WITHHOLDING_TAX_RATE);
+  const allowedSimulationTenors =
+    assumptions.allowedTenors?.length > 0
+      ? assumptions.allowedTenors
+      : DEFAULT_ASSUMPTIONS.allowedTenors;
   const actualPortfolio = purchases.reduce(
     (total, item) => total + (item.status === "active" ? item.faceValue : 0),
     0,
@@ -1096,12 +1101,14 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   const waitingCash = selectedInjectionRow?.closingCashBalance ?? 0;
   const draftInjectionAmount = Math.max(0, injectionDraft.amount);
   const additionalBondPurchase =
-    Math.floor(
-      ((waitingCash + draftInjectionAmount) *
-        Math.max(0, Math.min(1, assumptions.auctionFillRate)) +
-        0.001) /
-        assumptions.purchaseMinimum,
-    ) * assumptions.purchaseMinimum;
+    selectedInjectionRow?.auctionEligible
+      ? Math.floor(
+          ((waitingCash + draftInjectionAmount) *
+            Math.max(0, Math.min(1, assumptions.auctionFillRate)) +
+            0.001) /
+            assumptions.purchaseMinimum,
+        ) * assumptions.purchaseMinimum
+      : 0;
   const combinedBondPurchase =
     (selectedInjectionRow?.newBondPurchase ?? 0) + additionalBondPurchase;
   const cashAfterDraftInjection =
@@ -1144,6 +1151,34 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
         })),
       };
     });
+  }
+
+  function toggleAllowedTenor(tenor: number) {
+    setAssumptions((current) => {
+      const currentTenors =
+        current.allowedTenors?.length > 0
+          ? current.allowedTenors
+          : DEFAULT_ASSUMPTIONS.allowedTenors;
+      const nextTenors = currentTenors.includes(tenor)
+        ? currentTenors.filter((item) => item !== tenor)
+        : [...currentTenors, tenor].sort((a, b) => a - b);
+
+      return {
+        ...current,
+        allowedTenors: nextTenors,
+      };
+    });
+  }
+
+  function updateTenorCouponRate(tenor: number, ratePercent: number) {
+    setAssumptions((current) => ({
+      ...current,
+      tenorCouponRates: {
+        ...DEFAULT_ASSUMPTIONS.tenorCouponRates,
+        ...current.tenorCouponRates,
+        [String(tenor)]: Math.max(0, ratePercent) / 100,
+      },
+    }));
   }
 
   function updateContributionPeriod(
@@ -1585,6 +1620,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       "Opening Cash Balance",
       "Personal Contribution",
       "Extra Cash Injection",
+      "Auction Tenor",
+      "Auction Eligible",
       "Coupon Payment",
       "Matured Principal",
       "Reinvested Coupon",
@@ -1611,6 +1648,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       row.openingCashBalance,
       row.personalContribution,
       row.cashInjection,
+      row.auctionTenorYears,
+      row.auctionEligible,
       row.couponPayment,
       row.maturedPrincipal,
       row.reinvestedCoupon,
@@ -1941,6 +1980,75 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   </span>
                 </div>
               </div>
+              <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4 md:col-span-2 xl:col-span-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                      Bond tenors to buy
+                    </span>
+                    <p className="mt-1 text-[11px] leading-5 text-[var(--md-sys-color-outline)]">
+                      The projection repeats the current 12-month issuance
+                      calendar. Contributions wait as 0% cash until a checked
+                      tenor appears.
+                    </p>
+                  </div>
+                  <span className="rounded-lg bg-surface-container px-2.5 py-1 text-[10px] font-black uppercase text-on-surface-variant">
+                    {allowedSimulationTenors.length} selected
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {SIMULATION_TREASURY_BOND_TENORS.map((tenor) => {
+                    const checked = allowedSimulationTenors.includes(tenor);
+                    const couponRate =
+                      assumptions.tenorCouponRates?.[String(tenor)] ??
+                      DEFAULT_ASSUMPTIONS.tenorCouponRates[String(tenor)] ??
+                      assumptions.annualCouponRate;
+
+                    return (
+                      <label
+                        key={tenor}
+                        className={`rounded-xl border p-3 transition ${
+                          checked
+                            ? "border-primary/30 bg-primary/5"
+                            : "border-outline/10 bg-surface-container/35"
+                        }`}
+                      >
+                        <span className="flex items-center justify-between gap-3">
+                          <span className="flex items-center gap-2 text-sm font-black">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleAllowedTenor(tenor)}
+                              className="h-4 w-4 accent-[var(--md-sys-color-primary)]"
+                            />
+                            {tenor}Y bond
+                          </span>
+                          <span className="text-[10px] font-bold text-on-surface-variant">
+                            {checked ? "Buy" : "Skip"}
+                          </span>
+                        </span>
+                        <span className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-outline)]">
+                          Coupon assumption
+                        </span>
+                        <input
+                          type="number"
+                          min={MIN_ANNUAL_COUPON_RATE * 100}
+                          max={MAX_ANNUAL_COUPON_RATE * 100}
+                          step={0.05}
+                          value={Math.round(couponRate * 10_000) / 100}
+                          onChange={(event) =>
+                            updateTenorCouponRate(
+                              tenor,
+                              Number(event.target.value),
+                            )
+                          }
+                          className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2 text-sm font-bold text-on-surface outline-none focus:border-primary/60"
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               <NumberControl
                 label="Investment horizon"
                 value={assumptions.horizonYears}
@@ -1984,8 +2092,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
               <div className="block rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
                 <span className="flex items-center justify-between gap-3">
                   <span className="flex items-center gap-2 text-xs font-bold text-[var(--md-sys-color-on-surface)]">
-                    Bond tenor
-                    <InfoTip label="About bond tenor">
+                    Fallback bond tenor
+                    <InfoTip label="About fallback bond tenor">
                       The lifetime of one specific bond before its principal is repaid.
                       For example, a 10-year bond bought in 2026 matures in 2036.
                     </InfoTip>
@@ -1993,7 +2101,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   <span className="text-[11px] text-[var(--md-sys-color-outline)]">Official options</span>
                 </span>
                 <select
-                  aria-label="Bond tenor"
+                  aria-label="Fallback bond tenor"
                   value={assumptions.tenorYears}
                   onChange={(event) => update("tenorYears", Number(event.target.value))}
                   className="mt-3 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-3 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
@@ -2004,7 +2112,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 </select>
               </div>
               <NumberControl
-                label="Annual coupon rate"
+                label="Fallback annual coupon rate"
                 value={Math.round(modeledCouponRate * 10_000) / 100}
                 onChange={(value) => update("annualCouponRate", value / 100)}
                 min={MIN_ANNUAL_COUPON_RATE * 100}
@@ -2488,7 +2596,15 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                           )}
                                         </td>
                                         <td className="px-3 py-3 text-on-surface-variant">
-                                          {formatRwf(month.intendedBondBid)}
+                                          <span className="block font-bold text-on-surface">
+                                            {month.auctionTenorYears}Y{" "}
+                                            {month.auctionEligible ? "auction" : "skipped"}
+                                          </span>
+                                          <span className="mt-1 block">
+                                            {month.auctionEligible
+                                              ? formatRwf(month.intendedBondBid)
+                                              : "Holding cash"}
+                                          </span>
                                           {month.unfilledBondBid > 0 && (
                                             <span className="mt-1 block text-[9px] font-bold text-[var(--md-sys-color-tertiary)]">
                                               {formatRwf(month.unfilledBondBid)}{" "}
@@ -2523,11 +2639,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                             >
                                               {formatRwf(month.newBondPurchase)}
                                               <span className="mt-1 block text-[9px] font-bold text-on-surface-variant">
-                                                Lot{" "}
-                                                {String(month.month).padStart(
-                                                  3,
-                                                  "0",
-                                                )}
+                                                {month.newBondPurchaseLot.tenorYears}Y lot{" "}
+                                                {String(month.month).padStart(3, "0")}
                                               </span>
                                             </Link>
                                           ) : (
@@ -2610,6 +2723,18 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                                 />
                                               </DetailPanel>
                                               <DetailPanel title="Auction">
+                                                <DetailLine
+                                                  label="Calendar tenor"
+                                                  value={`${month.auctionTenorYears}Y`}
+                                                />
+                                                <DetailLine
+                                                  label="Strategy"
+                                                  value={
+                                                    month.auctionEligible
+                                                      ? "Allowed"
+                                                      : "Skipped"
+                                                  }
+                                                />
                                                 <DetailLine
                                                   label="Intended bid"
                                                   value={formatRwf(

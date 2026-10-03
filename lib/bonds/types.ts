@@ -5,6 +5,8 @@ export type BondAssumptions = {
   startMonth: number;
   startYear: number;
   tenorYears: number;
+  allowedTenors: number[];
+  tenorCouponRates: Record<string, number>;
   annualCouponRate: number;
   couponPaymentsPerYear: number;
   reinvestmentRate: number;
@@ -59,6 +61,8 @@ export type MonthlyProjection = {
   personalContribution: number;
   cashInjection: number;
   cashInjectionLabels: string[];
+  auctionTenorYears: number;
+  auctionEligible: boolean;
   couponPayment: number;
   couponPayments: ModeledCouponPayment[];
   reinvestedCoupon: number;
