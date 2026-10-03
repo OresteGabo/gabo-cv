@@ -911,6 +911,9 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
             annualContributions:
               row.totalContributions -
               (index > 0 ? projection[index * 12 - 1].totalContributions : 0),
+            annualCashInjections: projection
+              .slice(index * 12, index * 12 + 12)
+              .reduce((total, month) => total + month.cashInjection, 0),
             coupons: row.totalCoupons,
             annualCoupons:
               row.totalCoupons -
@@ -2321,6 +2324,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
               <tr>
                 <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Year</th>
                 <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Invested this year</th>
+                <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Extra deposits</th>
                 <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Income this year</th>
                 <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Account value</th>
                 <th className="sticky top-0 z-30 bg-[var(--md-sys-color-surface-container)] px-5 py-4 shadow-[0_1px_0_rgba(100,116,139,0.18)] lg:top-[73px]">Annual passive income</th>
@@ -2354,6 +2358,11 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         )}
                       </td>
                       <td className="px-5 py-4">{formatRwf(row.annualContributions)}</td>
+                      <td className="px-5 py-4">
+                        <span className={row.annualCashInjections > 0 ? "font-bold text-[var(--md-sys-color-tertiary)]" : "text-on-surface-variant"}>
+                          {formatRwf(row.annualCashInjections)}
+                        </span>
+                      </td>
                       <td className="px-5 py-4 text-[var(--md-sys-color-on-surface-variant)]">
                         {formatRwf(row.annualCoupons)}
                       </td>
@@ -2388,13 +2397,14 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                     </tr>
                     {isExpanded && (
                       <tr className="border-t border-[var(--md-sys-color-primary)]/10 bg-[var(--md-sys-color-surface-container-lowest)]">
-                        <td colSpan={6} className="p-0">
+                        <td colSpan={7} className="p-0">
                           <div className="px-4 py-4 md:px-6">
                             <div className="contents">
-                            <table className="w-full min-w-[780px] border-collapse text-left">
+                            <table className="w-full min-w-[900px] border-collapse text-left">
                               <thead className="text-[9px] uppercase tracking-[0.14em] text-[var(--md-sys-color-outline)]">
                                 <tr>
                                   <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Month</th>
+                                  <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Funding</th>
                                   <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Bid result</th>
                                   <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Bond purchase</th>
                                   <th className="sticky top-[53px] z-20 bg-[var(--md-sys-color-surface-container-lowest)] px-3 py-2 shadow-[0_1px_0_rgba(100,116,139,0.14)] lg:top-[126px]">Cash balance</th>
@@ -2437,6 +2447,21 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                           {month.couponPayment > 0 && (
                                             <span className="ml-2 inline-block rounded-full bg-[var(--md-sys-color-primary)]/10 px-2 py-1 text-[9px] font-black uppercase text-[var(--md-sys-color-primary)]">
                                               coupon
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-3">
+                                          <span className="block font-bold">
+                                            {formatRwf(month.personalContribution)}
+                                          </span>
+                                          {month.cashInjection > 0 && (
+                                            <span className="mt-1 block text-[9px] font-black text-[var(--md-sys-color-tertiary)]">
+                                              +{formatRwf(month.cashInjection)} extra
+                                            </span>
+                                          )}
+                                          {month.cashInjectionLabels.length > 0 && (
+                                            <span className="mt-1 block text-[9px] font-medium text-on-surface-variant">
+                                              {month.cashInjectionLabels.join(", ")}
                                             </span>
                                           )}
                                         </td>
@@ -2528,7 +2553,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                       </tr>
                                       {isMonthExpanded && (
                                         <tr className="bg-surface-container-low text-xs">
-                                          <td colSpan={6} className="px-4 py-4">
+                                          <td colSpan={7} className="px-4 py-4">
                                             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                                               <DetailPanel title="Funding">
                                                 <DetailLine
