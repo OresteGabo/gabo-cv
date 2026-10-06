@@ -1832,58 +1832,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 suffix=" years"
                 help="How long you plan to follow the overall investment strategy. A 20-year horizon can include several individual bonds that mature and are replaced."
               />
-              <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
-                <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Investment start</span>
-                <div className="mt-3 grid grid-cols-[1fr_110px] gap-3">
-                  <select
-                    aria-label="Investment start month"
-                    value={assumptions.startMonth}
-                    onChange={(event) => update("startMonth", Number(event.target.value))}
-                    className="w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-3 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
-                  >
-                    {MONTH_NAMES.map((month, index) => (
-                      <option key={month} value={index + 1}>{month}</option>
-                    ))}
-                  </select>
-                  <input
-                    aria-label="Investment start year"
-                    type="number"
-                    min={2020}
-                    max={2100}
-                    value={assumptions.startYear}
-                    onChange={(event) => update("startYear", Number(event.target.value))}
-                    className="w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-3 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
-                  />
-                </div>
-                <p className="mt-2 text-[11px] text-[var(--md-sys-color-outline)]">
-                  The {assumptions.horizonYears}-year projection ends in{" "}
-                  {simulationEnd
-                    ? `${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
-                    : "the selected horizon"}.
-                </p>
-              </div>
-              <div className="block rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
-                <span className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-xs font-bold text-[var(--md-sys-color-on-surface)]">
-                    Fallback bond tenor
-                    <InfoTip label="About fallback bond tenor">
-                      The lifetime of one specific bond before its principal is repaid.
-                      For example, a 10-year bond bought in 2026 matures in 2036.
-                    </InfoTip>
-                  </span>
-                  <span className="text-[11px] text-[var(--md-sys-color-outline)]">Official options</span>
-                </span>
-                <select
-                  aria-label="Fallback bond tenor"
-                  value={assumptions.tenorYears}
-                  onChange={(event) => update("tenorYears", Number(event.target.value))}
-                  className="mt-3 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-3 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
-                >
-                  {TREASURY_BOND_TENORS.map((tenor) => (
-                    <option key={tenor} value={tenor}>{tenor} years</option>
-                  ))}
-                </select>
-              </div>
               <NumberControl
                 label="Fallback annual coupon rate"
                 value={Math.round(modeledCouponRate * 10_000) / 100}
@@ -1929,6 +1877,36 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 </button>
                 {advancedSettingsOpen && (
                   <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4">
+                      <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Investment start</span>
+                      <div className="mt-3 grid grid-cols-[1fr_110px] gap-3">
+                        <select
+                          aria-label="Investment start month"
+                          value={assumptions.startMonth}
+                          onChange={(event) => update("startMonth", Number(event.target.value))}
+                          className="w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-3 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
+                        >
+                          {MONTH_NAMES.map((month, index) => (
+                            <option key={month} value={index + 1}>{month}</option>
+                          ))}
+                        </select>
+                        <input
+                          aria-label="Investment start year"
+                          type="number"
+                          min={2020}
+                          max={2100}
+                          value={assumptions.startYear}
+                          onChange={(event) => update("startYear", Number(event.target.value))}
+                          className="w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-3 text-sm font-bold text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60"
+                        />
+                      </div>
+                      <p className="mt-2 text-[11px] text-[var(--md-sys-color-outline)]">
+                        The {assumptions.horizonYears}-year projection ends in{" "}
+                        {simulationEnd
+                          ? `${MONTH_NAMES[simulationEnd.calendarMonth - 1]} ${simulationEnd.calendarYear}`
+                          : "the selected horizon"}.
+                      </p>
+                    </div>
                     <NumberControl label="Coupon reinvestment" value={Math.round(assumptions.reinvestmentRate * 100)} onChange={(value) => update("reinvestmentRate", value / 100)} min={0} max={100} step={5} suffix="%" />
                     <NumberControl
                       label="Expected auction fill"
