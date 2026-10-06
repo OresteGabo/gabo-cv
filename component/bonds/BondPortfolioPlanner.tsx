@@ -432,6 +432,7 @@ function GrowthChart({
     calendarYear: number;
     portfolio: number;
     contributions: number;
+    monthlyIncome: number;
   }[];
 }) {
   const [activeMonth, setActiveMonth] = useState<number | null>(null);
@@ -481,10 +482,10 @@ function GrowthChart({
     ? `${MONTH_NAMES[activeValue.calendarMonth - 1]} ${activeValue.calendarYear} (${Math.max(0, (activeValue.month - 1) / 12).toFixed(1)}Y)`
     : "";
   const tooltipX = activePortfolioPoint
-    ? Math.min(Math.max(activePortfolioPoint.x - 104, 36), width - 246)
+    ? Math.min(Math.max(activePortfolioPoint.x - 112, 36), width - 260)
     : 0;
   const tooltipY = activePortfolioPoint
-    ? Math.max(34, Math.min(activePortfolioPoint.y - 92, height - 112))
+    ? Math.max(34, Math.min(activePortfolioPoint.y - 112, height - 126))
     : 0;
 
   return (
@@ -579,8 +580,8 @@ function GrowthChart({
             />
             <g transform={`translate(${tooltipX} ${tooltipY})`}>
               <rect
-                width="210"
-                height="82"
+                width="224"
+                height="104"
                 rx="14"
                 fill="var(--md-sys-color-surface-container-lowest)"
                 stroke="rgba(100,116,139,0.18)"
@@ -612,6 +613,15 @@ function GrowthChart({
               >
                 Contributions {formatRwf(activeValue.contributions, true)}
               </text>
+              <text
+                x="14"
+                y="85"
+                fill="var(--md-sys-color-on-surface-variant)"
+                fontSize="11"
+                fontWeight="800"
+              >
+                Avg monthly income ≈ {formatRwf(activeValue.monthlyIncome, true)}
+              </text>
             </g>
           </g>
         )}
@@ -629,7 +639,7 @@ function GrowthChart({
               fill="transparent"
               tabIndex={0}
               role="button"
-              aria-label={`${MONTH_NAMES[value.calendarMonth - 1]} ${value.calendarYear}: portfolio ${formatRwf(value.portfolio)}, contributions ${formatRwf(value.contributions)}`}
+              aria-label={`${MONTH_NAMES[value.calendarMonth - 1]} ${value.calendarYear}: portfolio ${formatRwf(value.portfolio)}, contributions ${formatRwf(value.contributions)}, average monthly income about ${formatRwf(value.monthlyIncome)}`}
               onMouseEnter={() => setActiveMonth(value.month)}
               onFocus={() => setActiveMonth(value.month)}
             />
@@ -932,6 +942,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
         calendarYear: row.calendarYear,
         portfolio: row.totalAccountValue,
         contributions: row.totalContributions,
+        monthlyIncome: row.monthlyPassiveIncome,
       })),
     [projection],
   );
