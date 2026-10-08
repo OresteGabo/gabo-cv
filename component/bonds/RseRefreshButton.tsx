@@ -15,6 +15,14 @@ export function RseRefreshButton() {
 
   function refresh() {
     setRefreshing(true);
+    const detail = { handled: false };
+    const refreshEvent = new CustomEvent("rse-market-refresh", { detail });
+    window.dispatchEvent(refreshEvent);
+    if (detail.handled) {
+      window.setTimeout(() => setRefreshing(false), 1500);
+      return;
+    }
+
     const url = new URL(window.location.href);
     url.searchParams.set("rseRefresh", Date.now().toString());
     url.hash = "rse-market";
