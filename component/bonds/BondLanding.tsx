@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import {
   MAX_ANNUAL_COUPON_RATE,
@@ -26,12 +27,14 @@ import {
   formatPercent,
   formatRwf,
 } from "@/lib/bonds/calculations";
+import { getRseMarketData } from "@/lib/bonds/rse";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 import {
   RseMarketHighlights,
-  RseMarketProvider,
-  RseMarketTablePanel,
-} from "./RseMarketLoader";
+  RseMarketHighlightsFallback,
+  RseMarketTable,
+  RseMarketTableFallback,
+} from "./RseDeferredMarket";
 
 const steps = [
   {
@@ -115,8 +118,9 @@ export function BondLanding({
 }: {
   forceMarketRefresh?: boolean;
 }) {
+  const marketDataPromise = getRseMarketData(forceMarketRefresh);
+
   return (
-    <RseMarketProvider forceRefresh={forceMarketRefresh}>
     <main className="bond-app relative min-h-screen overflow-x-hidden bg-background font-sans text-on-background">
       <ImigongoBackground />
       <header className="sticky top-0 z-50 border-b border-outline/5 bg-background/85 backdrop-blur-xl">
@@ -182,7 +186,16 @@ export function BondLanding({
             </div>
           </div>
 
-          <RseMarketHighlights fallbackFacts={facts.slice(0, 2)} />
+          <Suspense
+            fallback={
+              <RseMarketHighlightsFallback fallbackFacts={facts.slice(0, 2)} />
+            }
+          >
+            <RseMarketHighlights
+              fallbackFacts={facts.slice(0, 2)}
+              marketDataPromise={marketDataPromise}
+            />
+          </Suspense>
         </div>
       </section>
 
@@ -283,7 +296,9 @@ export function BondLanding({
 
           <div className="mt-6 space-y-6">
             <article className="overflow-hidden rounded-3xl border border-outline/10 bg-background/75">
-              <RseMarketTablePanel />
+              <Suspense fallback={<RseMarketTableFallback />}>
+                <RseMarketTable marketDataPromise={marketDataPromise} />
+              </Suspense>
             </article>
           </div>
         </div>
@@ -404,6 +419,5 @@ export function BondLanding({
         </div>
       </footer>
     </main>
-    </RseMarketProvider>
   );
 }
