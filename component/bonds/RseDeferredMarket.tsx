@@ -1,4 +1,4 @@
-import { AlertCircle, ExternalLink, RadioTower } from "lucide-react";
+import { ExternalLink, RadioTower } from "lucide-react";
 import Image from "next/image";
 import { formatPercent } from "@/lib/bonds/calculations";
 import type { RseMarketData, RseOutstandingBond } from "@/lib/bonds/rse";
@@ -279,19 +279,10 @@ export async function RseMarketTable({
 
   if (marketData.outstanding.length === 0) {
     return (
-      <div>
-        <div className="border-b border-outline/10 bg-error-container/30 p-4 text-xs font-bold text-[var(--md-sys-color-on-error-container)]">
-          <span className="inline-flex items-center gap-2">
-            <AlertCircle size={15} />
-            RSE did not return Treasury bond rows.
-          </span>
-        </div>
-        <RseMarketErrorTable
-          columns={["Bond", "Code", "Maturity", "Coupon", "YTM"]}
-          sourceName="RSE Fixed Income Board"
-          sourceUrl="https://rse.rw/fixed-income-board"
-        />
-      </div>
+      <RseMarketErrorTable
+        sourceName="RSE Fixed Income Board"
+        sourceUrl="https://rse.rw/fixed-income-board"
+      />
     );
   }
 
