@@ -26,10 +26,12 @@ import {
   formatPercent,
   formatRwf,
 } from "@/lib/bonds/calculations";
-import { getRseMarketData } from "@/lib/bonds/rse";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
-import { RseMarketErrorTable } from "./RseMarketErrorTable";
-import { RseRankedBondTable } from "./RseRankedBondTable";
+import {
+  RseMarketHighlights,
+  RseMarketProvider,
+  RseMarketTablePanel,
+} from "./RseMarketLoader";
 
 const steps = [
   {
@@ -108,50 +110,13 @@ const labPaths = [
   },
 ];
 
-export async function BondLanding({
+export function BondLanding({
   forceMarketRefresh = false,
 }: {
   forceMarketRefresh?: boolean;
 }) {
-  const marketData = await getRseMarketData(forceMarketRefresh);
-  const marketUpdated = marketData.fetchedAt
-    ? new Intl.DateTimeFormat("en", {
-        dateStyle: "medium",
-        timeStyle: "short",
-        timeZone: "Africa/Kigali",
-      }).format(new Date(marketData.fetchedAt))
-    : null;
-  const rankedPreview = [...marketData.outstanding]
-    .sort(
-      (left, right) =>
-        right.strategyScore - left.strategyScore ||
-        right.netAnnualizedYield - left.netAnnualizedYield ||
-        right.yearsRemaining - left.yearsRemaining,
-    )
-    .slice(0, 3);
-  const topOpportunity = rankedPreview[0] ?? null;
-  const marketHighlights = [
-    {
-      label: "Top net annualized yield",
-      value: topOpportunity
-        ? formatPercent(topOpportunity.netAnnualizedYield, 2)
-        : "Awaiting feed",
-      detail: topOpportunity
-        ? `${topOpportunity.code} · ${topOpportunity.yearsRemaining.toFixed(1)} years left`
-        : "RSE data will appear when the source responds.",
-    },
-    {
-      label: "Yield records",
-      value:
-        marketData.outstanding.length > 0
-          ? String(marketData.outstanding.length)
-          : "0",
-      detail: `${marketData.treasuryRowsAnalyzed} Treasury rows analyzed from RSE.`,
-    },
-    ...facts.slice(0, 2),
-  ];
-
   return (
+    <RseMarketProvider forceRefresh={forceMarketRefresh}>
     <main className="bond-app relative min-h-screen overflow-x-hidden bg-background font-sans text-on-background">
       <ImigongoBackground />
       <header className="sticky top-0 z-50 border-b border-outline/5 bg-background/85 backdrop-blur-xl">
@@ -213,101 +178,11 @@ export async function BondLanding({
                 <LockKeyhole size={15} />
                 Private portfolio
               </Link>
-              <span>
-                {marketUpdated
-                  ? `RSE snapshot refreshed ${marketUpdated}`
-                  : "RSE source status shown below"}
-              </span>
+              <span>RSE source loads after the page is ready</span>
             </div>
           </div>
 
-          <aside className="overflow-hidden rounded-2xl border border-outline/10 bg-surface-container-lowest/80 shadow-[0_28px_80px_rgba(0,0,0,0.08)] backdrop-blur-xl">
-            <div className="border-b border-outline/10 p-5 md:p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-outline/10 bg-white p-1.5">
-                    <Image
-                      src="/brands/bnr-logo.png"
-                      alt="National Bank of Rwanda logo"
-                      width={42}
-                      height={42}
-                      className="h-full w-full object-contain"
-                    />
-                  </span>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">
-                      Live market board
-                    </p>
-                    <h2 className="mt-1 text-2xl font-black tracking-tight">
-                      Current RSE signals
-                    </h2>
-                  </div>
-                </div>
-                <a
-                  href="https://www.bnr.rw/mminstruments"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-outline/10 text-on-surface-variant transition hover:border-primary/40 hover:text-primary"
-                  aria-label="Open BNR market instruments"
-                >
-                  <ExternalLink size={16} />
-                </a>
-              </div>
-            </div>
-
-            <div className="p-5 md:p-6">
-              <div className="grid gap-3 sm:grid-cols-2">
-                {marketHighlights.map((fact) => (
-                  <div key={fact.label} className="rounded-xl border border-outline/10 bg-background/65 p-4">
-                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-on-surface-variant">
-                      {fact.label}
-                    </p>
-                    <p className="mt-2 text-2xl font-black text-primary">{fact.value}</p>
-                    <p className="mt-2 text-xs leading-5 text-on-surface-variant">{fact.detail}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 overflow-hidden rounded-xl border border-outline/10">
-                <div className="flex items-center justify-between gap-3 border-b border-outline/10 bg-surface-container-low/70 px-4 py-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">
-                    Top ranked bonds
-                  </p>
-                  <span className="text-[10px] font-black text-primary">
-                    Score · Net yield
-                  </span>
-                </div>
-                {rankedPreview.length > 0 ? (
-                  <div className="divide-y divide-outline/10">
-                    {rankedPreview.map((bond, index) => (
-                      <div key={`${bond.code}-${bond.yieldToMaturity}`} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
-                        <span className="font-mono text-xs text-outline">0{index + 1}</span>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-black text-on-surface">
-                            {bond.bond}
-                          </p>
-                          <p className="mt-1 text-[11px] font-bold text-on-surface-variant">
-                            {bond.code} · {bond.yearsRemaining.toFixed(1)} years
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-black text-primary">{bond.strategyScore.toFixed(1)}</p>
-                          <p className="text-[11px] font-bold text-on-surface-variant">
-                            {formatPercent(bond.netAnnualizedYield, 2)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-4 py-6 text-sm font-bold text-on-surface-variant">
-                    Market data is unavailable right now. The full source table below
-                    will show a fallback state.
-                  </div>
-                )}
-              </div>
-            </div>
-          </aside>
+          <RseMarketHighlights fallbackFacts={facts.slice(0, 2)} />
         </div>
       </section>
 
@@ -344,8 +219,9 @@ export async function BondLanding({
                 Current fixed-income market data
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-on-surface-variant">
-                Read directly from the official RSE market pages on every page load.
-                Always open the source before making an investment decision.
+                Loaded from the official RSE market pages after the main workspace
+                is visible. Always open the source before making an investment
+                decision.
               </p>
             </div>
           </div>
@@ -407,20 +283,7 @@ export async function BondLanding({
 
           <div className="mt-6 space-y-6">
             <article className="overflow-hidden rounded-3xl border border-outline/10 bg-background/75">
-              {marketData.outstanding.length > 0 ? (
-                <RseRankedBondTable
-                  bonds={marketData.outstanding}
-                  pagesFetched={marketData.fixedIncomePagesFetched}
-                  rowsAnalyzed={marketData.treasuryRowsAnalyzed}
-                  marketUpdated={marketUpdated}
-                />
-              ) : (
-                <RseMarketErrorTable
-                  columns={["Bond", "Code", "Maturity", "Coupon", "YTM"]}
-                  sourceName="RSE Fixed Income Board"
-                  sourceUrl="https://rse.rw/fixed-income-board"
-                />
-              )}
+              <RseMarketTablePanel />
             </article>
           </div>
         </div>
@@ -541,5 +404,6 @@ export async function BondLanding({
         </div>
       </footer>
     </main>
+    </RseMarketProvider>
   );
 }
