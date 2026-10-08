@@ -1,10 +1,12 @@
 "use client";
 
 import { RefreshCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useTransition } from "react";
 
 export function RseRefreshButton() {
-  const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
+  const [refreshing, startRefresh] = useTransition();
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -14,19 +16,13 @@ export function RseRefreshButton() {
   }, []);
 
   function refresh() {
-    setRefreshing(true);
-    const detail = { handled: false };
-    const refreshEvent = new CustomEvent("rse-market-refresh", { detail });
-    window.dispatchEvent(refreshEvent);
-    if (detail.handled) {
-      window.setTimeout(() => setRefreshing(false), 1500);
-      return;
-    }
-
-    const url = new URL(window.location.href);
-    url.searchParams.set("rseRefresh", Date.now().toString());
-    url.hash = "rse-market";
-    window.location.assign(url);
+    document.getElementById("rse-market")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    startRefresh(() => {
+      router.refresh();
+    });
   }
 
   return (
