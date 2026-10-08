@@ -296,41 +296,31 @@ function LoadingMarketTable() {
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
               Treasury listings
             </p>
-            <h3 className="mt-1 font-black">Loading from RSE</h3>
+            <h3 className="mt-1 font-black">Fixed income board</h3>
           </div>
           <span className="inline-flex items-center gap-2 rounded-xl border border-outline/15 bg-surface-container px-4 py-2.5 text-xs font-black text-on-surface-variant">
             <RadioTower size={14} className="animate-pulse text-primary" />
-            Waiting for fixed-income board
+            Loading RSE data
           </span>
         </div>
       </div>
-      <div className="bond-scrollbar overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse text-left">
-          <thead className="bg-surface-container text-[9px] uppercase tracking-[0.12em] text-on-surface-variant">
-            <tr>
-              {["Rank", "Bond", "Price", "Net yield", "Maturity", "Signal"].map((column) => (
-                <th key={column} className="px-4 py-3">
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[0, 1, 2, 3, 4].map((row) => (
-              <tr key={row} className="border-t border-outline/10">
-                {[0, 1, 2, 3, 4, 5].map((cell) => (
-                  <td key={cell} className="px-4 py-4">
-                    <span
-                      className={`block h-3 animate-pulse rounded-full bg-outline/10 ${
-                        cell === 1 ? "w-48" : "w-16"
-                      }`}
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid min-h-[320px] place-items-center px-5 py-10">
+        <div className="w-full max-w-xl rounded-2xl border border-outline/10 bg-surface-container-low/70 p-6 text-center">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <RadioTower size={22} className="animate-pulse" />
+          </span>
+          <p className="mt-5 text-sm font-black text-on-surface">
+            Loading from RSE...
+          </p>
+          <p className="mt-2 text-xs leading-5 text-on-surface-variant">
+            The market table will appear here when the fixed-income board responds.
+          </p>
+          <div className="mt-6 space-y-3" aria-hidden="true">
+            <span className="mx-auto block h-3 w-full max-w-md animate-pulse rounded-full bg-outline/10" />
+            <span className="mx-auto block h-3 w-4/5 max-w-sm animate-pulse rounded-full bg-outline/10" />
+            <span className="mx-auto block h-3 w-3/5 max-w-xs animate-pulse rounded-full bg-outline/10" />
+          </div>
+        </div>
       </div>
     </div>
   );
