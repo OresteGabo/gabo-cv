@@ -51,6 +51,11 @@ import type {
   ContributionPeriod,
   ModeledBondPurchase,
 } from "@/lib/bonds/types";
+import {
+  formatFxEstimateAssumption,
+  formatHardCurrency,
+  rwfToEstimatedHardCurrency,
+} from "@/lib/bonds/fx";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 
 const STORAGE_KEY = "rwanda-bond-planner-assumptions-v2";
@@ -305,11 +310,26 @@ function GrowthChart({
   const activeMonthLabel = activeValue
     ? `${MONTH_NAMES[activeValue.calendarMonth - 1]} ${activeValue.calendarYear} (${Math.max(0, (activeValue.month - 1) / 12).toFixed(1)}Y)`
     : "";
+  const activeElapsedMonths = activeValue ? activeValue.month - 1 : 0;
+  const activeMonthlyIncomeUsd = activeValue
+    ? rwfToEstimatedHardCurrency(
+        activeValue.monthlyIncome,
+        "USD",
+        activeElapsedMonths,
+      )
+    : 0;
+  const activeMonthlyIncomeEur = activeValue
+    ? rwfToEstimatedHardCurrency(
+        activeValue.monthlyIncome,
+        "EUR",
+        activeElapsedMonths,
+      )
+    : 0;
   const tooltipX = activePortfolioPoint
     ? Math.min(Math.max(activePortfolioPoint.x - 112, 36), width - 260)
     : 0;
   const tooltipY = activePortfolioPoint
-    ? Math.max(34, Math.min(activePortfolioPoint.y - 112, height - 126))
+    ? Math.max(34, Math.min(activePortfolioPoint.y - 132, height - 146))
     : 0;
 
   return (
@@ -403,7 +423,7 @@ function GrowthChart({
             <g transform={`translate(${tooltipX} ${tooltipY})`}>
               <rect
                 width="224"
-                height="104"
+                height="126"
                 rx="14"
                 fill="var(--md-sys-color-surface-container-lowest)"
                 stroke="rgba(100,116,139,0.18)"
@@ -419,6 +439,11 @@ function GrowthChart({
               </text>
               <text x="14" y="85" fill="var(--md-sys-color-on-surface-variant)" fontSize="11" fontWeight="800">
                 Avg monthly income ≈ {formatRwf(activeValue.monthlyIncome, true)}
+              </text>
+              <text x="14" y="106" fill="var(--md-sys-color-outline)" fontSize="11" fontWeight="800">
+                FX estimate ≈ {formatHardCurrency(activeMonthlyIncomeUsd, "USD", true)}
+                {" / "}
+                {formatHardCurrency(activeMonthlyIncomeEur, "EUR", true)}
               </text>
             </g>
           </g>
@@ -444,6 +469,9 @@ function GrowthChart({
           );
         })}
       </svg>
+      <p className="mt-2 text-[10px] font-bold text-[var(--md-sys-color-outline)]">
+        {formatFxEstimateAssumption()}
+      </p>
     </div>
   );
 }
