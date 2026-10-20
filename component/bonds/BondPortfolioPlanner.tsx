@@ -81,6 +81,7 @@ import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 import { calculateBondTracking } from "@/lib/bonds/tracking";
 import { BondPdfUpload } from "./BondPdfUpload";
+import { BondPurchaseDialog } from "./BondPurchaseDialog";
 import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
 
 type PlannerView = "simulator" | "portfolio";
@@ -125,7 +126,7 @@ function purchaseFromCatalogEntry(
     couponFrequency: 2,
     scheduleConfidence: "confirmed",
     broker: entry.broker,
-    accountReference: entry.accountReference,
+    accountReference: "",
     sourceUrl: "",
     status: "active",
     notes: entry.notes,
@@ -820,11 +821,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     prefillApplied.current = search;
     setPurchase(prefilledPurchase);
     setPurchasePanelOpen(true);
-    window.setTimeout(() => {
-      document
-        .getElementById("portfolio-transaction-form")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 0);
   }, [editingPurchaseId, view]);
 
   useEffect(() => {
@@ -1332,7 +1328,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
 
   async function savePurchase(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (importingPdf || (pdfReview && !pdfReviewed)) return;
+    if (savingPurchase || importingPdf || (pdfReview && !pdfReviewed)) return;
     setSavingPurchase(true);
     setPortfolioError("");
     const couponDates =
@@ -1342,49 +1338,62 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
             purchase.firstCouponDate,
             purchase.maturityDate,
           );
-    const response = await fetch(
-      editingPurchaseId
-        ? `/api/bonds/purchases/${editingPurchaseId}`
-        : "/api/bonds/purchases",
-      {
-      method: editingPurchaseId ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...purchase,
-        instrumentType: "treasury",
-        issuer: "Government of Rwanda",
-        currency: "RWF",
-        market: "primary",
-        broker: "BK Capital",
-        withholdingTaxRate: WITHHOLDING_TAX_RATE,
-        couponFrequency: 2,
-        scheduleConfidence:
-          purchase.status === "submitted"
-            ? "estimated"
-            : purchase.scheduleConfidence,
-        couponDates: purchase.status === "submitted" ? [] : couponDates,
-        amountInvested: purchaseCashCost,
-      }),
-    });
-    const data = await response.json();
-    setSavingPurchase(false);
-    if (!response.ok) {
-      setPortfolioError(data.error ?? "The purchase could not be saved.");
-      return;
+    try {
+      const response = await fetch(
+        editingPurchaseId
+          ? `/api/bonds/purchases/${editingPurchaseId}`
+          : "/api/bonds/purchases",
+        {
+          method: editingPurchaseId ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...purchase,
+            instrumentType: "treasury",
+            issuer: "Government of Rwanda",
+            currency: "RWF",
+            market: "primary",
+            broker: "BK Capital",
+            withholdingTaxRate: WITHHOLDING_TAX_RATE,
+            couponFrequency: 2,
+            scheduleConfidence:
+              purchase.status === "submitted"
+                ? "estimated"
+                : purchase.scheduleConfidence,
+            couponDates: purchase.status === "submitted" ? [] : couponDates,
+            amountInvested: purchaseCashCost,
+          }),
+        },
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setPortfolioError(data.error ?? "The purchase could not be saved.");
+        return;
+      }
+      setPurchases((current) =>
+        editingPurchaseId
+          ? current.map((item) =>
+              item.id === editingPurchaseId ? data.purchase : item,
+            )
+          : [data.purchase, ...current],
+      );
+      setPurchase({ ...EMPTY_PURCHASE });
+      setEditingPurchaseId(null);
+      setPurchasePanelOpen(false);
+    } catch {
+      setPortfolioError("The purchase could not be saved. Please try again.");
+    } finally {
+      setSavingPurchase(false);
     }
-    setPurchases((current) =>
-      editingPurchaseId
-        ? current.map((item) =>
-            item.id === editingPurchaseId ? data.purchase : item,
-          )
-        : [data.purchase, ...current],
-    );
-    setPurchase({ ...EMPTY_PURCHASE });
-    setEditingPurchaseId(null);
+  }
+
+  function closePurchaseDialog() {
+    if (savingPurchase) return;
     setPurchasePanelOpen(false);
+    setEditingPurchaseId(null);
   }
 
   function editPurchase(item: BondPurchase) {
+    setPortfolioError("");
     setPdfReview(null);
     setPdfReviewed(false);
     const { id, createdAt, ...input } = item;
@@ -1404,12 +1413,10 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     });
     setEditingPurchaseId(item.id);
     setPurchasePanelOpen(true);
-    document
-      .getElementById("portfolio-transaction-form")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function startNewPurchase() {
+    setPortfolioError("");
     const catalogEntry =
       bondCatalog.find((entry) => entry.id === selectedCatalogBondId) ??
       bondCatalog[0];
@@ -1419,11 +1426,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     setSelectedCatalogBondId(catalogEntry.id);
     setPurchase(purchaseFromCatalogEntry(catalogEntry));
     setPurchasePanelOpen(true);
-    window.setTimeout(() => {
-      document
-        .getElementById("portfolio-transaction-form")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 0);
   }
 
   function applyCatalogBond(id: string) {
@@ -1451,9 +1453,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     setSelectedCatalogBondId(bondCatalog[0]?.id ?? "");
     setPurchase({ ...DEFAULT_CATALOG_PURCHASE });
     setPurchasePanelOpen(true);
-    document
-      .getElementById("portfolio-transaction-form")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function applyPdfImport(result: BondPdfImport, fileName: string) {
@@ -2977,34 +2976,35 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   )}
                 </div>
               )}
-              <div className={`mt-4 grid gap-6 ${purchasePanelOpen ? "xl:grid-cols-[minmax(0,1fr)_420px]" : ""}`}>
+              <div className="mt-4">
                 {purchasePanelOpen && (
-                <form id="portfolio-transaction-form" onSubmit={savePurchase} className="order-2 scroll-mt-24 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5">
-                  <div className="flex items-start justify-between gap-3">
+                <BondPurchaseDialog onDismiss={closePurchaseDialog} saving={savingPurchase}>
+                <form id="portfolio-transaction-form" onSubmit={savePurchase} className="p-5">
+                  <div className="sticky top-0 z-10 -mx-5 -mt-5 flex items-start justify-between gap-3 border-b border-outline/10 bg-[var(--md-sys-color-surface-container-lowest)] px-5 py-4">
                     <div className="flex items-center gap-3">
                       <Plus size={18} className="text-[var(--md-sys-color-primary)]" />
                     <div>
-                      <h3 className="font-black">
+                      <h3 id="purchase-dialog-title" tabIndex={-1} className="font-black outline-none">
                         {editingPurchaseId
                           ? purchaseTermsLocked
                             ? "Update purchase record"
                             : "Edit Treasury bond purchase"
-                          : "Record Treasury bond purchase"}
+                          : "Add bond purchase"}
                       </h3>
+                      <p className="mt-1 text-xs text-on-surface-variant">{importingPdf ? "Reading your PDF. Details will appear below when ready." : "Review the bond details, then confirm to save."}</p>
                     </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
-                        setPurchasePanelOpen(false);
-                        setEditingPurchaseId(null);
-                      }}
-                      aria-label="Close purchase panel"
+                      onClick={closePurchaseDialog}
+                      disabled={savingPurchase}
+                      aria-label="Close purchase dialog"
                       className="rounded-xl p-2 text-outline transition hover:bg-surface-container hover:text-on-surface"
                     >
                       <X size={17} />
                     </button>
                   </div>
+                  {portfolioError && <p role="alert" className="mt-4 rounded-xl border border-error/20 bg-error-container/20 p-3 text-sm text-error">{portfolioError}</p>}
                   {!editingPurchaseId && <BondPdfUpload onImport={applyPdfImport} onBusyChange={setImportingPdf} />}
                   {pdfReview && !editingPurchaseId && (
                     <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4" role="status">
@@ -3021,7 +3021,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       </label>
                     </div>
                   )}
-                  <fieldset disabled={importingPdf}>
+                  <fieldset disabled={importingPdf || savingPurchase} aria-busy={importingPdf || savingPurchase}>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     {!editingPurchaseId && (
                       <label className="sm:col-span-2 text-[11px] font-bold text-on-surface-variant">
@@ -3327,14 +3327,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         </label>
                       )}
                     </div>
-                    <label className="text-[11px] font-bold text-on-surface-variant">
-                      Account reference
-                      <input value={purchase.accountReference} onChange={(event) => setPurchase((current) => ({ ...current, accountReference: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface" />
-                    </label>
-                    <label className="sm:col-span-2 text-[11px] font-bold text-on-surface-variant">
-                      Prospectus or source URL
-                      <input type="url" value={purchase.sourceUrl} onChange={(event) => setPurchase((current) => ({ ...current, sourceUrl: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface" />
-                    </label>
                     <div className="sm:col-span-2 rounded-xl border border-primary/15 bg-primary/5 p-3">
                       <div className="grid gap-3 sm:grid-cols-3">
                         <div>
@@ -3364,30 +3356,27 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       <textarea value={purchase.notes} maxLength={1000} onChange={(event) => setPurchase((current) => ({ ...current, notes: event.target.value }))} className="mt-1.5 min-h-20 w-full resize-y rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60" />
                     </label>
                   </div>
-                  <div className="mt-4 flex gap-2">
-                    {editingPurchaseId && (
+                  </fieldset>
+                  <div className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-4 flex gap-2 border-t border-outline/10 bg-[var(--md-sys-color-surface-container-lowest)] px-5 py-4">
                       <button
                         type="button"
-                        onClick={() => {
-                          setEditingPurchaseId(null);
-                          setPurchase({ ...EMPTY_PURCHASE });
-                        }}
+                        onClick={closePurchaseDialog}
+                        disabled={savingPurchase}
                         className="rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant"
                       >
                         Cancel
                       </button>
-                    )}
                     <button disabled={savingPurchase || importingPdf || Boolean(pdfReview && !pdfReviewed)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90 disabled:opacity-50">
                       <Database size={16} />{" "}
                       {savingPurchase
                         ? "Saving…"
                         : editingPurchaseId
                           ? "Update transaction"
-                          : "Save transaction"}
+                          : "Confirm and save purchase"}
                     </button>
                   </div>
-                  </fieldset>
                 </form>
+                </BondPurchaseDialog>
                 )}
 
                 <div className="bond-scrollbar order-1 overflow-x-auto rounded-3xl border border-outline/10">
