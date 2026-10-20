@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FileText, Upload, X } from "lucide-react";
+import { FileText, LoaderCircle, Upload, X } from "lucide-react";
 import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
 
 export function BondPdfUpload({ onImport, onBusyChange }: {
@@ -46,14 +46,14 @@ export function BondPdfUpload({ onImport, onBusyChange }: {
   }
 
   return (
-    <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+    <div aria-busy={busy} className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
       <div className="flex items-center gap-2 text-sm font-black"><FileText size={17} className="text-primary" />Import from a bond PDF</div>
       <p className="mt-2 text-xs leading-relaxed text-on-surface-variant">
         Fill this form from a BNR bond result, including scanned PDFs. The file stays on your device. Review the extracted values before saving.
       </p>
       <div className="mt-3 flex items-center gap-3">
         <label className={`inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-black text-on-primary ${busy ? "cursor-wait opacity-50" : "cursor-pointer"}`}>
-          <Upload size={15} />{busy ? "Reading PDF…" : "Upload PDF"}
+          {busy ? <LoaderCircle size={15} className="animate-spin" /> : <Upload size={15} />}{busy ? "Reading PDF…" : "Upload PDF"}
           <input type="file" accept=".pdf,application/pdf" disabled={busy} className="sr-only"
             onChange={(event) => {
               const file = event.target.files?.[0];
