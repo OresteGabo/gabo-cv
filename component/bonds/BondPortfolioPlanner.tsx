@@ -80,6 +80,8 @@ import {
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 import { calculateBondTracking } from "@/lib/bonds/tracking";
+import { BondPdfUpload } from "./BondPdfUpload";
+import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
 
 type PlannerView = "simulator" | "portfolio";
 
@@ -754,6 +756,10 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     null,
   );
   const [savingPurchase, setSavingPurchase] = useState(false);
+  const [importingPdf, setImportingPdf] = useState(false);
+  const [pdfReview, setPdfReview] = useState<(BondPdfImport & { fileName: string }) | null>(null);
+  const [pdfReviewed, setPdfReviewed] = useState(false);
+  const [additionalCouponDate, setAdditionalCouponDate] = useState("");
   const [portfolioSettingsOpen, setPortfolioSettingsOpen] = useState(false);
   const [purchasePendingDelete, setPurchasePendingDelete] =
     useState<BondPurchase | null>(null);
@@ -1326,6 +1332,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
 
   async function savePurchase(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (importingPdf || (pdfReview && !pdfReviewed)) return;
     setSavingPurchase(true);
     setPortfolioError("");
     const couponDates =
@@ -1378,6 +1385,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   }
 
   function editPurchase(item: BondPurchase) {
+    setPdfReview(null);
+    setPdfReviewed(false);
     const { id, createdAt, ...input } = item;
     void id;
     void createdAt;
@@ -1405,6 +1414,9 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       bondCatalog.find((entry) => entry.id === selectedCatalogBondId) ??
       bondCatalog[0];
     setEditingPurchaseId(null);
+    setPdfReview(null);
+    setPdfReviewed(false);
+    setSelectedCatalogBondId(catalogEntry.id);
     setPurchase(purchaseFromCatalogEntry(catalogEntry));
     setPurchasePanelOpen(true);
     window.setTimeout(() => {
@@ -1417,6 +1429,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   function applyCatalogBond(id: string) {
     const catalogEntry = bondCatalog.find((entry) => entry.id === id);
     if (!catalogEntry) return;
+    setPdfReview(null);
+    setPdfReviewed(false);
     setSelectedCatalogBondId(id);
     setPurchase((current) =>
       purchaseFromCatalogEntry(catalogEntry, {
@@ -1431,6 +1445,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   }
 
   function resetToCatalogTemplate() {
+    setPdfReview(null);
+    setPdfReviewed(false);
     setEditingPurchaseId(null);
     setSelectedCatalogBondId(bondCatalog[0]?.id ?? "");
     setPurchase({ ...DEFAULT_CATALOG_PURCHASE });
@@ -1438,6 +1454,24 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     document
       .getElementById("portfolio-transaction-form")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function applyPdfImport(result: BondPdfImport, fileName: string) {
+    setAdditionalCouponDate("");
+    // Start clean: never carry another investor's template amounts or account into an import.
+    setPurchase({
+      instrumentType: "treasury", issuer: "Government of Rwanda", currency: "RWF", market: "primary",
+      purchaseDate: "", settlementDate: "", bondName: "", isin: "", tenorYears: 0,
+      faceValue: 0, pricePercent: 0, accruedInterestPaid: 0, feesPaid: 0, amountInvested: 0,
+      couponRate: 0, withholdingTaxRate: WITHHOLDING_TAX_RATE, maturityDate: "", firstCouponDate: "",
+      couponDates: [], couponFrequency: 2, scheduleConfidence: "estimated", broker: "",
+      accountReference: "", sourceUrl: "", status: "active", notes: "",
+      ...result.fields,
+    });
+    setSelectedCatalogBondId("");
+    setPdfReview({ ...result, fileName });
+    setPdfReviewed(false);
+    setPortfolioError("");
   }
 
   async function removePurchase() {
@@ -2890,6 +2924,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 <button
                   type="button"
                   onClick={startNewPurchase}
+                  disabled={importingPdf}
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90"
                 >
                   <Plus size={17} />
@@ -2970,6 +3005,23 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       <X size={17} />
                     </button>
                   </div>
+                  {!editingPurchaseId && <BondPdfUpload onImport={applyPdfImport} onBusyChange={setImportingPdf} />}
+                  {pdfReview && !editingPurchaseId && (
+                    <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4" role="status">
+                      <p className="text-sm font-black">Review imported details</p>
+                      <p className="mt-1 break-all text-xs text-on-surface-variant">{pdfReview.fileName} · {pdfReview.usedOcr ? "Text recognition" : "PDF text"} · {pdfReview.fields.couponDates?.length ?? 0} coupon dates extracted</p>
+                      {pdfReview.missingFields.length > 0 && <p className="mt-2 text-xs text-error">Not found — enter manually: {pdfReview.missingFields.join(", ")}.</p>}
+                      <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-on-surface-variant">
+                        <li>Check principal, price, dates, fees, and the security code against your original PDF.</li>
+                        {pdfReview.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                      </ul>
+                      <label className="mt-3 flex items-start gap-2 text-xs font-bold">
+                        <input type="checkbox" checked={pdfReviewed} onChange={(event) => setPdfReviewed(event.target.checked)} className="mt-0.5 accent-primary" />
+                        I have checked the imported details and completed any missing values.
+                      </label>
+                    </div>
+                  )}
+                  <fieldset disabled={importingPdf}>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     {!editingPurchaseId && (
                       <label className="sm:col-span-2 text-[11px] font-bold text-on-surface-variant">
@@ -2979,6 +3031,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                           onChange={(event) => applyCatalogBond(event.target.value)}
                           className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface"
                         >
+                          <option value="" disabled>Custom / imported bond</option>
                           {bondCatalog.map((entry) => (
                             <option key={entry.id} value={entry.id}>
                               {entry.issuanceNumber} · {formatPercent(entry.couponRate, 2)} · {entry.maturityDate}
@@ -2987,7 +3040,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         </select>
                       </label>
                     )}
-                    {!editingPurchaseId && calendarPrefilledPurchase ? (
+                    {!editingPurchaseId && pdfReview ? null : !editingPurchaseId && calendarPrefilledPurchase ? (
                       <div className="sm:col-span-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
                           Prefilled from calendar
@@ -3119,6 +3172,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                             }
                             className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface"
                           >
+                            {!TREASURY_BOND_TENORS.some((tenor) => tenor === purchase.tenorYears) && <option value={purchase.tenorYears}>{purchase.tenorYears > 0 ? `${purchase.tenorYears} years` : "Select tenor"}</option>}
                             {TREASURY_BOND_TENORS.map((tenor) => (
                               <option key={tenor} value={tenor}>
                                 {tenor} years
@@ -3247,6 +3301,31 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                           No coupon dates generated yet.
                         </p>
                       )}
+                      {!purchaseTermsLocked && (
+                        <div className="mt-3 flex items-end gap-2">
+                          <label className="min-w-0 flex-1 text-[11px] font-bold text-on-surface-variant">
+                            Add a missing coupon date
+                            <input type="date" value={additionalCouponDate} min={purchase.settlementDate} max={purchase.maturityDate} onChange={(event) => setAdditionalCouponDate(event.target.value)} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface" />
+                          </label>
+                          <button type="button" disabled={!additionalCouponDate || purchase.couponDates.includes(additionalCouponDate) || additionalCouponDate <= purchase.purchaseDate || additionalCouponDate > purchase.maturityDate} onClick={() => {
+                            setPurchase((current) => {
+                              const dates = [...new Set([...current.couponDates, additionalCouponDate])].sort();
+                              return { ...current, couponDates: dates, firstCouponDate: dates[0], scheduleConfidence: "estimated" };
+                            });
+                            setAdditionalCouponDate("");
+                            setPdfReviewed(false);
+                          }} className="rounded-xl border border-primary/20 px-3 py-2.5 text-xs font-black text-primary disabled:opacity-40">Add date</button>
+                        </div>
+                      )}
+                      {!purchaseTermsLocked && (
+                        <label className="mt-3 block text-[11px] font-bold text-on-surface-variant">
+                          Schedule accuracy
+                          <select value={purchase.scheduleConfidence} onChange={(event) => setPurchase((current) => ({ ...current, scheduleConfidence: event.target.value as BondPurchaseInput["scheduleConfidence"] }))} className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface">
+                            <option value="estimated">Estimated / needs checking</option>
+                            <option value="confirmed">Confirmed against official schedule</option>
+                          </select>
+                        </label>
+                      )}
                     </div>
                     <label className="text-[11px] font-bold text-on-surface-variant">
                       Account reference
@@ -3298,7 +3377,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         Cancel
                       </button>
                     )}
-                    <button disabled={savingPurchase} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90 disabled:opacity-50">
+                    <button disabled={savingPurchase || importingPdf || Boolean(pdfReview && !pdfReviewed)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90 disabled:opacity-50">
                       <Database size={16} />{" "}
                       {savingPurchase
                         ? "Saving…"
@@ -3307,6 +3386,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                           : "Save transaction"}
                     </button>
                   </div>
+                  </fieldset>
                 </form>
                 )}
 
