@@ -23,9 +23,9 @@ subdomain URL, preserving bookmarks while keeping one public bond-site address.
 ## PDF bond import
 
 In the private portfolio, choose **Add purchase → Choose PDF**, or drop one PDF
-into the highlighted upload area. New purchases start with PDF import; an
-**Enter details manually instead** button opens an empty form. No issuance
-template is preloaded. The browser checks
+into the highlighted upload area. New-purchase fields appear only after a
+successful PDF import. Manual-entry and calendar-prefill paths do not populate
+new purchases, and no issuance template is loaded. The browser checks
 the PDF signature and structure, rejects detected JavaScript or embedded files,
 and extracts BNR result fields and coupon dates. Scanned pages use local English
 OCR. The PDF and recognized text stay on the device; only the reviewed purchase
