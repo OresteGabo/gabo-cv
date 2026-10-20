@@ -6,18 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prepare:bond-import": "node scripts/prepare-bond-import.mjs",
+    "predev": "npm run prepare:bond-import",
+    "prebuild": "npm run prepare:bond-import",
+    "test:bond-import": "node --experimental-strip-types --test tests/bond-pdf-import.test.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "@tesseract.js-data/eng": "^1.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.35.0",
     "lucide-react": "^0.577.0",
     "next": "^16.2.7",
+    "pdfjs-dist": "^6.4.299",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-icons": "^5.6.0",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
