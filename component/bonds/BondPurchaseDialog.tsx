@@ -15,11 +15,22 @@ export function BondPurchaseDialog({ children, onDismiss, saving }: {
     const previousFocus = document.activeElement;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // Keep an accidental drop outside the upload area from navigating away.
+    const preventFileNavigation = (event: DragEvent) => {
+      if (event.dataTransfer?.types.includes("Files") && !event.defaultPrevented) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "none";
+      }
+    };
+    window.addEventListener("dragover", preventFileNavigation);
+    window.addEventListener("drop", preventFileNavigation);
     dialog.showModal();
     // Start at the heading rather than scrolling down to the first form control.
     dialog.querySelector<HTMLElement>("#purchase-dialog-title")?.focus();
     return () => {
       dialog.close();
+      window.removeEventListener("dragover", preventFileNavigation);
+      window.removeEventListener("drop", preventFileNavigation);
       document.body.style.overflow = previousOverflow;
       if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
         previousFocus.focus({ preventScroll: true });
