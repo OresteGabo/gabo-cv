@@ -2844,10 +2844,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         <li>Check principal, price, dates, fees, and the security code against your original PDF.</li>
                         {pdfReview.warnings.map((warning) => <li key={warning}>{warning}</li>)}
                       </ul>
-                      <label className="mt-3 flex items-start gap-2 text-xs font-bold">
-                        <input type="checkbox" checked={pdfReviewed} onChange={(event) => setPdfReviewed(event.target.checked)} className="mt-0.5 accent-primary" />
-                        I have checked the imported details and completed any missing values.
-                      </label>
                     </div>
                   )}
                   {(editingPurchaseId || pdfReview) && (
@@ -3121,14 +3117,17 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         </div>
                       </div>
                     </div>
-                    <label className="sm:col-span-2 text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)]">
-                      Notes
-                      <textarea value={purchase.notes} maxLength={1000} onChange={(event) => setPurchase((current) => ({ ...current, notes: event.target.value }))} className="mt-1.5 min-h-20 w-full resize-y rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-3 py-2.5 text-sm text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60" />
-                    </label>
                   </div>
                   </fieldset>
                   )}
-                  <div className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-4 flex gap-2 border-t border-outline/10 bg-[var(--md-sys-color-surface-container-lowest)] px-5 py-4">
+                  <div className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-4 space-y-3 border-t border-outline/10 bg-[var(--md-sys-color-surface-container-lowest)] px-5 py-4">
+                    {pdfReview && !editingPurchaseId && (
+                      <label className="flex items-start gap-2 text-xs font-bold">
+                        <input type="checkbox" checked={pdfReviewed} disabled={importingPdf || savingPurchase} onChange={(event) => setPdfReviewed(event.target.checked)} className="mt-0.5 shrink-0 accent-primary" />
+                        I have checked the imported details and completed any missing values.
+                      </label>
+                    )}
+                    <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={closePurchaseDialog}
@@ -3145,6 +3144,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                           ? "Update transaction"
                           : "Confirm and save purchase"}
                     </button>}
+                    </div>
                   </div>
                 </form>
                 </BondPurchaseDialog>
