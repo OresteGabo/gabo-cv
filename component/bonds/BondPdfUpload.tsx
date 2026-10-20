@@ -58,7 +58,13 @@ export function BondPdfUpload({ onImport, onBusyChange }: {
     event.preventDefault();
     event.stopPropagation();
     const items = Array.from(event.dataTransfer.items).filter((item) => item.kind === "file");
-    const accepted = !busy && items.length === 1 && (!items[0].type || items[0].type === "application/pdf");
+    // File counts and MIME types can be hidden or incomplete while hovering.
+    // Check the actual FileList only on drop, rather than reporting unknown
+    // drag metadata as multiple files.
+    const definitelyNotPdf = items.length > 0 && items.every((item) =>
+      item.type && item.type !== "application/pdf" && item.type !== "application/octet-stream",
+    );
+    const accepted = !busy && !definitelyNotPdf;
     event.dataTransfer.dropEffect = accepted ? "copy" : "none";
     setDragState(accepted ? "ready" : "invalid");
   }
@@ -84,9 +90,17 @@ export function BondPdfUpload({ onImport, onBusyChange }: {
           dragDepth.current = 0;
           setDragState(null);
           if (busy) return;
-          const files = Array.from(event.dataTransfer.files);
-          if (files.length !== 1) {
+          const listedFiles = Array.from(event.dataTransfer.files);
+          const files = listedFiles.length ? listedFiles : Array.from(event.dataTransfer.items)
+            .filter((item) => item.kind === "file")
+            .map((item) => item.getAsFile())
+            .filter((file): file is File => file !== null);
+          if (files.length > 1) {
             setError("Drop one PDF at a time.");
+            return;
+          }
+          if (!files.length) {
+            setError("No readable file was received. Please use Choose PDF to select your file.");
             return;
           }
           void readFile(files[0]);
@@ -100,7 +114,7 @@ export function BondPdfUpload({ onImport, onBusyChange }: {
           {busy ? <LoaderCircle size={26} className="animate-spin motion-reduce:animate-none" /> : dragState === "invalid" ? <CircleAlert size={26} /> : dragState === "ready" ? <Upload size={26} /> : <FileText size={26} />}
         </div>
         <p role="status" aria-live="polite" className="pointer-events-none text-base font-black">
-          {busy ? "Reading your bond PDF…" : dragState === "ready" ? "Release to read your PDF" : dragState === "invalid" ? busy ? "Please wait for this import to finish" : "One PDF file at a time" : "Drop your bond PDF here"}
+          {busy ? "Reading your bond PDF…" : dragState === "ready" ? "Release to read your PDF" : dragState === "invalid" ? "Use a PDF document" : "Drop your bond PDF here"}
         </p>
         <p className="pointer-events-none mt-2 max-w-sm text-xs leading-relaxed text-on-surface-variant">
           {dragState === "invalid" ? "Only PDF documents are accepted." : "We’ll extract your bond details and coupon dates for you to review."}
