@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { FileText, LoaderCircle, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
+import { CircleAlert, FileText, LoaderCircle, Upload, X } from "lucide-react";
 import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
 
 export function BondPdfUpload({ onImport, onBusyChange }: {
@@ -11,6 +11,9 @@ export function BondPdfUpload({ onImport, onBusyChange }: {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
+  const [dragState, setDragState] = useState<"ready" | "invalid" | null>(null);
+  const dragDepth = useRef(0);
+  const input = useRef<HTMLInputElement>(null);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => {
     controller.current?.abort();
@@ -19,6 +22,11 @@ export function BondPdfUpload({ onImport, onBusyChange }: {
   }, [onBusyChange]);
 
   async function readFile(file: File) {
+    if (controller.current) return;
+    if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== "application/pdf")) {
+      setError("Choose a PDF file. Other file types are not accepted.");
+      return;
+    }
     const current = new AbortController();
     controller.current = current;
     setBusy(true);
@@ -45,27 +53,75 @@ export function BondPdfUpload({ onImport, onBusyChange }: {
     }
   }
 
+  function checkDrag(event: DragEvent<HTMLDivElement>) {
+    if (!event.dataTransfer.types.includes("Files")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const items = Array.from(event.dataTransfer.items).filter((item) => item.kind === "file");
+    const accepted = !busy && items.length === 1 && (!items[0].type || items[0].type === "application/pdf");
+    event.dataTransfer.dropEffect = accepted ? "copy" : "none";
+    setDragState(accepted ? "ready" : "invalid");
+  }
+
   return (
-    <div aria-busy={busy} className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-      <div className="flex items-center gap-2 text-sm font-black"><FileText size={17} className="text-primary" />Import from a bond PDF</div>
-      <p className="mt-2 text-xs leading-relaxed text-on-surface-variant">
-        Fill this form from a BNR bond result, including scanned PDFs. The file stays on your device. Review the extracted values before saving.
-      </p>
-      <div className="mt-3 flex items-center gap-3">
-        <label className={`inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-black text-on-primary ${busy ? "cursor-wait opacity-50" : "cursor-pointer"}`}>
-          {busy ? <LoaderCircle size={15} className="animate-spin" /> : <Upload size={15} />}{busy ? "Reading PDF…" : "Upload PDF"}
-          <input type="file" accept=".pdf,application/pdf" disabled={busy} className="sr-only"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (file) void readFile(file);
-            }} />
-        </label>
-        {busy && <button type="button" onClick={() => controller.current?.abort()} className="inline-flex items-center gap-1 text-xs font-bold text-on-surface-variant"><X size={14} />Cancel</button>}
+    <div aria-busy={busy} className="mt-5">
+      <div data-testid="bond-pdf-dropzone" data-drag-state={dragState ?? "idle"}
+        onDragEnter={(event) => {
+          if (!event.dataTransfer.types.includes("Files")) return;
+          dragDepth.current++;
+          checkDrag(event);
+        }}
+        onDragOver={checkDrag}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (!dragDepth.current) setDragState(null);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          dragDepth.current = 0;
+          setDragState(null);
+          if (busy) return;
+          const files = Array.from(event.dataTransfer.files);
+          if (files.length !== 1) {
+            setError("Drop one PDF at a time.");
+            return;
+          }
+          void readFile(files[0]);
+        }}
+        className={`relative flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-8 text-center transition-[background-color,border-color,box-shadow] duration-150 motion-reduce:transition-none ${
+          dragState === "ready" ? "border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)] shadow-[inset_0_0_0_3px_var(--md-sys-color-primary)]"
+            : dragState === "invalid" ? "border-[var(--md-sys-color-error)] bg-[var(--md-sys-color-error-container)]"
+            : "border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)]"
+        }`}>
+        <div className={`pointer-events-none mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] ${dragState === "invalid" ? "text-[var(--md-sys-color-error)]" : "text-[var(--md-sys-color-primary)]"}`}>
+          {busy ? <LoaderCircle size={26} className="animate-spin motion-reduce:animate-none" /> : dragState === "invalid" ? <CircleAlert size={26} /> : dragState === "ready" ? <Upload size={26} /> : <FileText size={26} />}
+        </div>
+        <p role="status" aria-live="polite" className="pointer-events-none text-base font-black">
+          {busy ? "Reading your bond PDF…" : dragState === "ready" ? "Release to read your PDF" : dragState === "invalid" ? busy ? "Please wait for this import to finish" : "One PDF file at a time" : "Drop your bond PDF here"}
+        </p>
+        <p className="pointer-events-none mt-2 max-w-sm text-xs leading-relaxed text-on-surface-variant">
+          {dragState === "invalid" ? "Only PDF documents are accepted." : "We’ll extract your bond details and coupon dates for you to review."}
+        </p>
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <button type="button" disabled={busy} onClick={() => input.current?.click()} className="inline-flex items-center gap-2 rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-2.5 text-xs font-black text-[var(--md-sys-color-on-primary)] transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:opacity-40">
+            <Upload size={15} />Choose PDF
+          </button>
+          {busy && <button type="button" onClick={() => controller.current?.abort()} className="inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-bold text-on-surface-variant"><X size={14} />Cancel import</button>}
+        </div>
+        <input ref={input} type="file" aria-label="Bond PDF" accept=".pdf,application/pdf" disabled={busy} className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) void readFile(file);
+          }} />
+        <p className="pointer-events-none mt-4 text-[11px] text-on-surface-variant">Up to 10 MB · Scanned PDFs supported</p>
       </div>
-      <p className="mt-2 text-[11px] text-on-surface-variant">PDF only · Up to 10 MB · 10 pages, including up to 5 scanned pages</p>
-      <p role="status" aria-live="polite" className="mt-2 text-xs text-primary">{progress}</p>
-      {error && <p role="alert" className="mt-2 text-xs text-error">{error}</p>}
+      <p className="mt-3 text-center text-[11px] text-on-surface-variant">Your PDF stays on this device. Nothing is saved until you confirm.</p>
+      <p role="status" aria-live="polite" className="mt-2 text-center text-xs text-primary">{progress}</p>
+      {error && <p role="alert" className="mt-3 rounded-xl border border-[var(--md-sys-color-error)] p-3 text-xs text-[var(--md-sys-color-error)]">{error}</p>}
     </div>
   );
 }
