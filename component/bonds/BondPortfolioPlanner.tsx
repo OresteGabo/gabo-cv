@@ -100,44 +100,6 @@ const EMPTY_PURCHASE: BondPurchaseInput = {
   accountReference: "", sourceUrl: "", status: "active", notes: "",
 };
 
-function generateSemiannualCouponDates(
-  firstCouponDate: string,
-  maturityDate: string,
-) {
-  if (!firstCouponDate || !maturityDate) return [];
-  const first = new Date(`${firstCouponDate}T00:00:00Z`);
-  const maturity = new Date(`${maturityDate}T00:00:00Z`);
-  if (
-    Number.isNaN(first.getTime()) ||
-    Number.isNaN(maturity.getTime()) ||
-    first > maturity
-  ) {
-    return [];
-  }
-
-  const dates: string[] = [];
-  for (let date = first; date <= maturity; ) {
-    dates.push(date.toISOString().slice(0, 10));
-    const next = new Date(date);
-    const day = next.getUTCDate();
-    next.setUTCDate(1);
-    next.setUTCMonth(next.getUTCMonth() + 6);
-    const finalDay = new Date(
-      Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0),
-    ).getUTCDate();
-    next.setUTCDate(Math.min(day, finalDay));
-    date = next;
-  }
-
-  const maturityValue = maturity.toISOString().slice(0, 10);
-  if (dates.at(-1) !== maturityValue) dates.push(maturityValue);
-  return dates;
-}
-
-function validIsoDate(value: string | null) {
-  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
-}
-
 function simulationMonthDate(
   assumptions: Pick<BondAssumptions, "startMonth" | "startYear">,
   month: number,
@@ -205,46 +167,6 @@ function scheduledMonthlyContribution(
         : total,
     0,
   );
-}
-
-function purchaseFromCalendarPrefill(params: URLSearchParams): BondPurchaseInput | null {
-  if (params.get("prefill") !== "calendar") return null;
-
-  const tenorYears = Number(params.get("tenorYears"));
-  const purchaseDate = validIsoDate(params.get("purchaseDate"));
-  const settlementDate = validIsoDate(params.get("settlementDate"));
-  const maturityDate = validIsoDate(params.get("maturityDate"));
-  const sourceDescription = params.get("sourceDescription")?.trim();
-
-  if (!purchaseDate || !settlementDate || !maturityDate) return null;
-
-  return {
-    ...EMPTY_PURCHASE,
-    purchaseDate,
-    settlementDate,
-    bondName: params.get("bondName")?.trim().slice(0, 120) || "Treasury bond",
-    isin: "",
-    tenorYears:
-      Number.isFinite(tenorYears) && tenorYears > 0
-        ? tenorYears
-        : EMPTY_PURCHASE.tenorYears,
-    faceValue: 100_000,
-    pricePercent: 100,
-    accruedInterestPaid: 0,
-    feesPaid: 0,
-    amountInvested: 100_000,
-    couponRate: 0,
-    maturityDate,
-    firstCouponDate: "",
-    couponDates: [],
-    scheduleConfidence: "estimated",
-    accountReference: "",
-    sourceUrl: "",
-    status: "submitted",
-    notes: sourceDescription
-      ? `From BNR calendar: ${sourceDescription}. Add amount, fees, and coupon after issuance.`
-      : "From BNR calendar. Add amount, fees, and coupon after issuance.",
-  };
 }
 
 function Metric({
@@ -710,7 +632,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     ...EMPTY_PURCHASE,
   }));
   const [purchasePanelOpen, setPurchasePanelOpen] = useState(false);
-  const [manualPurchaseEntry, setManualPurchaseEntry] = useState(false);
   const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(
     null,
   );
@@ -771,14 +692,11 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     const search = window.location.search;
     if (!search || prefillApplied.current === search) return;
 
-    const prefilledPurchase = purchaseFromCalendarPrefill(
-      new URLSearchParams(search),
-    );
-    if (!prefilledPurchase) return;
-
+    if (new URLSearchParams(search).get("prefill") !== "calendar") return;
     prefillApplied.current = search;
-    setPurchase(prefilledPurchase);
-    setManualPurchaseEntry(true);
+    setPurchase({ ...EMPTY_PURCHASE, couponDates: [] });
+    setPdfReview(null);
+    setPdfReviewed(false);
     setPurchasePanelOpen(true);
   }, [editingPurchaseId, view]);
 
@@ -1008,9 +926,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       : purchase.faceValue * purchase.couponRate * (1 - WITHHOLDING_TAX_RATE);
   const purchaseTermsLocked =
     Boolean(editingPurchaseId) && purchase.status !== "submitted";
-  const calendarPrefilledPurchase =
-    purchase.status === "submitted" &&
-    purchase.notes.startsWith("From BNR calendar");
   const selectedInjectionMonth = Math.min(
     projection.length,
     Math.max(
@@ -1287,17 +1202,11 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
 
   async function savePurchase(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!editingPurchaseId && !manualPurchaseEntry && !pdfReview) return;
+    if (!editingPurchaseId && !pdfReview) return;
     if (savingPurchase || importingPdf || (pdfReview && !pdfReviewed)) return;
     setSavingPurchase(true);
     setPortfolioError("");
-    const couponDates =
-      purchase.couponDates.length > 0
-        ? purchase.couponDates
-        : generateSemiannualCouponDates(
-            purchase.firstCouponDate,
-            purchase.maturityDate,
-          );
+    const couponDates = purchase.couponDates;
     try {
       const response = await fetch(
         editingPurchaseId
@@ -1380,7 +1289,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     setEditingPurchaseId(null);
     setPdfReview(null);
     setPdfReviewed(false);
-    setManualPurchaseEntry(false);
     setAdditionalCouponDate("");
     setPurchase({ ...EMPTY_PURCHASE, couponDates: [] });
     setPurchasePanelOpen(true);
@@ -2912,7 +2820,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                             : "Edit Treasury bond purchase"
                           : "Add bond purchase"}
                       </h3>
-                      <p className="mt-1 text-xs text-on-surface-variant">{importingPdf ? "Reading your PDF. Details will appear below when ready." : editingPurchaseId || manualPurchaseEntry || pdfReview ? "Review the bond details, then confirm to save." : "Upload your bond result to get started."}</p>
+                      <p className="mt-1 text-xs text-on-surface-variant">{importingPdf ? "Reading your PDF. Details will appear below when ready." : editingPurchaseId || pdfReview ? "Review the bond details, then confirm to save." : "Upload your bond result to get started."}</p>
                     </div>
                     </div>
                     <button
@@ -2927,11 +2835,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   </div>
                   {portfolioError && <p role="alert" className="mt-4 rounded-xl border border-error/20 bg-error-container/20 p-3 text-sm text-error">{portfolioError}</p>}
                   {!editingPurchaseId && <BondPdfUpload onImport={applyPdfImport} onBusyChange={setImportingPdf} />}
-                  {!editingPurchaseId && !pdfReview && !manualPurchaseEntry && (
-                    <div className="mt-4 text-center">
-                      <button type="button" disabled={importingPdf} onClick={() => setManualPurchaseEntry(true)} className="rounded-xl px-3 py-2 text-xs font-bold text-on-surface-variant underline decoration-outline/40 underline-offset-4 transition hover:text-primary disabled:opacity-40">Enter details manually instead</button>
-                    </div>
-                  )}
                   {pdfReview && !editingPurchaseId && (
                     <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4" role="status">
                       <p className="text-sm font-black">Review imported details</p>
@@ -2947,12 +2850,9 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       </label>
                     </div>
                   )}
-                  {(editingPurchaseId || manualPurchaseEntry || pdfReview) && (
+                  {(editingPurchaseId || pdfReview) && (
                   <fieldset disabled={importingPdf || savingPurchase} aria-busy={importingPdf || savingPurchase}>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    {!editingPurchaseId && calendarPrefilledPurchase && (
-                      <p className="sm:col-span-2 text-xs text-on-surface-variant">Prefilled from your selected calendar event. Check the final terms before saving.</p>
-                    )}
                     {purchaseTermsLocked ? (
                       <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
                         <LockedField label="Bond" value={purchase.bondName} />
@@ -3088,7 +2988,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         <CalendarDays size={18} className="shrink-0 text-primary" />
                       </div>
                       {!purchaseTermsLocked && (
-                        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                        <div className="mt-4">
                           <label className="text-[11px] font-bold text-on-surface-variant">
                             First coupon payment
                             <input
@@ -3099,28 +2999,13 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                 setPurchase((current) => ({
                                   ...current,
                                   firstCouponDate: event.target.value,
-                                  couponDates: [],
+                                  couponDates: current.couponDates.map((date) => date === current.firstCouponDate ? event.target.value : date).filter(Boolean).sort(),
+                                  scheduleConfidence: "estimated",
                                 }))
                               }
                               className="mt-1.5 w-full rounded-xl border border-outline/10 bg-background px-3 py-2.5 text-sm text-on-surface outline-none focus:border-primary/60"
                             />
                           </label>
-                          <button
-                            type="button"
-                            disabled={!purchase.firstCouponDate || !purchase.maturityDate}
-                            onClick={() =>
-                              setPurchase((current) => ({
-                                ...current,
-                                couponDates: generateSemiannualCouponDates(
-                                  current.firstCouponDate,
-                                  current.maturityDate,
-                                ),
-                              }))
-                            }
-                            className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs font-black text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            Generate dates
-                          </button>
                         </div>
                       )}
 
@@ -3183,7 +3068,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                         </div>
                       ) : (
                         <p className="mt-4 rounded-xl border border-dashed border-outline/20 px-3 py-4 text-center text-[10px] text-on-surface-variant">
-                          No coupon dates generated yet.
+                          No coupon dates were extracted. Add missing dates from your PDF before saving.
                         </p>
                       )}
                       {!purchaseTermsLocked && (
@@ -3252,7 +3137,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       >
                         Cancel
                       </button>
-                    {(editingPurchaseId || manualPurchaseEntry || pdfReview) && <button disabled={savingPurchase || importingPdf || Boolean(pdfReview && !pdfReviewed)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90 disabled:opacity-50">
+                    {(editingPurchaseId || pdfReview) && <button disabled={savingPurchase || importingPdf || Boolean(pdfReview && !pdfReviewed)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90 disabled:opacity-50">
                       <Database size={16} />{" "}
                       {savingPurchase
                         ? "Saving…"
