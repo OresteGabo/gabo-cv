@@ -64,7 +64,7 @@ export function proxy(request: NextRequest) {
     if (process.env.NODE_ENV === "production") {
       response.headers.set(
         "Content-Security-Policy",
-        "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; upgrade-insecure-requests",
+        "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; upgrade-insecure-requests",
       );
       response.headers.set(
         "Strict-Transport-Security",
