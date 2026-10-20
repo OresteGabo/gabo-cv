@@ -20,6 +20,40 @@ subdomain URL, preserving bookmarks while keeping one public bond-site address.
 - Signed, HTTP-only owner session
 - Responsive layout suitable for installation from a phone browser
 
+## PDF bond import
+
+In the private portfolio, choose **Add purchase → Upload PDF**. The browser checks
+the PDF signature and structure, rejects detected JavaScript or embedded files,
+and extracts BNR result fields and coupon dates. Scanned pages use local English
+OCR. The PDF and recognized text stay on the device; only the reviewed purchase
+form is sent to the existing save endpoint. The original PDF is not stored in the
+document library by this feature.
+
+Imports start from an empty draft rather than copying personal data from an
+issuance template. The investor's allocated principal is read separately from
+the total issuance amount. Missing or ambiguous fields need manual entry. OCR
+and incomplete schedules remain estimated until the user checks the original
+and selects a confirmed schedule. The review checkbox is required before saving.
+
+Limits: 10 MB per PDF, 10 pages total, up to 5 scanned pages, and a two-minute
+processing timeout. Clear English BNR result documents are supported; arbitrary
+broker layouts may require manual correction. OCR can misread codes, numbers,
+and dates, so review remains necessary. Password-protected PDFs must be unlocked
+first. This validation does not certify that a document is malware-free; the app
+does not execute PDF actions or upload the source file.
+
+`npm run dev` and `npm run build` prepare same-origin PDF/OCR workers, language
+data, fonts, and WASM in the ignored `public/bond-import/` directory. No external
+OCR service or API key is required. Deploy the generated public assets together
+with the app (including when deploying Next.js standalone output). The PDF/OCR
+libraries load only after file selection; scans download additional language and
+WASM assets on first use. The production CSP permits same-origin workers and
+WASM compilation.
+
+Run parser regression checks with `npm run test:bond-import` (Node 22.13+).
+Import uses the current shared owner session and storage. Independent user
+accounts and per-user portfolio isolation are separate future work.
+
 ## Portfolio storage
 
 The portfolio API uses the JSON file database by default. The tracked deployment
