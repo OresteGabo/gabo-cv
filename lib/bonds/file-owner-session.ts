@@ -35,17 +35,3 @@ export async function validFileOwnerSession(token: string, owner: Owner | null) 
       && typeof payload.nonce === "string" && /^[A-Za-z0-9_-]{43}$/.test(payload.nonce);
   } catch { return false; }
 }
-
-// Best-effort per-instance limits for the legacy single-owner deployment.
-// Database mode retains its shared, persisted rate limits.
-const attempts = new Map<string, { count: number; resetAt: number }>();
-export function consumeFileOwnerAttempt(key: string, limit: number) {
-  const now = Date.now();
-  for (const [id, entry] of attempts) if (entry.resetAt <= now) attempts.delete(id);
-  const entry = attempts.get(key);
-  if (entry) { entry.count++; return entry.count > limit; }
-  // Keep memory bounded even when callers rotate identities.
-  if (attempts.size >= 1000) return true;
-  attempts.set(key, { count: 1, resetAt: now + 15 * 60_000 });
-  return false;
-}

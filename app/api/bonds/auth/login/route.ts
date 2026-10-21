@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
-import { authenticate, createSession, revokeSession, sessionCookie } from "@/lib/bonds/auth";
+import { authenticate, createSession, ownerEmail, revokeSession, sessionCookie } from "@/lib/bonds/auth";
 import { normalizeEmail } from "@/lib/bonds/auth-crypto";
-import { authJson, authRateLimited } from "@/lib/bonds/auth-http";
+import { authJson } from "@/lib/bonds/auth-http";
+import { fileOwnerMode } from "@/lib/bonds/auth-mode";
 import { reportAuthFailure } from "@/lib/bonds/auth-diagnostics";
 import { isSameOriginRequest, readBoundedJsonBody } from "@/lib/bonds/request";
 
@@ -11,11 +12,10 @@ export async function POST(request: NextRequest) {
   if (!body.ok) return authJson({ error: body.error }, body.status);
   const input = body.data && typeof body.data === "object" ? body.data as Record<string, unknown> : {};
   const email = normalizeEmail(input.email);
-  let stage = "rate_limit_storage";
+  let stage = "credential_verification";
   try {
-    if (await authRateLimited(request, "login", email || "invalid")) return authJson({ error: "Too many attempts. Try again in 15 minutes." }, 429);
     if (!email || typeof input.password !== "string" || input.password.length > 128) return authJson({ error: "Invalid email or password." }, 401);
-    stage = "credential_verification";
+    if (fileOwnerMode() && !ownerEmail()) return authJson({ error: "Owner sign-in is not configured on this deployment. Save the owner credentials in Vercel and redeploy." }, 503);
     const account = await authenticate(email, input.password);
     if (!account) return authJson({ error: "Invalid email or password." }, 401);
     stage = "previous_session_revocation";

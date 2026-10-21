@@ -32,6 +32,13 @@ test('JSON authentication needs no database and never falls back to exposed cred
   assert.equal(auth.ownerEmail(), null);
   assert.equal(await auth.authenticate('stranger@example.test', password), null);
   assert.equal(await auth.getBondSession(), null);
+  const { NextRequest } = await import('next/server.js');
+  const response = await load('app/api/bonds/auth/login/route.ts').POST(new NextRequest('https://bonds.example.test/api/bonds/auth/login', {
+    method: 'POST', headers: { origin: 'https://bonds.example.test', 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'qa-owner@example.test', password }),
+  }));
+  assert.equal(response.status, 503);
+  assert.match((await response.json()).error, /not configured/);
 });
 test('private owner configuration works without a database and requires both credential values', async () => {
   process.env.BONDS_ADMIN_EMAIL = 'qa-owner@example.test';
@@ -77,7 +84,7 @@ test('tampering, expiry, credential changes, deployment key rotation, and old si
     assert.equal(await auth.getBondSession(), null);
   }
 });
-test('JSON production keeps registration closed and applies login attempt limits', async () => {
+test('JSON production keeps registration closed and allows sign-in immediately after repeated failed attempts', async () => {
   const { NextRequest } = await import('next/server.js');
   const request = new NextRequest('https://bonds.example.test/api/bonds/auth/register', {
     method: 'POST', headers: { origin: 'https://bonds.example.test', 'content-type': 'application/json' },
@@ -85,9 +92,15 @@ test('JSON production keeps registration closed and applies login attempt limits
   });
   const response = await load('app/api/bonds/auth/register/route.ts').POST(request);
   assert.equal(response.status, 403);
-  const { authRateLimited } = load('lib/bonds/auth-http.ts');
-  for (let i = 0; i < 5; i++) assert.equal(await authRateLimited(request, 'test-login', 'qa-owner@example.test'), false);
-  assert.equal(await authRateLimited(request, 'test-login', 'qa-owner@example.test'), true);
+  const login = load('app/api/bonds/auth/login/route.ts').POST;
+  const signIn = supplied => login(new NextRequest('https://bonds.example.test/api/bonds/auth/login', {
+    method: 'POST', headers: { origin: 'https://bonds.example.test', 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'qa-owner@example.test', password: supplied }),
+  }));
+  for (let i = 0; i < 7; i++) assert.equal((await signIn('incorrect password')).status, 401);
+  const success = await signIn(password);
+  assert.equal(success.status, 200);
+  assert.equal((await success.json()).user.isOwner, true);
 });
 test('database mode never accepts file-owner tokens or silently falls back during a database outage', async () => {
   const account = await auth.authenticate('qa-owner@example.test', password);

@@ -135,9 +135,9 @@ script so preparation runs; a missing key fails closed.
 
 Owner-only sessions expire after one hour. Logout clears the browser cookie;
 without shared storage it cannot revoke a copied cookie on every server instance.
-Password changes and a new build invalidate those sessions. Login attempt limits
-are bounded and per-instance in this legacy mode. Database mode provides shared
-rate limits and server-side session revocation. Every mode requires both private
+Password changes and a new build invalidate those sessions. Sign-in has no
+attempt-based lockout. Database registration retains shared rate limits and
+database sessions support server-side revocation. Every mode requires both private
 owner credential variables; there is no fallback to credentials exposed in Git.
 
 Before enabling multi-user accounts on a deployed website:
@@ -250,8 +250,8 @@ project and continues serving the portfolio website.
 - Every mutation checks the complete request origin and uses a bounded JSON body.
 - Invitation redemption and consumption are atomic in Postgres; duplicate
   registration cannot create two accounts from one link.
-- Database login and registration are limited by account identity, IP, and a global budget
-  using persistent storage. JSON owner login uses bounded per-instance counters.
+- Database registration is limited by account identity, IP, and a global budget
+  using persistent storage. Sign-in retries have no 15-minute lockout.
   Proxy IP headers are supplemental; identity and
   global limits still apply if an IP header is spoofed. Hosting firewall limits
   can add protection against distributed abuse.

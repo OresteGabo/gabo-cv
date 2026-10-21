@@ -63,8 +63,7 @@ test('cross-origin mutations and malformed credentials are rejected without serv
  assert.equal((await friend.request('/api/bonds/purchases','POST',purchase,{origin:'https://evil.example.test','x-forwarded-host':'evil.example.test'})).status,403);
  assert.equal((await anon.request('/api/bonds/auth/login','POST',{email:{bad:true},password:['bad']})).status,401);
  const forged=client();forged.cookie='bonds_session_v2='+ 'x'.repeat(43);assert.equal((await forged.request('/api/bonds/purchases')).status,401);
- for(let i=0;i<5;i++)assert.equal((await anon.request('/api/bonds/auth/login','POST',{email:'attack@example.test',password:'wrong password'})).status,401);
- assert.equal((await anon.request('/api/bonds/auth/login','POST',{email:'attack@example.test',password:'wrong password'})).status,429);
+ for(let i=0;i<7;i++)assert.equal((await anon.request('/api/bonds/auth/login','POST',{email:'attack@example.test',password:'wrong password'})).status,401);
 });
 test('logout revokes copied session cookies and friend can sign in again independently',async()=>{
  const old=client();old.cookie=friend.cookie;
