@@ -3,12 +3,13 @@ import { getBondSession } from "@/lib/bonds/auth";
 import { listEquityHoldings } from "@/lib/bonds/equities";
 
 export async function GET() {
-  if (!(await getBondSession())) {
+  const session = await getBondSession();
+  if (!session) {
     return NextResponse.json(
       { error: "Authentication required." },
       { status: 401 },
     );
   }
 
-  return NextResponse.json({ holdings: listEquityHoldings() });
+  return NextResponse.json({ holdings: session.isOwner ? listEquityHoldings() : [] });
 }

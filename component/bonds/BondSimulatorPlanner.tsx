@@ -492,44 +492,51 @@ export function BondSimulatorPlanner() {
   const [expandedYears, setExpandedYears] = useState<Set<number>>(
     () => new Set(),
   );
-  const assumptionsHydrated = useRef(false);
+  const assumptionsHydrated = useRef<string | null>(null);
+  const [storageScope, setStorageScope] = useState<string | null>(null);
+  const assumptionsKey = `${STORAGE_KEY}:${storageScope ?? "public"}`;
+  const injectionsKey = `${INJECTIONS_STORAGE_KEY}:${storageScope ?? "public"}`;
   const realPurchaseStartApplied = useRef(false);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      try {
-        const stored = window.localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = { ...DEFAULT_ASSUMPTIONS, ...JSON.parse(stored) };
-          setAssumptions({
-            ...parsed,
-            contributionPeriods: normalizeContributionPeriods(parsed),
-          });
-        }
-        const storedInjections = window.localStorage.getItem(INJECTIONS_STORAGE_KEY);
-        if (storedInjections) {
-          setCashInjections(JSON.parse(storedInjections));
-        }
-      } catch {
-        window.localStorage.removeItem(STORAGE_KEY);
-      } finally {
-        assumptionsHydrated.current = true;
-      }
-    });
+    let active = true;
+    fetch("/api/bonds/auth/session", { cache: "no-store" }).then((response) => response.json())
+      .then((data) => { if (active) setStorageScope(data.user?.id ?? "public"); })
+      .catch(() => { if (active) setStorageScope("public"); });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
-    if (!assumptionsHydrated.current) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions));
-  }, [assumptions]);
+    if (!storageScope) return;
+    assumptionsHydrated.current = null;
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      try {
+        const stored = window.localStorage.getItem(assumptionsKey) || (storageScope === "owner" ? window.localStorage.getItem(STORAGE_KEY) : null);
+        const parsed = { ...DEFAULT_ASSUMPTIONS, ...(stored ? JSON.parse(stored) : {}) };
+        setAssumptions({ ...parsed, contributionPeriods: normalizeContributionPeriods(parsed) });
+        const injections = window.localStorage.getItem(injectionsKey) || (storageScope === "owner" ? window.localStorage.getItem(INJECTIONS_STORAGE_KEY) : null);
+        setCashInjections(injections ? JSON.parse(injections) : []);
+      } catch {
+        window.localStorage.removeItem(assumptionsKey);
+        window.localStorage.removeItem(injectionsKey);
+        setAssumptions(DEFAULT_ASSUMPTIONS);
+        setCashInjections([]);
+      } finally { assumptionsHydrated.current = storageScope; }
+    });
+    return () => { active = false; };
+  }, [assumptionsKey, injectionsKey, storageScope]);
 
   useEffect(() => {
-    if (!assumptionsHydrated.current) return;
-    window.localStorage.setItem(
-      INJECTIONS_STORAGE_KEY,
-      JSON.stringify(cashInjections),
-    );
-  }, [cashInjections]);
+    if (!storageScope || assumptionsHydrated.current !== storageScope) return;
+    window.localStorage.setItem(assumptionsKey, JSON.stringify(assumptions));
+  }, [assumptions, assumptionsKey, storageScope]);
+
+  useEffect(() => {
+    if (!storageScope || assumptionsHydrated.current !== storageScope) return;
+    window.localStorage.setItem(injectionsKey, JSON.stringify(cashInjections));
+  }, [cashInjections, injectionsKey, storageScope]);
 
   useEffect(() => {
     let active = true;
@@ -555,25 +562,27 @@ export function BondSimulatorPlanner() {
   }, []);
 
   useEffect(() => {
-    if (realPurchaseStartApplied.current || realPurchases.length === 0) return;
+    if (!storageScope || assumptionsHydrated.current !== storageScope || realPurchaseStartApplied.current || realPurchases.length === 0) return;
 
     const realStart = earliestActivePurchaseMonth(realPurchases);
     if (!realStart) return;
 
     realPurchaseStartApplied.current = true;
-    setAssumptions((current) => {
-      const currentStartIndex = current.startYear * 12 + current.startMonth;
-      const realStartIndex = realStart.year * 12 + realStart.month;
+    queueMicrotask(() => {
+      setAssumptions((current) => {
+        const currentStartIndex = current.startYear * 12 + current.startMonth;
+        const realStartIndex = realStart.year * 12 + realStart.month;
 
-      if (currentStartIndex <= realStartIndex) return current;
+        if (currentStartIndex <= realStartIndex) return current;
 
-      return {
-        ...current,
-        startMonth: realStart.month,
-        startYear: realStart.year,
-      };
+        return {
+          ...current,
+          startMonth: realStart.month,
+          startYear: realStart.year,
+        };
+      });
     });
-  }, [realPurchases]);
+  }, [realPurchases, storageScope, assumptions.startMonth, assumptions.startYear]);
 
   const contributionPeriods = useMemo(
     () => normalizeContributionPeriods(assumptions),
@@ -873,10 +882,10 @@ export function BondSimulatorPlanner() {
     setExpandedYears(new Set());
     setAdvancedSettingsOpen(false);
     window.localStorage.setItem(
-      STORAGE_KEY,
+      assumptionsKey,
       JSON.stringify(DEFAULT_ASSUMPTIONS),
     );
-    window.localStorage.removeItem(INJECTIONS_STORAGE_KEY);
+    window.localStorage.removeItem(injectionsKey);
   }
 
   function addCashInjection(event: FormEvent<HTMLFormElement>) {

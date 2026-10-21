@@ -10,7 +10,9 @@
     "prepare:bond-import": "node scripts/prepare-bond-import.mjs",
     "predev": "npm run prepare:bond-import",
     "prebuild": "npm run prepare:bond-import",
-    "test:bond-import": "node --experimental-strip-types --test tests/bond-pdf-import.test.mjs"
+    "test:bond-import": "node --experimental-strip-types --test tests/bond-pdf-import.test.mjs",
+    "test:accounts": "node --test tests/bond-accounts.test.mjs",
+    "test:accounts:http": "node --test tests/bond-auth-http.test.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -18,7 +20,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.35.0",
     "lucide-react": "^0.577.0",
-    "next": "^16.2.7",
+    "next": "^16.4.2",
     "pdfjs-dist": "^6.4.299",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -27,13 +29,14 @@
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "^16.4.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -35,11 +35,6 @@ export function catalogEntryForPurchase(
         entry.tenorYears === purchase.tenorYears &&
         entry.purchaseDate === purchase.purchaseDate &&
         entry.settlementDate === purchase.settlementDate
-      ) ||
-      (
-        entry.tenorYears === purchase.tenorYears &&
-        entry.defaultFaceValue === purchase.faceValue &&
-        purchaseName.includes("7YEAR")
       ),
   );
 }

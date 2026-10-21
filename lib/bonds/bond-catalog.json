@@ -27,8 +27,6 @@
     ],
     "pricePercent": 100,
     "broker": "BK Capital",
-    "accountReference": "BNR-FXD2-2026-7YR",
-    "defaultFaceValue": 100000,
     "notes": "Public BNR issuance terms. Replace face value, fees, and notes with the confirmed details from your own broker or investor result."
   },
   {
@@ -65,8 +63,6 @@
     ],
     "pricePercent": 100,
     "broker": "BK Capital",
-    "accountReference": "BNR-FXD3-2026-10YR",
-    "defaultFaceValue": 100000,
     "notes": "Public BNR issuance terms. Replace face value, fees, and notes with the confirmed details from your own broker or investor result."
   }
 ]

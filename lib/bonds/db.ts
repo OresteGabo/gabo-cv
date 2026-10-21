@@ -1,3 +1,4 @@
+import "server-only";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -11,11 +12,13 @@ type BondFileDatabase = {
 
 let fileWriteQueue: Promise<void> = Promise.resolve();
 
-function shouldUseFileDatabase() {
-  return process.env.BONDS_PORTFOLIO_DATABASE !== "database";
+function shouldUseFileDatabase(userId: string) {
+  if (userId !== "owner" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) throw new Error("Invalid portfolio owner.");
+  return userId === "owner" ? process.env.BONDS_PORTFOLIO_DATABASE !== "database" : !process.env.BONDS_DATABASE_URL;
 }
 
-function fileDatabasePath() {
+function fileDatabasePath(userId: string) {
+  if (userId !== "owner") return join(process.cwd(), ".data", "bonds-users", `${userId}.json`);
   const fileName = (
     process.env.BONDS_FILE_DATABASE_NAME ?? "bonds-portfolio.json"
   ).replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -79,8 +82,8 @@ function normalizePurchase(value: unknown): BondPurchase | null {
   });
 }
 
-async function readFileDatabase(): Promise<BondFileDatabase> {
-  const path = fileDatabasePath();
+async function readFileDatabase(userId: string): Promise<BondFileDatabase> {
+  const path = fileDatabasePath(userId);
   try {
     const raw = await readFile(path, "utf8");
     const parsed = JSON.parse(raw) as Partial<BondFileDatabase>;
@@ -98,8 +101,8 @@ async function readFileDatabase(): Promise<BondFileDatabase> {
   }
 }
 
-async function writeFileDatabase(fileDatabase: BondFileDatabase) {
-  const path = fileDatabasePath();
+async function writeFileDatabase(userId: string, fileDatabase: BondFileDatabase) {
+  const path = fileDatabasePath(userId);
   await mkdir(dirname(path), { recursive: true });
   const temporaryPath = `${path}.${process.pid}.${Date.now()}.tmp`;
   const payload = JSON.stringify(
@@ -112,12 +115,13 @@ async function writeFileDatabase(fileDatabase: BondFileDatabase) {
 }
 
 async function updateFileDatabase<T>(
+  userId: string,
   change: (fileDatabase: BondFileDatabase) => T | Promise<T>,
 ): Promise<T> {
   const operation = fileWriteQueue.then(async () => {
-    const fileDatabase = await readFileDatabase();
+    const fileDatabase = await readFileDatabase(userId);
     const result = await change(fileDatabase);
-    await writeFileDatabase(fileDatabase);
+    await writeFileDatabase(userId, fileDatabase);
     return result;
   });
   fileWriteQueue = operation.then(
@@ -138,16 +142,17 @@ function purchaseFromInput(
   });
 }
 
-async function listFilePurchases(): Promise<BondPurchase[]> {
+async function listFilePurchases(userId: string): Promise<BondPurchase[]> {
   await fileWriteQueue;
-  const fileDatabase = await readFileDatabase();
+  const fileDatabase = await readFileDatabase(userId);
   return fileDatabase.purchases;
 }
 
 async function createFilePurchase(
+  userId: string,
   input: BondPurchaseInput,
 ): Promise<BondPurchase> {
-  return updateFileDatabase((fileDatabase) => {
+  return updateFileDatabase(userId, (fileDatabase) => {
     const purchase = purchaseFromInput(input);
     fileDatabase.purchases = sortPurchases([
       purchase,
@@ -157,14 +162,14 @@ async function createFilePurchase(
   });
 }
 
-async function getFilePurchase(id: string): Promise<BondPurchase | null> {
+async function getFilePurchase(userId: string, id: string): Promise<BondPurchase | null> {
   await fileWriteQueue;
-  const fileDatabase = await readFileDatabase();
+  const fileDatabase = await readFileDatabase(userId);
   return fileDatabase.purchases.find((purchase) => purchase.id === id) ?? null;
 }
 
-async function deleteFilePurchase(id: string): Promise<boolean> {
-  return updateFileDatabase((fileDatabase) => {
+async function deleteFilePurchase(userId: string, id: string): Promise<boolean> {
+  return updateFileDatabase(userId, (fileDatabase) => {
     const initialLength = fileDatabase.purchases.length;
     fileDatabase.purchases = fileDatabase.purchases.filter(
       (purchase) => purchase.id !== id,
@@ -174,10 +179,11 @@ async function deleteFilePurchase(id: string): Promise<boolean> {
 }
 
 async function updateFilePurchase(
+  userId: string,
   id: string,
   input: BondPurchaseInput,
 ): Promise<BondPurchase | null> {
-  return updateFileDatabase((fileDatabase) => {
+  return updateFileDatabase(userId, (fileDatabase) => {
     const index = fileDatabase.purchases.findIndex(
       (purchase) => purchase.id === id,
     );
@@ -189,8 +195,8 @@ async function updateFilePurchase(
   });
 }
 
-export async function listPurchases(): Promise<BondPurchase[]> {
-  if (shouldUseFileDatabase()) return listFilePurchases();
+export async function listPurchases(userId: string): Promise<BondPurchase[]> {
+  if (shouldUseFileDatabase(userId)) return listFilePurchases(userId);
 
   const sql = database();
   const rows = await sql`
@@ -224,6 +230,7 @@ export async function listPurchases(): Promise<BondPurchase[]> {
       notes,
       created_at::text AS "createdAt"
     FROM bond_purchases
+    WHERE owner_id = ${userId}
     ORDER BY purchase_date DESC, created_at DESC
   `;
   return rows
@@ -232,13 +239,15 @@ export async function listPurchases(): Promise<BondPurchase[]> {
 }
 
 export async function createPurchase(
+  userId: string,
   input: BondPurchaseInput,
 ): Promise<BondPurchase> {
-  if (shouldUseFileDatabase()) return createFilePurchase(input);
+  if (shouldUseFileDatabase(userId)) return createFilePurchase(userId, input);
 
   const sql = database();
   const rows = await sql`
     INSERT INTO bond_purchases (
+      owner_id,
       instrument_type,
       issuer,
       currency,
@@ -267,6 +276,7 @@ export async function createPurchase(
       notes
     )
     VALUES (
+      ${userId},
       ${input.instrumentType},
       ${input.issuer},
       ${input.currency},
@@ -329,8 +339,8 @@ export async function createPurchase(
   return purchase;
 }
 
-export async function getPurchase(id: string): Promise<BondPurchase | null> {
-  if (shouldUseFileDatabase()) return getFilePurchase(id);
+export async function getPurchase(userId: string, id: string): Promise<BondPurchase | null> {
+  if (shouldUseFileDatabase(userId)) return getFilePurchase(userId, id);
 
   const sql = database();
   const rows = await sql`
@@ -364,29 +374,30 @@ export async function getPurchase(id: string): Promise<BondPurchase | null> {
       notes,
       created_at::text AS "createdAt"
     FROM bond_purchases
-    WHERE id = ${id}::uuid
+    WHERE id = ${id}::uuid AND owner_id = ${userId}
     LIMIT 1
   `;
   return normalizePurchase(rows[0]);
 }
 
-export async function deletePurchase(id: string): Promise<boolean> {
-  if (shouldUseFileDatabase()) return deleteFilePurchase(id);
+export async function deletePurchase(userId: string, id: string): Promise<boolean> {
+  if (shouldUseFileDatabase(userId)) return deleteFilePurchase(userId, id);
 
   const sql = database();
   const rows = await sql`
     DELETE FROM bond_purchases
-    WHERE id = ${id}::uuid
+    WHERE id = ${id}::uuid AND owner_id = ${userId}
     RETURNING id
   `;
   return rows.length > 0;
 }
 
 export async function updatePurchase(
+  userId: string,
   id: string,
   input: BondPurchaseInput,
 ): Promise<BondPurchase | null> {
-  if (shouldUseFileDatabase()) return updateFilePurchase(id, input);
+  if (shouldUseFileDatabase(userId)) return updateFilePurchase(userId, id, input);
 
   const sql = database();
   const rows = await sql`
@@ -419,7 +430,7 @@ export async function updatePurchase(
       status = ${input.status},
       notes = ${input.notes},
       updated_at = now()
-    WHERE id = ${id}::uuid
+    WHERE id = ${id}::uuid AND owner_id = ${userId}
     RETURNING
       id::text,
       instrument_type AS "instrumentType",

@@ -10,7 +10,8 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  if (!(await getBondSession())) {
+  const session = await getBondSession();
+  if (!session) {
     return NextResponse.json(
       { error: "Authentication required." },
       { status: 401 },
@@ -18,7 +19,7 @@ export async function GET(
   }
 
   const { id } = await context.params;
-  const document = getBondDocument(id);
+  const document = session.isOwner ? getBondDocument(id) : null;
   if (!document) {
     return NextResponse.json({ error: "Document not found." }, { status: 404 });
   }

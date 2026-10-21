@@ -17,7 +17,7 @@ subdomain URL, preserving bookmarks while keeping one public bond-site address.
 - Private real purchase log backed by Neon or a local JSON file
 - Saved RSE bond-market observations for recent secondary-market activity
 - Protected market snapshot endpoint for scheduled RSE captures
-- Signed, HTTP-only owner session
+- Invite-only user accounts with revocable HTTP-only sessions
 - Responsive layout suitable for installation from a phone browser
 
 ## PDF bond import
@@ -54,8 +54,8 @@ WASM assets on first use. The production CSP permits same-origin workers and
 WASM compilation.
 
 Run parser regression checks with `npm run test:bond-import` (Node 22.13+).
-Import uses the current shared owner session and storage. Independent user
-accounts and per-user portfolio isolation are separate future work.
+Import saves into the signed-in user’s portfolio. Existing bundled documents
+and equities remain private to the owner account.
 
 ## Portfolio storage
 
@@ -109,16 +109,71 @@ Use a separate Neon role for this application when possible. Grant it only
 `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on `bond_purchases` and
 `bond_market_observations`.
 
-## Owner password
+## Accounts and invitations
 
-Generate the scrypt hash locally:
+Before enabling accounts on a deployed website:
 
-```bash
-node scripts/hash-bonds-password.mjs 'your-long-unique-password'
-```
+1. Configure `BONDS_DATABASE_URL` with a durable Neon/Postgres database.
+2. Run the complete `db/bonds-schema.sql`. The migration is additive: existing SQL
+   purchases receive `owner_id = 'owner'`; existing bundled JSON records are also
+   available only to the owner. Back up the database before applying migrations.
+3. Set `BONDS_ADMIN_EMAIL` to your owner email and generate an owner password hash:
+   `node scripts/hash-bonds-password.mjs 'a-long-unique-passphrase'`.
+   Save the output as `BONDS_ADMIN_PASSWORD_HASH`. Existing `salt:hash` owner
+   hashes remain compatible; new hashes use stronger scrypt parameters.
+4. Optionally set `BONDS_APP_ORIGIN=https://bonds.orestegabo.dev` for a fixed origin
+   behind a proxy. Leave it unset for local development unless it matches the
+   actual local URL exactly.
+5. Deploy and sign in. Open **Portfolio → Settings → Account creation**, enter
+   your friend’s email, and select **Create invitation**. Copy the link and share
+   it directly with that friend. The website does not send email.
 
-Store the output as `BONDS_ADMIN_PASSWORD_HASH`. Never commit the password,
-hash, session secret, or database URL.
+Invitations are bound to the entered email, expire in 48 hours, and can create
+one account only. Successful registration closes account creation automatically.
+Creating a new invitation invalidates the previous one. **Close account creation**
+revokes any unused link immediately; existing accounts can still sign in. No
+public registration switch or source-code removal is needed. Only the owner can
+manage invitations. Invitations grant normal user access, never owner access.
+
+Every purchase read, list, update, and delete is scoped on the server to the user
+from the session. Owner access does not grant access to friends’ portfolios.
+The pre-existing document library and equity portfolio belong only to the owner;
+new users see an empty library/equity list. PDF imports remain local to the
+browser, with reviewed purchase values saved in that user’s portfolio. Signed-in
+users’ real purchases are also loaded in the simulator.
+
+Production accounts require Postgres: there is no fallback to serverless files
+for credentials, sessions, invitations, rate limits, or newly registered users’
+purchases. The owner’s legacy file portfolio can continue to be read with
+`BONDS_PORTFOLIO_DATABASE=file`; runtime changes to that legacy file are still
+not durable on Vercel. Switch to database mode only after migrating your owner
+portfolio into Postgres. New users use Postgres whenever the connection is set,
+regardless of the owner’s legacy storage setting.
+
+Without a database, development keeps its auth file in a project-specific
+`gabo-bonds-auth` directory under the OS temporary directory, outside Next’s
+watched source tree, and portfolios in ignored `.data/bonds-users/<user-id>.json`
+files. Temporary-directory auth data can be cleared by the OS. These are for a single local process;
+do not commit them or deploy them as an account database. No default password
+or signing secret is built in. `BONDS_SESSION_SECRET` is no longer used. Existing
+signed cookies are intentionally invalidated on upgrade: everyone signs in again.
+Passwords are hashed with scrypt; session and invitation tokens are random, and
+only token hashes are stored. Logout revokes the server session as well as the
+cookie. Disabling a user in `bond_users.disabled_at` blocks their sessions, and
+changing an owner password hash invalidates existing owner sessions.
+
+There is no automated password-reset or email-verification service in this
+version; send the private invitation directly to its intended recipient. Keep
+the owner password and database credentials outside Git. Use a least-privilege
+app database role with SELECT/INSERT/UPDATE/DELETE on `bond_users`, `bond_sessions`,
+`bond_registration`, `bond_auth_attempts`, and `bond_purchases`, plus the existing
+market-observation grants. Do not give the browser database credentials.
+
+`npm run test:accounts` runs password, migration, ownership, invitation, session,
+CSRF, and rate-limit checks against an embedded PostgreSQL engine. The HTTP suite
+requires an isolated development server and `BONDS_AUTH_TEST_URL`; never aim it
+at a real portfolio. Expired auth-attempt records are pruned during requests.
+Periodically delete expired `bond_sessions` rows as database maintenance.
 
 ## RSE market snapshots
 
@@ -144,16 +199,19 @@ project and continues serving the portfolio website.
 
 ## Security boundary
 
-- Simulator assumptions are stored only in browser local storage.
-- Browser code never receives Neon credentials.
-- Purchase APIs require a valid signed owner session.
-- Session cookies are HTTP-only, SameSite Strict, and Secure in production.
-- Set `BONDS_ADMIN_EMAIL`, `BONDS_ADMIN_PASSWORD_HASH`, and
-  `BONDS_SESSION_SECRET` when you want to override the built-in owner account
-  and signing secret. The built-in password is stored as a one-way scrypt hash,
-  not plaintext.
-- Login attempts are throttled per running server instance.
-- Database constraints validate financial values again at storage time.
-
-For stronger internet-facing login protection, enable Vercel Firewall rate
-limits or Cloudflare rate limiting on `/api/bonds/auth/login`.
+- All private purchase APIs derive the user from a valid server-side session.
+- Sessions use 256-bit random tokens, expire after 12 hours, and are revocable.
+- Cookies are HTTP-only, SameSite Strict, and Secure with a host-only `__Host-`
+  name in production. No session tokens are put in browser local storage.
+- Every mutation checks the complete request origin and uses a bounded JSON body.
+- Invitation redemption and consumption are atomic in Postgres; duplicate
+  registration cannot create two accounts from one link.
+- Login and registration are limited by account identity, IP, and a global budget
+  using persistent storage. Proxy IP headers are supplemental; identity and
+  global limits still apply if an IP header is spoofed. Hosting firewall limits
+  can add protection against distributed abuse.
+- Simulator assumptions and cash injections use account-scoped browser storage keys; private purchases
+  are fetched from the authenticated, user-scoped API.
+- Static files under `private/` and `.data/` remain readable by anyone with
+  repository, build-artifact, or host filesystem access; website authorization
+  does not change those infrastructure permissions.

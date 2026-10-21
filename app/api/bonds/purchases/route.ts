@@ -9,9 +9,10 @@ function unauthorized() {
 }
 
 export async function GET() {
-  if (!(await getBondSession())) return unauthorized();
+  const session = await getBondSession();
+  if (!session) return unauthorized();
   try {
-    return NextResponse.json({ purchases: await listPurchases() });
+    return NextResponse.json({ purchases: await listPurchases(session.userId) });
   } catch {
     return NextResponse.json(
       { error: "The portfolio database is not available." },
@@ -24,7 +25,8 @@ export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) {
     return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   }
-  if (!(await getBondSession())) return unauthorized();
+  const session = await getBondSession();
+  if (!session) return unauthorized();
   const bodyResult = await readBoundedJsonBody(request, 32_768);
   if (!bodyResult.ok) {
     return NextResponse.json(
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
 
   try {
     return NextResponse.json(
-      { purchase: await createPurchase(purchase) },
+      { purchase: await createPurchase(session.userId, purchase) },
       { status: 201 },
     );
   } catch {

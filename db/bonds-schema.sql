@@ -133,3 +133,33 @@ CREATE UNIQUE INDEX IF NOT EXISTS bond_market_observations_daily_trade_idx
 
 CREATE INDEX IF NOT EXISTS bond_market_observations_recent_idx
   ON bond_market_observations (normalized_bond_name, observed_date DESC, observed_at DESC);
+
+-- User accounts and revocable opaque sessions. Existing purchases belong to the owner.
+CREATE TABLE IF NOT EXISTS bond_users (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE CHECK (email = lower(email) AND char_length(email) <= 254),
+  password_hash TEXT NOT NULL,
+  disabled_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS bond_sessions (
+  token_hash CHAR(64) PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  credential_version CHAR(64) NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS bond_sessions_expiry_idx ON bond_sessions(expires_at);
+CREATE TABLE IF NOT EXISTS bond_registration (
+  id BOOLEAN PRIMARY KEY DEFAULT true CHECK (id = true),
+  token_hash CHAR(64) NOT NULL,
+  email TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ
+);
+CREATE TABLE IF NOT EXISTS bond_auth_attempts (
+  key CHAR(64) PRIMARY KEY,
+  count INTEGER NOT NULL,
+  reset_at TIMESTAMPTZ NOT NULL
+);
+ALTER TABLE bond_purchases ADD COLUMN IF NOT EXISTS owner_id TEXT NOT NULL DEFAULT 'owner';
+CREATE INDEX IF NOT EXISTS bond_purchases_owner_idx ON bond_purchases(owner_id, purchase_date DESC);

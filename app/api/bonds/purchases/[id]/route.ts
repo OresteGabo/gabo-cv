@@ -5,14 +5,15 @@ import { isSameOriginRequest, readBoundedJsonBody } from "@/lib/bonds/request";
 import { parsePurchase } from "@/lib/bonds/validation";
 
 function validPurchaseId(id: string) {
-  return /^[0-9a-f-]{36}$/i.test(id);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  if (!(await getBondSession())) {
+  const session = await getBondSession();
+  if (!session) {
     return NextResponse.json(
       { error: "Authentication required." },
       { status: 401 },
@@ -25,7 +26,7 @@ export async function GET(
   }
 
   try {
-    const purchase = await getPurchase(id);
+    const purchase = await getPurchase(session.userId, id);
     return purchase
       ? NextResponse.json({ purchase })
       : NextResponse.json({ error: "Purchase not found." }, { status: 404 });
@@ -44,7 +45,8 @@ export async function DELETE(
   if (!isSameOriginRequest(request)) {
     return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   }
-  if (!(await getBondSession())) {
+  const session = await getBondSession();
+  if (!session) {
     return NextResponse.json(
       { error: "Authentication required." },
       { status: 401 },
@@ -57,7 +59,7 @@ export async function DELETE(
   }
 
   try {
-    const deleted = await deletePurchase(id);
+    const deleted = await deletePurchase(session.userId, id);
     return deleted
       ? NextResponse.json({ deleted: true })
       : NextResponse.json({ error: "Purchase not found." }, { status: 404 });
@@ -76,7 +78,8 @@ export async function PUT(
   if (!isSameOriginRequest(request)) {
     return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   }
-  if (!(await getBondSession())) {
+  const session = await getBondSession();
+  if (!session) {
     return NextResponse.json(
       { error: "Authentication required." },
       { status: 401 },
@@ -104,7 +107,7 @@ export async function PUT(
   }
 
   try {
-    const updated = await updatePurchase(id, purchase);
+    const updated = await updatePurchase(session.userId, id, purchase);
     return updated
       ? NextResponse.json({ purchase: updated })
       : NextResponse.json({ error: "Purchase not found." }, { status: 404 });

@@ -3,7 +3,8 @@ import { getBondSession } from "@/lib/bonds/auth";
 import { documentSummary, listBondDocuments } from "@/lib/bonds/documents";
 
 export async function GET() {
-  if (!(await getBondSession())) {
+  const session = await getBondSession();
+  if (!session) {
     return NextResponse.json(
       { error: "Authentication required." },
       { status: 401 },
@@ -11,6 +12,6 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    documents: listBondDocuments().map(documentSummary),
+    documents: session.isOwner ? listBondDocuments().map(documentSummary) : [],
   });
 }

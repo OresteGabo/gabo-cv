@@ -1,107 +1,45 @@
-import { createHmac, scryptSync, timingSafeEqual } from "node:crypto";
+import "server-only";
 import { cookies } from "next/headers";
+import { accountByEmail, accountById, findSession, putSession, removeSession } from "./auth-store";
+import { newToken, normalizeEmail, tokenHash, verifyPasswordHash } from "./auth-crypto";
 
-const COOKIE_NAME = "bonds_session";
-const SESSION_SECONDS = 60 * 60 * 12;
-export const TEMPORARY_ADMIN_EMAIL = "orestegabo@icloud.com";
-const TEMPORARY_ADMIN_PASSWORD_HASH =
-  "22176e6d36c0374353a59bc510c86773:98c0316c06edcd0d4a7c391df19148aa23c6ebdc0b4b8f866c04ae6eb6c62f538cebca99f93fab58eb51d8c83adc26a6c076adc0fdadc46ce71a436eb792319a";
-const TEMPORARY_SESSION_SECRET =
-  "temporary-bonds-session-secret-replace-before-public-launch";
+const COOKIE_NAME = process.env.NODE_ENV === "production" ? "__Host-bonds_session" : "bonds_session_v2";
+const SESSION_SECONDS = 12 * 60 * 60;
+export type BondSession = { userId: string; email: string; isOwner: boolean };
 
-type SessionPayload = {
-  email: string;
-  expiresAt: number;
-};
-
-function encode(value: string) {
-  return Buffer.from(value).toString("base64url");
+export function ownerEmail() { return normalizeEmail(process.env.BONDS_ADMIN_EMAIL); }
+function ownerAccount() {
+  const email = ownerEmail();
+  const passwordHash = process.env.BONDS_ADMIN_PASSWORD_HASH;
+  return email && passwordHash ? { id: "owner", email, passwordHash } : null;
 }
-
-function configuredSessionSecret() {
-  const configured = process.env.BONDS_SESSION_SECRET?.trim();
-  const secret = configured || TEMPORARY_SESSION_SECRET;
-  if (secret.length < 32) {
-    throw new Error("BONDS_SESSION_SECRET must contain at least 32 characters.");
-  }
-  return secret;
+export async function authenticate(email: string, password: string) {
+  const owner = ownerAccount();
+  const account = owner?.email === email ? owner : await accountByEmail(email);
+  // Do comparable password work even for unknown email addresses.
+  const dummy = `scrypt:${"0".repeat(32)}:${"0".repeat(128)}`;
+  const valid = await verifyPasswordHash(password, account?.passwordHash ?? dummy);
+  return valid && account ? account : null;
 }
-
-function sign(value: string, secret: string) {
-  return createHmac("sha256", secret).update(value).digest("base64url");
+export async function createSession(account: { id: string; passwordHash: string }) {
+  const token = newToken();
+  await putSession({ tokenHash: tokenHash(token), userId: account.id, credentialVersion: tokenHash(account.passwordHash), expiresAt: Date.now() + SESSION_SECONDS * 1000 });
+  return token;
 }
-
-export function verifyPassword(password: string): boolean {
-  const configured = process.env.BONDS_ADMIN_PASSWORD_HASH?.trim();
-  const stored = configured || TEMPORARY_ADMIN_PASSWORD_HASH;
-
-  const [salt, expectedHex] = stored.split(":");
-  if (!salt || !expectedHex) return false;
-
-  const actual = scryptSync(password, salt, 64);
-  const expected = Buffer.from(expectedHex, "hex");
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
+export async function getBondSession(): Promise<BondSession | null> {
+  const token = (await cookies()).get(COOKIE_NAME)?.value;
+  if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
+  const session = await findSession(tokenHash(token));
+  if (!session) return null;
+  const account = session.userId === "owner" ? ownerAccount() : await accountById(session.userId);
+  if (!account || tokenHash(account.passwordHash) !== session.credentialVersion) return null;
+  return { userId: account.id, email: account.email, isOwner: account.id === "owner" };
 }
-
-export function createSessionToken(email: string): string {
-  const secret = configuredSessionSecret();
-  const payload = encode(
-    JSON.stringify({
-      email,
-      expiresAt: Date.now() + SESSION_SECONDS * 1000,
-    } satisfies SessionPayload),
-  );
-  return `${payload}.${sign(payload, secret)}`;
+export async function revokeSession() {
+  const token = (await cookies()).get(COOKIE_NAME)?.value;
+  if (token && /^[A-Za-z0-9_-]{43}$/.test(token)) await removeSession(tokenHash(token));
 }
-
-export function readSessionToken(token: string | undefined): SessionPayload | null {
-  if (!token) return null;
-  const [payload, signature] = token.split(".");
-  if (!payload || !signature) return null;
-  const secret = configuredSessionSecret();
-  const expectedSignature = sign(payload, secret);
-  const signatureBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expectedSignature);
-  if (
-    signatureBuffer.length !== expectedBuffer.length ||
-    !timingSafeEqual(signatureBuffer, expectedBuffer)
-  ) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(
-      Buffer.from(payload, "base64url").toString("utf8"),
-    ) as SessionPayload;
-    return parsed.expiresAt > Date.now() ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-export async function getBondSession() {
-  const cookieStore = await cookies();
-  return readSessionToken(cookieStore.get(COOKIE_NAME)?.value);
-}
-
 export function sessionCookie(token: string) {
-  return {
-    name: COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict" as const,
-    path: "/",
-    maxAge: SESSION_SECONDS,
-  };
+  return { name: COOKIE_NAME, value: token, httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" as const, path: "/", maxAge: SESSION_SECONDS };
 }
-
-export const expiredSessionCookie = {
-  name: COOKIE_NAME,
-  value: "",
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
-  path: "/",
-  maxAge: 0,
-};
+export const expiredSessionCookie = { ...sessionCookie(""), maxAge: 0 };

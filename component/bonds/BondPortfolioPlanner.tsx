@@ -20,7 +20,6 @@ import {
   Pencil,
   Plus,
   RefreshCcw,
-  ShieldCheck,
   Sparkles,
   Target,
   Trash2,
@@ -78,6 +77,8 @@ import {
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
 import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 import { calculateBondTracking } from "@/lib/bonds/tracking";
+import { BondAccountAccess, type BondAccountUser } from "./BondAccountAccess";
+import { BondRegistrationSettings } from "./BondRegistrationSettings";
 import { BondPdfUpload } from "./BondPdfUpload";
 import { BondPurchaseDialog } from "./BondPurchaseDialog";
 import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
@@ -624,6 +625,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     () => new Set(),
   );
   const [authenticated, setAuthenticated] = useState(false);
+  const [accountUser, setAccountUser] = useState<BondAccountUser | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [purchases, setPurchases] = useState<BondPurchase[]>([]);
   const [equities, setEquities] = useState<EquityHolding[]>([]);
@@ -648,44 +650,42 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   const [deletingPurchaseId, setDeletingPurchaseId] = useState<string | null>(
     null,
   );
-  const assumptionsHydrated = useRef(false);
+  const assumptionsHydrated = useRef<string | null>(null);
   const prefillApplied = useRef("");
+  const storageScope = accountUser?.id ?? "public";
+  const assumptionsKey = `${STORAGE_KEY}:${storageScope}`;
+  const injectionsKey = `${INJECTIONS_STORAGE_KEY}:${storageScope}`;
 
   useEffect(() => {
+    assumptionsHydrated.current = null;
+    let active = true;
     queueMicrotask(() => {
+      if (!active) return;
       try {
-        const stored = window.localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = { ...DEFAULT_ASSUMPTIONS, ...JSON.parse(stored) };
-          setAssumptions({
-            ...parsed,
-            contributionPeriods: normalizeContributionPeriods(parsed),
-          });
-        }
-        const storedInjections = window.localStorage.getItem(INJECTIONS_STORAGE_KEY);
-        if (storedInjections) {
-          setCashInjections(JSON.parse(storedInjections));
-        }
+        const stored = window.localStorage.getItem(assumptionsKey) || (storageScope === "owner" ? window.localStorage.getItem(STORAGE_KEY) : null);
+        const parsed = { ...DEFAULT_ASSUMPTIONS, ...(stored ? JSON.parse(stored) : {}) };
+        setAssumptions({ ...parsed, contributionPeriods: normalizeContributionPeriods(parsed) });
+        const injections = window.localStorage.getItem(injectionsKey) || (storageScope === "owner" ? window.localStorage.getItem(INJECTIONS_STORAGE_KEY) : null);
+        setCashInjections(injections ? JSON.parse(injections) : []);
       } catch {
-        window.localStorage.removeItem(STORAGE_KEY);
-      } finally {
-        assumptionsHydrated.current = true;
-      }
+        window.localStorage.removeItem(assumptionsKey);
+        window.localStorage.removeItem(injectionsKey);
+        setAssumptions(DEFAULT_ASSUMPTIONS);
+        setCashInjections([]);
+      } finally { assumptionsHydrated.current = storageScope; }
     });
-  }, []);
+    return () => { active = false; };
+  }, [assumptionsKey, injectionsKey, storageScope]);
 
   useEffect(() => {
-    if (!assumptionsHydrated.current) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions));
-  }, [assumptions]);
+    if (assumptionsHydrated.current !== storageScope) return;
+    window.localStorage.setItem(assumptionsKey, JSON.stringify(assumptions));
+  }, [assumptions, assumptionsKey, storageScope]);
 
   useEffect(() => {
-    if (!assumptionsHydrated.current) return;
-    window.localStorage.setItem(
-      INJECTIONS_STORAGE_KEY,
-      JSON.stringify(cashInjections),
-    );
-  }, [cashInjections]);
+    if (assumptionsHydrated.current !== storageScope) return;
+    window.localStorage.setItem(injectionsKey, JSON.stringify(cashInjections));
+  }, [cashInjections, injectionsKey, storageScope]);
 
   useEffect(() => {
     if (view !== "portfolio" || editingPurchaseId) return;
@@ -694,20 +694,19 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
 
     if (new URLSearchParams(search).get("prefill") !== "calendar") return;
     prefillApplied.current = search;
-    setPurchase({ ...EMPTY_PURCHASE, couponDates: [] });
-    setPdfReview(null);
-    setPdfReviewed(false);
-    setPurchasePanelOpen(true);
+    queueMicrotask(() => {
+      setPurchase({ ...EMPTY_PURCHASE, couponDates: [] });
+      setPdfReview(null);
+      setPdfReviewed(false);
+      setPurchasePanelOpen(true);
+    });
   }, [editingPurchaseId, view]);
 
   useEffect(() => {
-    if (view !== "portfolio") {
-      setSessionLoading(false);
-      return;
-    }
     fetch("/api/bonds/auth/session", { cache: "no-store" })
       .then((response) => response.json())
-      .then((data) => setAuthenticated(Boolean(data.authenticated)))
+      .then((data) => { setAuthenticated(Boolean(data.authenticated)); setAccountUser(data.user ?? null); })
+      .catch(() => { setAuthenticated(false); setAccountUser(null); })
       .finally(() => setSessionLoading(false));
   }, [view]);
 
@@ -1171,33 +1170,21 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     );
   }
 
-  async function login(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPortfolioError("");
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    const response = await fetch("/api/bonds/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: form.get("email"),
-        password: form.get("password"),
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      setPortfolioError(data.error ?? "Sign-in failed.");
-      return;
-    }
-    setAuthenticated(true);
-    formElement.reset();
-  }
-
   async function logout() {
-    await fetch("/api/bonds/auth/logout", { method: "POST" });
-    setAuthenticated(false);
-    setPurchases([]);
-    setEquities([]);
+    try {
+      const response = await fetch("/api/bonds/auth/logout", { method: "POST" });
+      if (!response.ok) { setPortfolioError("Sign-out failed. Please try again."); return; }
+      setAuthenticated(false);
+      setAccountUser(null);
+      setPurchases([]);
+      setEquities([]);
+      setPurchasePanelOpen(false);
+      setPurchase({ ...EMPTY_PURCHASE, couponDates: [] });
+      setPdfReview(null);
+      setPurchasePendingDelete(null);
+      setPortfolioSettingsOpen(false);
+      setPortfolioError("");
+    } catch { setPortfolioError("Sign-out failed. Please try again."); }
   }
 
   async function savePurchase(event: FormEvent<HTMLFormElement>) {
@@ -2610,6 +2597,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 <p className="text-[10px] font-black uppercase tracking-[0.22em]">Private portfolio</p>
               </div>
               <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Track real bond purchases</h2>
+              {accountUser && <p className="mt-2 text-xs text-on-surface-variant">Signed in as {accountUser.email}</p>}
             </div>
             {authenticated && (
               <button onClick={logout} className="flex w-fit items-center gap-2 rounded-xl border border-outline/10 px-3 py-2 text-xs font-black text-[var(--md-sys-color-on-surface-variant)] hover:text-on-surface">
@@ -2627,25 +2615,9 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
           {sessionLoading ? (
             <div className="mt-8 rounded-3xl border border-outline/10 p-8 text-sm text-[var(--md-sys-color-on-surface-variant)]">Checking private session…</div>
           ) : !authenticated ? (
-            <form onSubmit={login} className="mt-8 max-w-lg rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5 md:p-7">
-              <div className="mb-6 flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--md-sys-color-primary)]/10 text-[var(--md-sys-color-primary)]"><ShieldCheck size={21} /></span>
-                <div>
-                  <h3 className="font-black">Protected access</h3>
-                </div>
-              </div>
-              <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)]">
-                Email
-                <input name="email" type="email" required autoComplete="username" className="mt-2 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-4 py-3 text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60" />
-              </label>
-              <label className="mt-4 block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)]">
-                Password
-                <input name="password" type="password" required minLength={12} autoComplete="current-password" className="mt-2 w-full rounded-xl border border-outline/10 bg-[var(--md-sys-color-background)] px-4 py-3 text-on-surface outline-none focus:border-[var(--md-sys-color-primary)]/60" />
-              </label>
-              <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90">
-                Open private portfolio <ChevronRight size={16} />
-              </button>
-            </form>
+            <BondAccountAccess onAuthenticated={(user) => {
+              setPurchases([]); setEquities([]); setAccountUser(user); setAuthenticated(true); setPortfolioError("");
+            }} />
           ) : (
             <>
               <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -2772,6 +2744,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       {purchases.length + equities.length} saved
                     </span>
                   </div>
+                  {accountUser?.isOwner && <BondRegistrationSettings />}
                   {purchases.length === 0 ? (
                     <p className="mt-4 text-sm text-on-surface-variant">
                       No saved records.

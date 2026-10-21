@@ -1,3 +1,4 @@
+import "server-only";
 import equityPortfolio from "../../.data/equity-portfolio.json";
 import type { EquityHolding } from "./types";
 
