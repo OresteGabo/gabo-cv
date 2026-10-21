@@ -82,6 +82,9 @@ import { calculateBondTracking } from "@/lib/bonds/tracking";
 import { BondAccountAccess, type BondAccountUser } from "./BondAccountAccess";
 import { BondRegistrationSettings } from "./BondRegistrationSettings";
 import { BondAccountManagement } from "./BondAccountManagement";
+import { BondMarketQuote } from "./BondMarketQuote";
+import { useDeferredMarket } from "./useDeferredMarket";
+import type { BondQuotes } from "@/lib/bonds/market-quotes";
 import { BondPdfUpload } from "./BondPdfUpload";
 import { BondPurchaseDialog } from "./BondPurchaseDialog";
 import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
@@ -646,6 +649,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   const [pdfReviewed, setPdfReviewed] = useState(false);
   const [additionalCouponDate, setAdditionalCouponDate] = useState("");
   const [portfolioSettingsOpen, setPortfolioSettingsOpen] = useState(false);
+  const [portfolioLoadedFor, setPortfolioLoadedFor] = useState<BondAccountUser | null>(null);
   const [accountManagementOpen, setAccountManagementOpen] = useState(false);
   const [purchasePendingDelete, setPurchasePendingDelete] =
     useState<BondPurchase | null>(null);
@@ -715,46 +719,25 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   }, [view]);
 
   useEffect(() => {
-    if (!authenticated) return;
-    let active = true;
-    fetch("/api/bonds/purchases", { cache: "no-store" })
-      .then(async (response) => ({
-        ok: response.ok,
-        data: await response.json(),
-      }))
-      .then(({ ok, data }) => {
-        if (!active) return;
-        if (!ok) {
-          setPortfolioError(data.error ?? "Could not load the portfolio.");
-          return;
-        }
-        setPurchases(data.purchases);
-      });
-    return () => {
-      active = false;
+    if (!authenticated || !accountUser) return;
+    const controller = new AbortController();
+    const load = async (path: string) => {
+      const response = await fetch(path, { cache: "no-store", signal: controller.signal });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not load portfolio records.");
+      return data;
     };
-  }, [authenticated]);
+    const bondsRequest = load("/api/bonds/purchases").then((data) => { if (!controller.signal.aborted) setPurchases(data.purchases); });
+    const stocksRequest = load("/api/bonds/equities").then((data) => { if (!controller.signal.aborted) setEquities(data.holdings); });
+    void Promise.allSettled([bondsRequest, stocksRequest]).then(([bonds, stocks]) => {
+      if (controller.signal.aborted) return;
+      if (bonds.status === "rejected" || stocks.status === "rejected") setPortfolioError("Some portfolio records could not be loaded. Reload to try again.");
+      setPortfolioLoadedFor(accountUser);
+    });
+    return () => controller.abort();
+  }, [authenticated, accountUser]);
 
-  useEffect(() => {
-    if (!authenticated) return;
-    let active = true;
-    fetch("/api/bonds/equities", { cache: "no-store" })
-      .then(async (response) => ({
-        ok: response.ok,
-        data: await response.json(),
-      }))
-      .then(({ ok, data }) => {
-        if (!active) return;
-        if (!ok) {
-          setPortfolioError(data.error ?? "Could not load equity holdings.");
-          return;
-        }
-        setEquities(data.holdings);
-      });
-    return () => {
-      active = false;
-    };
-  }, [authenticated]);
+  const bondMarket = useDeferredMarket<BondQuotes>("/api/bonds/rse/quotes?kind=bonds", view === "portfolio" && authenticated && portfolioLoadedFor === accountUser && purchases.length > 0 && !portfolioError && !purchasePanelOpen && !portfolioSettingsOpen && !accountManagementOpen && !importingPdf && !savingPurchase && !deletingPurchaseId && !purchasePendingDelete);
 
   const contributionPeriods = useMemo(
     () => normalizeContributionPeriods(assumptions),
@@ -1187,6 +1170,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       setPdfReview(null);
       setPurchasePendingDelete(null);
       setPortfolioSettingsOpen(false);
+      setPortfolioLoadedFor(null);
       setAccountManagementOpen(false);
       setPortfolioError("");
     } catch { setPortfolioError("Sign-out failed. Please try again."); }
@@ -1432,6 +1416,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
             <NavLink active={false} href="/documents" icon={<FileText size={15} />}>
               Documents
             </NavLink>
+            <Link href="/stocks" prefetch={false} className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container"><BarChart3 size={15} />Stocks</Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -1458,6 +1443,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
             <NavLink active={view === "portfolio"} href="/portfolio" icon={<WalletCards size={15} />}>Portfolio</NavLink>
             <NavLink active={false} href="/calendar" icon={<CalendarClock size={15} />}>Calendar</NavLink>
             <NavLink active={false} href="/documents" icon={<FileText size={15} />}>Documents</NavLink>
+            <Link href="/stocks" prefetch={false} className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant"><BarChart3 size={15} />Stocks</Link>
           </nav>
         )}
       </header>
@@ -2643,6 +2629,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       </div>
                       <h3 className="mt-1 text-xl font-black">Listed shares</h3>
                     </div>
+                    <Link href="/stocks" prefetch={false} className="inline-flex items-center gap-2 rounded-xl border border-outline/15 px-3 py-2 text-xs font-black text-primary"><BarChart3 size={15} />Stock performance</Link>
                     <span className="rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant">
                       {actualEquityShares.toLocaleString()} shares
                     </span>
@@ -2772,6 +2759,10 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                               {formatRwf(item.faceValue)} · {item.settlementDate}
                             </p>
                           </div>
+                          <details className="text-xs">
+                            <summary className="cursor-pointer rounded-xl border border-outline/15 px-3 py-2 font-bold">More actions</summary>
+                            <button type="button" aria-label={`Edit purchase details for ${item.bondName}`} onClick={() => editPurchase(item)} className="mt-2 inline-flex items-center gap-2 rounded-xl px-3 py-2 font-bold hover:bg-primary/10"><Pencil size={14} />Edit purchase details</button>
+                          </details>
                           <button
                             type="button"
                             onClick={() => requestPurchaseDelete(item)}
@@ -3149,7 +3140,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                           <th className="px-4 py-3">Expected coupon</th>
                           <th className="px-4 py-3">Next payment</th>
                           <th className="px-4 py-3">Schedule</th>
-                          <th className="px-4 py-3" />
+                          <th className="px-4 py-3">RSE listed price</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3220,14 +3211,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                 </span>
                               </td>
                               <td className="px-4 py-4">
-                                <button
-                                  type="button"
-                                  onClick={() => editPurchase(item)}
-                                  aria-label={`Edit ${item.bondName}`}
-                                  className="mr-1 rounded-lg p-2 text-outline hover:bg-primary/10 hover:text-primary"
-                                >
-                                  <Pencil size={15} />
-                                </button>
+                                <BondMarketQuote purchase={item} {...bondMarket} />
                               </td>
                             </tr>
                           );

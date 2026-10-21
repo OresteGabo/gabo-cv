@@ -13,7 +13,8 @@
     "db:prepare:bonds": "node scripts/prepare-bond-database.mjs",
     "test:bond-import": "node --experimental-strip-types --test tests/bond-pdf-import.test.mjs",
     "test:accounts": "node --test tests/bond-accounts.test.mjs tests/bond-file-owner.test.mjs",
-    "test:accounts:http": "node --test tests/bond-auth-http.test.mjs"
+    "test:accounts:http": "node --test tests/bond-auth-http.test.mjs",
+    "test:market": "node --test tests/bond-market.test.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -109,6 +109,54 @@ Use a separate Neon role for this application when possible. Grant it only
 `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on `bond_purchases` and
 `bond_market_observations`.
 
+## Optional portfolio market data
+
+Portfolio bond rows show RSE listed closing prices instead of a prominent Edit
+button. Editing remains in **Settings → More actions → Edit purchase details**.
+Prices are matched to the exact bond series, using the outstanding-bond ISIN
+mapping when available. Reopened series match their original issue. Multiple
+listed prices are shown as a range, and comparisons use percentage points
+against the recorded purchase price. RSE bond rows do not supply execution
+dates, so the UI says **Trade date not provided**. A fetch/observation date is
+never presented as a trade date. Zero-price placeholder rows are ignored.
+
+The stock-performance page is **/stocks**. Its link has prefetch disabled.
+Holdings load through the existing authenticated equities API, which returns
+only the current account's authorized positions. Prices and history are public
+market data. Current valuation uses active RWF shares, compares against cash
+cost including purchase fees, and excludes dividends and selling fees. No
+automatic currency conversion is applied.
+
+The public RSE pages provide current quotes rather than a complete historical
+time series. `equity_market_observations` stores at most one public closing
+quote per ticker and source date, updated only by a newer observation. Snapshots
+are collected when the stock page requests quotes; there is no new scheduled
+job. Daily history is read in a later optional request. Monthly/yearly filters
+show collected observations only, with explicit empty and one-observation
+states. Missing months are not backfilled or treated as zero returns. The
+schema is installed by the existing production prebuild migration. A missing
+database/history table leaves current quote valuation usable.
+
+Optional requests wait until primary portfolio requests complete, document
+load finishes, the page is visible, resources are quiet, and an idle slot is
+available. Only one optional request runs at a time. Portfolio uploads,
+purchase dialogs, saves, deletion and account/settings panels suspend optional
+requests. Fetches are low priority and aborted on navigation or foreground
+work. HTML parsing and pagination happen on the server; the browser compares
+small parsed price rows with the securities already in the portfolio.
+The chart chunk loads only on the stock page after data becomes available.
+
+RSE HTTP responses are cached for 15 minutes, with per-process request
+deduplication and a short failure backoff. Pagination is capped, concurrency
+is bounded, and requests time out. Recent cached successes may be shown with
+a Cached label if the source is unavailable. Sources, observation/publication
+times, no-trade rows, missing data, partial coverage, timeouts, and retry states
+are shown separately from saved portfolio records. Nothing in market data
+updates purchase principal, coupon schedules, or owner credentials.
+
+Run `npm run test:market` for parsing, matching, valuation, history persistence,
+source failures, caching, pagination, and idle scheduling tests.
+
 ## Accounts and invitations
 
 ### Invite a friend to create an account

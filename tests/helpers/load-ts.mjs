@@ -21,7 +21,7 @@ export default function loader(overrides = {}) {
       }
       return nativeRequire(name);
     };
-    const result = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } });
+    const result = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, jsx: ts.JsxEmit.ReactJSX } });
     const run = runInThisContext(`(function(require,module,exports){${result.outputText}\n})`, { filename: file });
     run(requireForTest, target, target.exports);
     return target.exports;

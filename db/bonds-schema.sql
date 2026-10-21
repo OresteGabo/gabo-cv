@@ -163,3 +163,13 @@ CREATE TABLE IF NOT EXISTS bond_auth_attempts (
 );
 ALTER TABLE bond_purchases ADD COLUMN IF NOT EXISTS owner_id TEXT NOT NULL DEFAULT 'owner';
 CREATE INDEX IF NOT EXISTS bond_purchases_owner_idx ON bond_purchases(owner_id, purchase_date DESC);
+
+-- Public closing-price observations only. No personal holdings or account IDs.
+CREATE TABLE IF NOT EXISTS equity_market_observations (
+  ticker TEXT NOT NULL CHECK (ticker ~ '^[A-Z][A-Z0-9]{1,9}$'),
+  observed_date DATE NOT NULL,
+  closing_price NUMERIC(18, 6) NOT NULL CHECK (closing_price > 0),
+  observed_at TIMESTAMPTZ NOT NULL,
+  published_at TIMESTAMPTZ,
+  PRIMARY KEY (ticker, observed_date)
+);
