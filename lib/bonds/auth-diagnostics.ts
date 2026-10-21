@@ -1,5 +1,6 @@
 import "server-only";
 import { fileOwnerMode } from "./auth-mode";
+import { bondsDatabaseUrl } from "./database-config";
 
 // Log only known diagnostic codes and configuration presence. Database errors
 // can contain credentials, SQL values, or connection URLs in their messages.
@@ -16,7 +17,7 @@ export function reportAuthFailure(operation: string, stage: string, error: unkno
     ENOTFOUND: "database_host_not_found",
     ENOENT: "missing_private_runtime_file",
   };
-  const databaseConfigured = Boolean(process.env.BONDS_DATABASE_URL?.trim());
+  const databaseConfigured = Boolean(bondsDatabaseUrl());
   console.error("[bonds-auth]", {
     operation,
     stage,

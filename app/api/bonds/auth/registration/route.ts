@@ -5,15 +5,18 @@ import { newToken, normalizeEmail, tokenHash } from "@/lib/bonds/auth-crypto";
 import { authJson } from "@/lib/bonds/auth-http";
 import { isSameOriginRequest, readBoundedJsonBody } from "@/lib/bonds/request";
 import { fileOwnerMode } from "@/lib/bonds/auth-mode";
+import { configuredFriend } from "@/lib/bonds/friend-account";
 
 export async function GET() {
   try {
     const session = await getBondSession();
     if (!session) return authJson({ error: "Authentication required." }, 401);
     if (!session.isOwner) return authJson({ error: "Owner access required." }, 403);
-    if (fileOwnerMode()) return authJson({ available: false, invitation: null });
+    const friend = configuredFriend();
+    const setup = { passwordSetupPath: "/create-password", friendEmail: friend?.email ?? null };
+    if (fileOwnerMode()) return authJson({ available: false, invitation: null, ...setup });
     const invitation = await activeInvitation();
-    return authJson({ available: true, invitation: invitation ? { email: invitation.email, expiresAt: invitation.expiresAt } : null });
+    return authJson({ available: true, invitation: invitation ? { email: invitation.email, expiresAt: invitation.expiresAt } : null, ...setup });
   } catch { return authJson({ error: "Registration settings are unavailable." }, 503); }
 }
 export async function POST(request: NextRequest) {

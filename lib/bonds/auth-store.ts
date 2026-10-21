@@ -4,6 +4,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { neon } from "@neondatabase/serverless";
+import { bondsDatabaseUrl } from "./database-config";
 
 export type Account = { id: string; email: string; passwordHash: string };
 export type StoredSession = { tokenHash: string; userId: string; credentialVersion: string; expiresAt: number };
@@ -12,7 +13,8 @@ type LocalAuth = { users: Account[]; sessions: StoredSession[]; invitation: Invi
 let queue: Promise<unknown> = Promise.resolve();
 
 function sqlClient() {
-  if (process.env.BONDS_DATABASE_URL) return neon(process.env.BONDS_DATABASE_URL);
+  const url = bondsDatabaseUrl();
+  if (url) return neon(url);
   if (process.env.NODE_ENV === "production") throw new Error("BONDS_DATABASE_URL is required for production accounts.");
   return null;
 }

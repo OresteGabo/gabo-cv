@@ -20,6 +20,7 @@ let configuredHash;
 test.before(async () => {
   process.env.NODE_ENV = 'production';
   delete process.env.BONDS_DATABASE_URL;
+  delete process.env.DATABASE_URL;
   delete process.env.BONDS_ADMIN_EMAIL;
   delete process.env.BONDS_ADMIN_PASSWORD_HASH;
   delete process.env.BONDS_APP_ORIGIN;

@@ -57,6 +57,79 @@ test('passwords use randomized scrypt hashes, reject wrong passwords, and accept
   const salt='ab'.repeat(16), legacy=`${salt}:${scryptSync(password,salt,64).toString('hex')}`;
   assert.ok(await crypto.verifyPasswordHash(password,legacy));
 });
+test('browser-generated password hashes match server verification without exposing the password', async () => {
+  const { createBrowserPasswordHash } = load('lib/bonds/password-setup.ts');
+  const first = await createBrowserPasswordHash(password), second = await createBrowserPasswordHash(password);
+  assert.notEqual(first, second);
+  assert.equal(first.includes(password), false);
+  assert.ok(crypto.supportedPasswordHash(first));
+  assert.ok(await crypto.verifyPasswordHash(password, first));
+  assert.equal(await crypto.verifyPasswordHash('incorrect password', first), false);
+  assert.equal(await crypto.verifyPasswordHash(first, first), false);
+  assert.equal(await crypto.verifyPasswordHash(password, first.replace(':600000:', ':1:')), false);
+  assert.equal(await crypto.verifyPasswordHash(password, first.replace(':600000:', ':999999999:')), false);
+  assert.equal(await crypto.verifyPasswordHash(password, first + ':extra'), false);
+  await assert.rejects(createBrowserPasswordHash('too short'));
+});
+test('the two-variable friend account has separate database purchases, restricted APIs, and revocable sessions', async () => {
+  const { createBrowserPasswordHash } = load('lib/bonds/password-setup.ts');
+  const { configuredFriend } = load('lib/bonds/friend-account.ts');
+  const friendPassword = 'gorki isolated QA password only';
+  process.env.BONDS_FRIEND_EMAIL = ' GORKI@EXAMPLE.TEST ';
+  process.env.BONDS_FRIEND_PASSWORD_HASH = await createBrowserPasswordHash(friendPassword);
+  try {
+    const account = await auth.authenticate('gorki@example.test', friendPassword);
+    assert.ok(account);
+    assert.notEqual(account.id, 'owner');
+    assert.equal(account.id, configuredFriend().id);
+    assert.match(account.id, /^[a-f0-9-]{36}$/);
+    assert.equal((await pg.query('SELECT id FROM bond_users WHERE id=$1', [account.id])).rows.length, 0);
+    const token = await auth.createSession(account);
+    cookieValues.set('bonds_session_v2', token);
+    assert.equal((await auth.getBondSession()).isOwner, false);
+    assert.equal((await auth.getBondSession()).userId, account.id);
+    const ownerPurchase = await db.createPurchase('owner', purchase);
+    const friendPurchase = await db.createPurchase(account.id, purchase);
+    assert.deepEqual((await db.listPurchases(account.id)).map(row => row.id), [friendPurchase.id]);
+    assert.equal(await db.getPurchase(account.id, ownerPurchase.id), null);
+    assert.equal(await db.updatePurchase(account.id, ownerPurchase.id, purchase), null);
+    assert.equal(await db.deletePurchase(account.id, ownerPurchase.id), false);
+    const settings = await load('app/api/bonds/auth/registration/route.ts').GET();
+    assert.equal(settings.status, 403);
+    assert.deepEqual((await (await load('app/api/bonds/documents/route.ts').GET()).json()).documents, []);
+    assert.deepEqual((await (await load('app/api/bonds/equities/route.ts').GET()).json()).holdings, []);
+    process.env.BONDS_FRIEND_PASSWORD_HASH = await createBrowserPasswordHash('a changed friend QA password');
+    assert.equal(configuredFriend().id, account.id);
+    assert.equal(await auth.getBondSession(), null);
+    const changed = await auth.authenticate('gorki@example.test', 'a changed friend QA password');
+    cookieValues.set('bonds_session_v2', await auth.createSession(changed));
+    await auth.revokeSession();
+    assert.equal(await auth.getBondSession(), null);
+    cookieValues.set('bonds_session_v2', await auth.createSession(changed));
+    delete process.env.BONDS_FRIEND_EMAIL;
+    assert.equal(await auth.getBondSession(), null);
+    process.env.BONDS_FRIEND_EMAIL = process.env.BONDS_ADMIN_EMAIL;
+    assert.equal(configuredFriend(), null);
+  } finally {
+    delete process.env.BONDS_FRIEND_EMAIL;
+    delete process.env.BONDS_FRIEND_PASSWORD_HASH;
+    cookieValues.clear();
+  }
+});
+test('the standard Neon DATABASE_URL is accepted and explicit bonds configuration takes precedence', async () => {
+  const { bondsDatabaseUrl } = load('lib/bonds/database-config.ts');
+  const previous = process.env.BONDS_DATABASE_URL, previousDefault = process.env.DATABASE_URL;
+  try {
+    process.env.DATABASE_URL = 'postgresql://default.invalid/mock';
+    assert.equal(bondsDatabaseUrl(), previous);
+    delete process.env.BONDS_DATABASE_URL;
+    assert.equal(bondsDatabaseUrl(), process.env.DATABASE_URL);
+    assert.ok(Array.isArray(await db.listPurchases('owner')));
+  } finally {
+    process.env.BONDS_DATABASE_URL = previous;
+    if (previousDefault === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = previousDefault;
+  }
+});
 test('invitations bind email, expire, are revoked, and can be redeemed only once', async () => {
   const token=crypto.newToken(), hash=crypto.tokenHash(token), passwordHash=await crypto.hashPassword(password);
   await store.putInvitation({tokenHash:hash,email:'friend@example.test',expiresAt:Date.now()+60000,used:false});
@@ -140,12 +213,12 @@ test('cross-origin writes fail even with a spoofed forwarded host; request strea
 });
 
 test('production refuses a missing database and uses secure host-only session cookies', async () => {
-  const previousMode=process.env.NODE_ENV, previousUrl=process.env.BONDS_DATABASE_URL;
+  const previousMode=process.env.NODE_ENV, previousUrl=process.env.BONDS_DATABASE_URL, previousDefault=process.env.DATABASE_URL;
   try {
-    process.env.NODE_ENV='production'; delete process.env.BONDS_DATABASE_URL;
+    process.env.NODE_ENV='production'; delete process.env.BONDS_DATABASE_URL; delete process.env.DATABASE_URL;
     await assert.rejects(store.activeInvitation(),/required for production/);
     const fresh=makeLoader({ 'next/headers': { cookies:async()=>({get:()=>undefined}) } });
     const cookie=fresh('lib/bonds/auth.ts').sessionCookie('test');
     assert.equal(cookie.secure,true); assert.equal(cookie.name,'__Host-bonds_session'); assert.equal(cookie.path,'/'); assert.equal(cookie.domain,undefined);
-  } finally { process.env.NODE_ENV=previousMode; process.env.BONDS_DATABASE_URL=previousUrl; }
+  } finally { process.env.NODE_ENV=previousMode; process.env.BONDS_DATABASE_URL=previousUrl; if(previousDefault===undefined)delete process.env.DATABASE_URL;else process.env.DATABASE_URL=previousDefault; }
 });

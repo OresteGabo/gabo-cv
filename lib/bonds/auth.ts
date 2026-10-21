@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { accountByEmail, accountById, findSession, putSession, removeSession } from "./auth-store";
 import { newToken, normalizeEmail, tokenHash, verifyPasswordHash } from "./auth-crypto";
 import { fileOwnerMode } from "./auth-mode";
+import { configuredFriend } from "./friend-account";
 import { createFileOwnerSession, validFileOwnerSession, FILE_OWNER_SESSION_SECONDS } from "./file-owner-session";
 
 const COOKIE_NAME = process.env.NODE_ENV === "production" ? "__Host-bonds_session" : "bonds_session_v2";
@@ -17,7 +18,8 @@ function ownerAccount() {
 }
 export async function authenticate(email: string, password: string) {
   const owner = ownerAccount();
-  const account = owner?.email === email ? owner : fileOwnerMode() ? null : await accountByEmail(email);
+  const friend = configuredFriend();
+  const account = owner?.email === email ? owner : friend?.email === email ? friend : fileOwnerMode() ? null : await accountByEmail(email);
   // Do comparable password work even for unknown email addresses.
   const dummy = `scrypt:${"0".repeat(32)}:${"0".repeat(128)}`;
   const valid = await verifyPasswordHash(password, account?.passwordHash ?? dummy);
@@ -42,7 +44,8 @@ export async function getBondSession(): Promise<BondSession | null> {
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
   const session = await findSession(tokenHash(token));
   if (!session) return null;
-  const account = session.userId === "owner" ? ownerAccount() : await accountById(session.userId);
+  const friend = configuredFriend();
+  const account = session.userId === "owner" ? ownerAccount() : friend?.id === session.userId ? friend : await accountById(session.userId);
   if (!account || tokenHash(account.passwordHash) !== session.credentialVersion) return null;
   return { userId: account.id, email: account.email, isOwner: account.id === "owner" };
 }

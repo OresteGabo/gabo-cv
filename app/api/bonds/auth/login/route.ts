@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     if (fileOwnerMode() && !ownerEmail()) return authJson({ error: "Owner sign-in is not configured on this deployment. Save the owner credentials in Vercel and redeploy." }, 503);
     const account = await authenticate(email, input.password);
     if (!account) return authJson({ error: "Invalid email or password." }, 401);
+    if (fileOwnerMode() && account.id !== "owner") return authJson({ error: "Your login is ready, but synchronized portfolio storage has not been connected yet. Ask the owner to finish database setup." }, 503);
     stage = "previous_session_revocation";
     await revokeSession();
     const response = authJson({ authenticated: true, user: { id: account.id, email: account.email, isOwner: account.id === "owner" } });

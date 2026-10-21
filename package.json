@@ -9,13 +9,15 @@
     "lint": "eslint",
     "prepare:bond-import": "node scripts/prepare-bond-import.mjs",
     "predev": "node scripts/prepare-bond-auth.mjs && npm run prepare:bond-import",
-    "prebuild": "node scripts/prepare-bond-auth.mjs && npm run prepare:bond-import",
+    "prebuild": "node scripts/prepare-bond-auth.mjs && node scripts/prepare-bond-database.mjs && npm run prepare:bond-import",
+    "db:prepare:bonds": "node scripts/prepare-bond-database.mjs",
     "test:bond-import": "node --experimental-strip-types --test tests/bond-pdf-import.test.mjs",
     "test:accounts": "node --test tests/bond-accounts.test.mjs tests/bond-file-owner.test.mjs",
     "test:accounts:http": "node --test tests/bond-auth-http.test.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "@next/env": "^16.4.2",
     "@tesseract.js-data/eng": "^1.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.35.0",

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { neon } from "@neondatabase/serverless";
+import { bondsDatabaseUrl } from "./database-config";
 import type { RseMarketTrade } from "./rse";
 
 const RSE_BOND_MARKET_URL = "https://rse.rw/bond-market";
@@ -17,7 +18,7 @@ export type RecentTradeObservation = {
 };
 
 function optionalDatabase() {
-  const url = process.env.BONDS_DATABASE_URL;
+  const url = bondsDatabaseUrl();
   return url ? neon(url) : null;
 }
 

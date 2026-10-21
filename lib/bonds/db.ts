@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { neon } from "@neondatabase/serverless";
+import { bondsDatabaseUrl } from "./database-config";
 import { canonicalPurchaseFromCatalog } from "./catalog";
 import type { BondPurchase, BondPurchaseInput } from "./types";
 
@@ -14,7 +15,7 @@ let fileWriteQueue: Promise<void> = Promise.resolve();
 
 function shouldUseFileDatabase(userId: string) {
   if (userId !== "owner" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) throw new Error("Invalid portfolio owner.");
-  return userId === "owner" ? process.env.BONDS_PORTFOLIO_DATABASE !== "database" : !process.env.BONDS_DATABASE_URL;
+  return userId === "owner" ? process.env.BONDS_PORTFOLIO_DATABASE !== "database" : !bondsDatabaseUrl();
 }
 
 function fileDatabasePath(userId: string) {
@@ -26,7 +27,7 @@ function fileDatabasePath(userId: string) {
 }
 
 function database() {
-  const url = process.env.BONDS_DATABASE_URL;
+  const url = bondsDatabaseUrl();
   if (!url) {
     throw new Error("BONDS_DATABASE_URL is not configured.");
   }

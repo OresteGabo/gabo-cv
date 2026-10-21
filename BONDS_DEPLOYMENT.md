@@ -111,6 +111,48 @@ Use a separate Neon role for this application when possible. Grant it only
 
 ## Accounts and invitations
 
+### Friend access with an email and password hash
+
+Share `https://bonds.orestegabo.dev/create-password` after deploying this feature.
+The friend enters an email and chooses and confirms a password. The browser uses
+Web Crypto PBKDF2-HMAC-SHA256 with 600,000 iterations and a fresh 16-byte random
+salt, following [OWASP's PBKDF2 work factor](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+and the [Web Crypto derivation API](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveBits).
+The password is not sent to an endpoint, stored in browser storage, or
+included in the copy output. The generated verifier is compatible with server
+verification; existing scrypt owner passwords remain compatible.
+
+The friend sends only the email and hash privately to the owner. Configure two
+Production variables in Vercel: `BONDS_FRIEND_EMAIL` and
+`BONDS_FRIEND_PASSWORD_HASH`, then redeploy. Do not change the existing
+`BONDS_ADMIN_EMAIL` or `BONDS_ADMIN_PASSWORD_HASH`. No passwords or real password
+hashes belong in this public repository. The setup page is a public hash utility,
+not a registration endpoint; using its link does not create an account or grant
+access. Only the configured friend can sign in. Removing either friend variable
+and redeploying disables their sessions; replacing the hash invalidates existing
+sessions while preserving their purchases. The friend's ID is derived from the
+normalized email and remains stable across password changes and deployments.
+
+Synchronized friend purchases require Postgres. The Vercel Neon integration's
+`DATABASE_URL` is accepted automatically; `BONDS_DATABASE_URL` takes precedence
+when explicitly configured. Production is the only environment connected by the
+setup performed for this project. `npm run build` prepares `db/bonds-schema.sql`
+atomically before compiling, under an advisory lock to serialize concurrent
+builds. A failed migration fails the new build, preserving the previous live
+deployment. The script never uploads existing portfolio JSON. A standalone
+`npm run db:prepare:bonds` is also available. Set
+`BONDS_SKIP_DATABASE_MIGRATIONS=1` only after separately applying migrations if
+the application uses a restricted runtime role without DDL permissions.
+
+The friend receives normal account access and an isolated database portfolio;
+owner documents, equities, invitations, and purchases remain unavailable to them.
+The owner can keep the existing JSON portfolio while the friend uses Postgres;
+no automatic migration of the owner's existing private records is performed.
+If the database has not been connected, friend sign-in explains that storage is
+not ready instead of pretending to save records to serverless files.
+
+### Owner access and database invitations
+
 The existing production JSON deployment works without a database. Configure only
 `BONDS_ADMIN_EMAIL` and `BONDS_ADMIN_PASSWORD_HASH` as private Vercel environment
 variables. The old password was exposed in public Git history, so this repair
@@ -142,8 +184,10 @@ owner credential variables; there is no fallback to credentials exposed in Git.
 
 Before enabling multi-user accounts on a deployed website:
 
-1. Configure `BONDS_DATABASE_URL` with a durable Neon/Postgres database.
-2. Run the complete `db/bonds-schema.sql`. The migration is additive: existing SQL
+1. Connect Neon in Vercel (which supplies `DATABASE_URL`), or configure
+   `BONDS_DATABASE_URL` with a durable Neon/Postgres database.
+2. Deploy through `npm run build` to prepare the complete `db/bonds-schema.sql`,
+   or apply it separately with `npm run db:prepare:bonds`. The migration is additive: existing SQL
    purchases receive `owner_id = 'owner'`; existing bundled JSON records are also
    available only to the owner. Back up the database before applying migrations.
 3. Set `BONDS_ADMIN_EMAIL` to your owner email and generate an owner password hash:
