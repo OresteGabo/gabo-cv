@@ -187,6 +187,75 @@ test('owner-issued no-email links register a normal account directly, without Ve
   assert.equal((await register(request('/api/bonds/auth/register', { email: 'another-invited@example.test', password, invite }))).status, 403);
   cookieValues.clear();
 });
+test('only the owner can list accounts or delete a member, their purchases, and all sessions', async () => {
+  const { NextRequest } = await import('next/server.js');
+  const listing = load('app/api/bonds/auth/accounts/route.ts').GET;
+  const deletion = load('app/api/bonds/auth/accounts/[id]/route.ts').DELETE;
+  const request = (email, origin = 'https://bonds.example.test') => new NextRequest('https://bonds.example.test/api/bonds/auth/accounts/test', {
+    method: 'DELETE', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify({ email }),
+  });
+  const context = id => ({ params: Promise.resolve({ id }) });
+  const email = 'delete-test@example.test', hash = crypto.tokenHash(crypto.newToken());
+  await store.putInvitation({ tokenHash: hash, email, expiresAt: Date.now() + 60000, used: false });
+  const member = await store.redeemInvitation(hash, email, await crypto.hashPassword(password));
+  const firstSession = await auth.createSession(member), secondSession = await auth.createSession(member);
+  const saved = await db.createPurchase(member.id, purchase);
+  const ownerSaved = await db.createPurchase('owner', purchase);
+  cookieValues.clear();
+  assert.equal((await listing()).status, 401);
+  assert.equal((await deletion(request(email), context(member.id))).status, 401);
+  cookieValues.set('bonds_session_v2', firstSession);
+  assert.equal((await listing()).status, 403);
+  assert.equal((await deletion(request(email), context(member.id))).status, 403);
+  const ownerSession = await auth.createSession(await auth.authenticate('owner@example.test', password));
+  cookieValues.set('bonds_session_v2', ownerSession);
+  await pg.query('UPDATE bond_users SET disabled_at=now() WHERE id=$1', [member.id]);
+  const response = await listing();
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('cache-control'), /no-store/);
+  const data = await response.json();
+  const summary = data.accounts.find(account => account.id === member.id);
+  assert.equal(summary.email, email);
+  assert.equal(summary.status, 'disabled');
+  assert.equal(summary.deletable, true);
+  assert.ok(summary.createdAt);
+  assert.equal(data.accounts.find(account => account.id === 'owner').deletable, false);
+  const serialized = JSON.stringify(data);
+  for (const secret of ['passwordHash', 'password_hash', member.passwordHash, firstSession, secondSession, 'tokenHash']) assert.equal(serialized.includes(secret), false);
+  assert.equal((await deletion(request(email, 'https://evil.example.test'), context(member.id))).status, 403);
+  assert.equal((await deletion(request('owner@example.test'), context('owner'))).status, 403);
+  assert.equal((await deletion(request('owner@example.test'), context(member.id))).status, 403);
+  assert.equal((await deletion(request(email), context('../owner'))).status, 400);
+  assert.equal((await deletion(request('wrong@example.test'), context(member.id))).status, 404);
+  assert.ok(await db.getPurchase(member.id, saved.id));
+  await pg.query('UPDATE bond_users SET disabled_at=NULL WHERE id=$1', [member.id]);
+  process.env.BONDS_FRIEND_EMAIL = 'environment-friend@example.test';
+  process.env.BONDS_FRIEND_PASSWORD_HASH = await crypto.hashPassword(password);
+  const environmentFriend = load('lib/bonds/friend-account.ts').configuredFriend();
+  assert.ok((await (await listing()).json()).accounts.some(account => account.id === environmentFriend.id && !account.deletable));
+  assert.equal((await deletion(request(environmentFriend.email), context(environmentFriend.id))).status, 409);
+  delete process.env.BONDS_FRIEND_EMAIL;
+  delete process.env.BONDS_FRIEND_PASSWORD_HASH;
+  assert.equal((await deletion(request(email), context(member.id))).status, 200);
+  assert.equal(await store.accountById(member.id), null);
+  assert.deepEqual(await db.listPurchases(member.id), []);
+  assert.equal((await pg.query('SELECT * FROM bond_sessions WHERE user_id=$1', [member.id])).rows.length, 0);
+  assert.ok(await db.getPurchase('owner', ownerSaved.id));
+  assert.equal((await auth.getBondSession()).isOwner, true);
+  for (const token of [firstSession, secondSession]) {
+    cookieValues.set('bonds_session_v2', token);
+    assert.equal(await auth.getBondSession(), null);
+  }
+  assert.equal(await auth.authenticate(email, password), null);
+  cookieValues.set('bonds_session_v2', ownerSession);
+  assert.equal((await deletion(request(email), context(member.id))).status, 404);
+  assert.equal(await store.deleteAccount('owner', 'owner@example.test'), false);
+  await store.putInvitation({ tokenHash: hash, email, expiresAt: Date.now() + 60000, used: false });
+  const replacement = await store.redeemInvitation(hash, email, await crypto.hashPassword(password));
+  assert.notEqual(replacement.id, member.id);
+  assert.deepEqual(await db.listPurchases(replacement.id), []);
+  cookieValues.clear();
+});
 test('each SQL purchase operation requires the current owner, including mutations by guessed ID', async () => {
   const a=await db.createPurchase(userA,purchase), b=await db.createPurchase(userB,purchase), owner=await db.createPurchase('owner',purchase);
   assert.deepEqual((await db.listPurchases(userA)).map(p=>p.id),[a.id]);

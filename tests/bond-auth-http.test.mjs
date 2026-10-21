@@ -13,7 +13,7 @@ const owner=client(),friend=client(),anon=client();
 const purchase={instrumentType:'treasury',issuer:'Government of Rwanda',currency:'RWF',market:'primary',purchaseDate:'2026-01-01',settlementDate:'2026-01-02',bondName:'Security isolation QA bond',isin:'TEST0000001',tenorYears:3,faceValue:1000000,pricePercent:100,accruedInterestPaid:0,feesPaid:0,couponRate:0.1,withholdingTaxRate:0.05,maturityDate:'2029-01-02',firstCouponDate:'2026-07-02',couponDates:['2026-07-02'],couponFrequency:2,scheduleConfidence:'estimated',broker:'',accountReference:'',sourceUrl:'',status:'active',notes:''};
 let invite,ownerPurchase,friendPurchase;
 test('anonymous callers cannot read portfolios, equities, documents, or registration settings',async()=>{
- for(const path of ['/api/bonds/purchases','/api/bonds/equities','/api/bonds/documents','/api/bonds/auth/registration'])assert.equal((await anon.request(path)).status,401);
+ for(const path of ['/api/bonds/purchases','/api/bonds/equities','/api/bonds/documents','/api/bonds/auth/registration','/api/bonds/auth/accounts'])assert.equal((await anon.request(path)).status,401);
  assert.equal((await anon.request('/api/bonds/auth/register','POST',{email:'closed@example.test',password:'a secure test password 2026',invite:'x'.repeat(43)})).status,403);
 });
 test('owner sign-in has an HTTP-only cookie and creates an email-bound invitation',async()=>{
@@ -88,4 +88,25 @@ test('a private link creates an independent account with a chosen email and pers
  assert.deepEqual((await newFriend.request('/api/bonds/purchases')).data.purchases.map(row=>row.id),[saved.data.purchase.id]);
  assert.equal((await anon.request('/api/bonds/auth/register','POST',{email:'reused-invitation@example.test',password,invite:issue.data.invite})).status,403);
  assert.equal((await newFriend.request(`/api/bonds/purchases/${saved.data.purchase.id}`,'DELETE')).status,200);
+});
+test('owner can remove a test account while member account administration stays forbidden',async()=>{
+ const issue=await owner.request('/api/bonds/auth/registration','POST',{});
+ const disposable=client(),email='delete-me@example.test',password='disposable account deletion test password';
+ const created=await disposable.request('/api/bonds/auth/register','POST',{email,password,invite:issue.data.invite});
+ assert.equal(created.status,201);
+ const id=created.data.user.id;
+ const saved=await disposable.request('/api/bonds/purchases','POST',purchase);assert.equal(saved.status,201);
+ assert.equal((await disposable.request('/api/bonds/auth/accounts')).status,403);
+ assert.equal((await disposable.request(`/api/bonds/auth/accounts/${id}`,'DELETE',{email})).status,403);
+ const listed=await owner.request('/api/bonds/auth/accounts');assert.equal(listed.status,200);
+ assert.ok(listed.data.accounts.some(account=>account.id===id&&account.email===email&&account.deletable));
+ assert.equal(JSON.stringify(listed.data).includes('passwordHash'),false);
+ assert.equal((await owner.request('/api/bonds/auth/accounts/owner','DELETE',{email:'owner@example.test'})).status,403);
+ assert.equal((await owner.request(`/api/bonds/auth/accounts/${id}`,'DELETE',{email:'wrong@example.test'})).status,404);
+ assert.equal((await disposable.request(`/api/bonds/purchases/${saved.data.purchase.id}`)).status,200);
+ assert.equal((await owner.request(`/api/bonds/auth/accounts/${id}`,'DELETE',{email})).status,200);
+ assert.equal((await disposable.request('/api/bonds/purchases')).status,401);
+ assert.equal((await disposable.request('/api/bonds/auth/login','POST',{email,password})).status,401);
+ assert.ok(!(await owner.request('/api/bonds/auth/accounts')).data.accounts.some(account=>account.id===id));
+ assert.equal((await friend.request('/api/bonds/purchases')).status,200);
 });

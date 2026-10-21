@@ -25,6 +25,7 @@ import {
   Trash2,
   WalletCards,
   UserPlus,
+  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -80,6 +81,7 @@ import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
 import { calculateBondTracking } from "@/lib/bonds/tracking";
 import { BondAccountAccess, type BondAccountUser } from "./BondAccountAccess";
 import { BondRegistrationSettings } from "./BondRegistrationSettings";
+import { BondAccountManagement } from "./BondAccountManagement";
 import { BondPdfUpload } from "./BondPdfUpload";
 import { BondPurchaseDialog } from "./BondPurchaseDialog";
 import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
@@ -644,6 +646,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   const [pdfReviewed, setPdfReviewed] = useState(false);
   const [additionalCouponDate, setAdditionalCouponDate] = useState("");
   const [portfolioSettingsOpen, setPortfolioSettingsOpen] = useState(false);
+  const [accountManagementOpen, setAccountManagementOpen] = useState(false);
   const [purchasePendingDelete, setPurchasePendingDelete] =
     useState<BondPurchase | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -1184,6 +1187,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       setPdfReview(null);
       setPurchasePendingDelete(null);
       setPortfolioSettingsOpen(false);
+      setAccountManagementOpen(false);
       setPortfolioError("");
     } catch { setPortfolioError("Sign-out failed. Please try again."); }
   }
@@ -2704,6 +2708,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
               )}
               <div className="mt-6 flex flex-wrap justify-end gap-2">
                 {accountUser?.isOwner && <button type="button" onClick={() => setPortfolioSettingsOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-black text-primary"><UserPlus size={17} />Invite a friend</button>}
+                {accountUser?.isOwner && <button type="button" onClick={() => setAccountManagementOpen((open) => !open)} aria-expanded={accountManagementOpen} aria-controls="account-management" className="inline-flex items-center gap-2 rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:border-primary/30 hover:text-primary"><Users size={17} />Manage accounts</button>}
                 <Link
                   href="/documents"
                   className="inline-flex items-center gap-2 rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
@@ -2733,6 +2738,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   Add purchase
                 </button>
               </div>
+              {accountManagementOpen && accountUser?.isOwner && <BondAccountManagement />}
               {portfolioSettingsOpen && (
                 <div className="mt-4 rounded-3xl border border-outline/10 bg-surface-container-lowest/75 p-5">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

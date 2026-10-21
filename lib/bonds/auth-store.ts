@@ -1,12 +1,13 @@
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { neon } from "@neondatabase/serverless";
 import { bondsDatabaseUrl } from "./database-config";
 
-export type Account = { id: string; email: string; passwordHash: string };
+export type Account = { id: string; email: string; passwordHash: string; createdAt?: string };
+export type AccountSummary = { id: string; email: string; createdAt: string | null; status: "active" | "disabled" };
 export type StoredSession = { tokenHash: string; userId: string; credentialVersion: string; expiresAt: number };
 type Invitation = { tokenHash: string; email: string; expiresAt: number; used: boolean };
 type LocalAuth = { users: Account[]; sessions: StoredSession[]; invitation: Invitation | null; attempts: Record<string, { count: number; resetAt: number }> };
@@ -59,6 +60,37 @@ export async function accountById(id: string): Promise<Account | null> {
   const rows = await sql`SELECT id, email, password_hash AS "passwordHash" FROM bond_users WHERE id = ${id} AND disabled_at IS NULL`;
   return (rows[0] as Account) ?? null;
 }
+export async function listAccounts(): Promise<AccountSummary[]> {
+  const sql = sqlClient();
+  if (!sql) return local((data) => data.users.map((user) => ({ id: user.id, email: user.email, createdAt: user.createdAt ?? null, status: "active" as const })).sort((a, b) => a.email.localeCompare(b.email)));
+  const rows = await sql`SELECT id, email, created_at::text AS "createdAt", CASE WHEN disabled_at IS NULL THEN 'active' ELSE 'disabled' END AS status FROM bond_users ORDER BY created_at DESC, email`;
+  return rows as AccountSummary[];
+}
+export async function deleteAccount(id: string, email: string): Promise<boolean> {
+  // The environment owner is never a deletable database account.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return false;
+  const sql = sqlClient();
+  if (!sql) {
+    const removed = await local((data) => {
+      if (!data.users.some((user) => user.id === id && user.email === email)) return false;
+      data.users = data.users.filter((user) => user.id !== id);
+      data.sessions = data.sessions.filter((session) => session.userId !== id);
+      return true;
+    }, true);
+    if (removed) await rm(join(process.cwd(), ".data", "bonds-users", `${id}.json`), { force: true });
+    return removed;
+  }
+  // Delete the account, its purchases, and every session in one atomic statement.
+  const rows = await sql`
+    WITH removed AS (
+      DELETE FROM bond_users WHERE id = ${id} AND email = ${email} RETURNING id
+    ), purchases AS (
+      DELETE FROM bond_purchases WHERE owner_id IN (SELECT id FROM removed)
+    ), sessions AS (
+      DELETE FROM bond_sessions WHERE user_id IN (SELECT id FROM removed)
+    ) SELECT id FROM removed`;
+  return rows.length > 0;
+}
 export async function putSession(session: StoredSession) {
   const sql = sqlClient();
   if (!sql) return local((data) => { data.sessions.push(session); }, true);
@@ -97,7 +129,7 @@ export async function redeemInvitation(hash: string, email: string, passwordHash
   if (!sql) return local((data) => {
     const invitation = data.invitation;
     if (!invitation || invitation.used || invitation.tokenHash !== hash || (invitation.email && invitation.email !== email) || invitation.expiresAt <= Date.now() || data.users.some((user) => user.email === email)) return null;
-    const user = { id, email, passwordHash };
+    const user = { id, email, passwordHash, createdAt: new Date().toISOString() };
     data.users.push(user);
     invitation.used = true;
     return user;

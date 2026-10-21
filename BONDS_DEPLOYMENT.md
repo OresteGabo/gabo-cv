@@ -134,6 +134,19 @@ stored. Creating a replacement link invalidates the previous one, and successful
 registration closes it automatically. Only the owner can issue or cancel links;
 normal users cannot promote themselves or access the owner's data.
 
+### Review and delete test accounts
+
+Sign in as the main owner and open **Portfolio → Manage accounts**. The list
+shows the protected owner and every registered account, including disabled
+accounts. It contains emails, status, and creation dates; it never returns
+password hashes or session tokens. Select **Delete account**, type that
+account's email, and confirm permanent deletion. This removes the database
+account, its saved purchases, and all its sessions atomically. Other portfolios
+remain unchanged. The deleted email can be invited again as a new, empty account.
+Only the owner can list or delete accounts, and the owner cannot be deleted.
+The optional legacy account configured in Vercel is shown separately; revoke
+that account by removing its friend credential variables and redeploying.
+
 ### Friend access with an email and password hash
 
 This optional manual alternative is under **Advanced: manual Vercel account**.
