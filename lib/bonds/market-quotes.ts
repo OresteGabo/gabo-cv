@@ -85,16 +85,21 @@ export function equityValuation(holding: EquityHolding, quotes: EquityQuote[]) {
   return { quote, value, gain, gainPercent: holding.netAmountPayable > 0 ? gain / holding.netAmountPayable * 100 : null };
 }
 
-export function equityHistorySeries(observations: EquityObservation[], ticker: string, period: "month" | "year" | "all", now = new Date()) {
+export function equityRangeStart(period: "month" | "year" | "all", now: Date) {
   const cutoff = new Date(now);
   const day = cutoff.getUTCDate();
   cutoff.setUTCDate(1);
   if (period === "month") cutoff.setUTCMonth(cutoff.getUTCMonth() - 1);
   else if (period === "year") cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 1);
   cutoff.setUTCDate(Math.min(day, new Date(Date.UTC(cutoff.getUTCFullYear(), cutoff.getUTCMonth() + 1, 0)).getUTCDate()));
+  return cutoff.toISOString().slice(0, 10);
+}
+
+export function equityHistorySeries(observations: EquityObservation[], ticker: string, period: "month" | "year" | "all", now = new Date()) {
+  const cutoff = equityRangeStart(period, now);
   const byDate = new Map<string, EquityObservation>();
   for (const observation of observations) {
-    if (observation.ticker !== ticker || !/^\d{4}-\d{2}-\d{2}$/.test(observation.date) || !Number.isFinite(Date.parse(observation.date)) || observation.date > now.toISOString().slice(0, 10) || !Number.isFinite(observation.closing) || observation.closing <= 0 || (period !== "all" && observation.date < cutoff.toISOString().slice(0, 10))) continue;
+    if (observation.ticker !== ticker || !/^\d{4}-\d{2}-\d{2}$/.test(observation.date) || !Number.isFinite(Date.parse(observation.date)) || observation.date > now.toISOString().slice(0, 10) || !Number.isFinite(observation.closing) || observation.closing <= 0 || (period !== "all" && observation.date < cutoff)) continue;
     const old = byDate.get(observation.date);
     if (!old || observation.observedAt > old.observedAt) byDate.set(observation.date, observation);
   }

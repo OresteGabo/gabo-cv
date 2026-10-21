@@ -132,8 +132,16 @@ time series. `equity_market_observations` stores at most one public closing
 quote per ticker and source date, updated only by a newer observation. Snapshots
 are collected when the stock page requests quotes; there is no new scheduled
 job. Daily history is read in a later optional request. Monthly/yearly filters
-show collected observations only, with explicit empty and one-observation
-states. Missing months are not backfilled or treated as zero returns. The
+show recorded quotes alongside purchase-cost anchors and today's estimated
+value. A graph can render before two quote dates have accumulated: purchase
+cash cost is a stepped line, recorded RSE values are dots/solid segments, and
+cost-to-quote or latest-quote comparisons are dashed. Today's marker explicitly
+retains the actual source quote date, and is never saved as a new observation.
+Repeat purchases are combined per company, with average cash cost per share
+calculated as total cost including fees divided by total shares. Only shares
+bought by each plotted date contribute to that date's value. Same-day purchases
+use a same-day comparison; filtered ranges carry earlier cost into the range.
+Missing months are not backfilled or treated as zero returns. The
 schema is installed by the existing production prebuild migration. A missing
 database/history table leaves current quote valuation usable.
 

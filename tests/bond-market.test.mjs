@@ -54,19 +54,40 @@ test('monthly and yearly views use actual observations, deduplicate days, and do
   assert.equal(quotes.equityHistorySeries(values,'BOK','year',now).length,3);
   assert.equal(quotes.equityHistorySeries([],'BOK','all',now).length,0);
 });
-test('history graphs value only shares already bought on each date and distinguish empty or single-date history', async () => {
+test('history graphs value only shares already bought, with purchase-cost anchors even before history builds', async () => {
   const {createElement}=await import('react');const {renderToStaticMarkup}=await import('react-dom/server');
   const Chart=makeLoader()('component/bonds/StockHistoryChart.tsx').default;
-  const holdings=[{ticker:'BOK',tradeDate:'2020-01-02',shares:100},{ticker:'BOK',tradeDate:'2020-01-05',shares:50}];
+  const holdings=[{ticker:'BOK',status:'active',tradeDate:'2020-01-02',shares:100,netAmountPayable:10000},{ticker:'BOK',status:'active',tradeDate:'2020-01-05',shares:50,netAmountPayable:5500}];
   const point=(date,closing)=>({date,closing,ticker:'BOK',observedAt:date+'T14:00:00Z'});
   const observations=[point('2020-01-01',90),point('2020-01-02',100),point('2020-01-05',110)];
-  const html=renderToStaticMarkup(createElement(Chart,{holdings,observations,period:'all'}));
+  const html=renderToStaticMarkup(createElement(Chart,{holdings,observations,period:'all',valuationDate:'2020-01-10'}));
   assert.match(html,/<polyline/);assert.match(html,/100 shares at 100/);assert.match(html,/150 shares at 110/);
   assert.equal(html.includes('2020-01-01:'),false);
-  const single=renderToStaticMarkup(createElement(Chart,{holdings,observations:[observations[1]],period:'all'}));
-  assert.match(single,/At least two dates/);assert.equal(single.includes('<polyline'),false);
-  const empty=renderToStaticMarkup(createElement(Chart,{holdings,observations:[],period:'all'}));
-  assert.match(empty,/No dated prices/);
+  const single=renderToStaticMarkup(createElement(Chart,{holdings,observations:[observations[1]],period:'all',valuationDate:'2020-01-10',latestQuote:{closing:110,date:'2020-01-09'}}));
+  assert.match(single,/<svg/);assert.match(single,/2020-01-10 \(today\)/);assert.match(single,/using RSE quote dated 2020-01-09/);assert.match(single,/stroke-dasharray/);assert.equal(single.includes('At least two dates'),false);
+  const empty=renderToStaticMarkup(createElement(Chart,{holdings,observations:[],period:'all',valuationDate:'2020-01-10'}));
+  assert.match(empty,/<svg/);assert.match(empty,/Current RSE value is unavailable/);
+  const noHoldings=renderToStaticMarkup(createElement(Chart,{holdings:[],observations:[],period:'all'}));
+  assert.match(noHoldings,/No active shares/);
+});
+test('repeat purchases use share-weighted cash cost and never count later shares in earlier observations', () => {
+  const {stockChartData}=makeLoader()('lib/bonds/stock-chart.ts');
+  const holdings=[{ticker:'BOK',status:'active',tradeDate:'2026-09-01',shares:100,netAmountPayable:60100},{ticker:'BOK',status:'active',tradeDate:'2026-10-01',shares:300,netAmountPayable:210300},{ticker:'BOK',status:'sold',tradeDate:'2026-08-01',shares:999,netAmountPayable:999999},{ticker:'BOK',status:'active',tradeDate:'2026-11-01',shares:500,netAmountPayable:500000}];
+  const observations=[{ticker:'BOK',date:'2026-09-15',closing:650,observedAt:'2026-09-15T14:00:00Z'},{ticker:'BOK',date:'2026-10-21',closing:700,observedAt:'2026-10-21T14:00:00Z'}];
+  const data=stockChartData(holdings,observations,'all','2026-10-22',{closing:700,date:'2026-10-21'});
+  assert.deepEqual(data.totals,{shares:400,value:270400});assert.equal(data.averageCashCost,676);
+  assert.deepEqual(data.quotes.map(point=>[point.date,point.shares,point.value]),[['2026-09-15',100,65000],['2026-10-21',400,280000]]);
+  assert.deepEqual(data.cost.map(point=>[point.date,point.value]),[['2026-09-01',60100],['2026-10-01',270400],['2026-10-22',270400]]);
+  assert.equal(data.current.date,'2026-10-22');assert.equal(data.current.quoteDate,'2026-10-21');assert.equal(data.current.value,280000);
+  assert.equal(observations.length,2);assert.equal(data.quotes.some(point=>point.date==='2026-10-22'),false);
+  const month=stockChartData(holdings,observations,'month','2026-10-22',{closing:700,date:'2026-10-21'});
+  assert.equal(month.cost[0].date,'2026-09-22');assert.equal(month.cost[0].value,60100);
+});
+test('a same-day purchase produces a same-day comparison without inventing a previous date', async () => {
+  const {createElement}=await import('react');const {renderToStaticMarkup}=await import('react-dom/server');
+  const Chart=makeLoader()('component/bonds/StockHistoryChart.tsx').default;
+  const html=renderToStaticMarkup(createElement(Chart,{holdings:[{ticker:'BOK',status:'active',tradeDate:'2026-10-22',shares:100,netAmountPayable:68000}],observations:[],period:'all',valuationDate:'2026-10-22',latestQuote:{closing:700,date:'2026-10-21'}}));
+  assert.match(html,/Same-day purchase and valuation/);assert.match(html,/RWF 70,000/);assert.equal(html.includes('NaN'),false);assert.equal(html.includes('2026-10-20'),false);
 });
 test('RSE loading deduplicates concurrent requests, bounds pagination, caches quotes, and handles partial pages', async () => {
   const originalFetch=global.fetch;
