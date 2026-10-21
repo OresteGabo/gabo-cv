@@ -4,14 +4,16 @@ import { accountByEmail, activeInvitation, closeInvitations, putInvitation } fro
 import { newToken, normalizeEmail, tokenHash } from "@/lib/bonds/auth-crypto";
 import { authJson } from "@/lib/bonds/auth-http";
 import { isSameOriginRequest, readBoundedJsonBody } from "@/lib/bonds/request";
+import { fileOwnerMode } from "@/lib/bonds/auth-mode";
 
 export async function GET() {
   try {
     const session = await getBondSession();
     if (!session) return authJson({ error: "Authentication required." }, 401);
     if (!session.isOwner) return authJson({ error: "Owner access required." }, 403);
+    if (fileOwnerMode()) return authJson({ available: false, invitation: null });
     const invitation = await activeInvitation();
-    return authJson({ invitation: invitation ? { email: invitation.email, expiresAt: invitation.expiresAt } : null });
+    return authJson({ available: true, invitation: invitation ? { email: invitation.email, expiresAt: invitation.expiresAt } : null });
   } catch { return authJson({ error: "Registration settings are unavailable." }, 503); }
 }
 export async function POST(request: NextRequest) {
@@ -20,6 +22,7 @@ export async function POST(request: NextRequest) {
     const session = await getBondSession();
     if (!session) return authJson({ error: "Authentication required." }, 401);
     if (!session.isOwner) return authJson({ error: "Owner access required." }, 403);
+    if (fileOwnerMode()) return authJson({ error: "Invitations require persistent account storage. This deployment uses the original owner-only JSON portfolio." }, 409);
     const body = await readBoundedJsonBody(request, 1024);
     if (!body.ok) return authJson({ error: body.error }, body.status);
     const email = normalizeEmail((body.data as Record<string, unknown> | null)?.email);
@@ -36,6 +39,7 @@ export async function DELETE(request: NextRequest) {
     const session = await getBondSession();
     if (!session) return authJson({ error: "Authentication required." }, 401);
     if (!session.isOwner) return authJson({ error: "Owner access required." }, 403);
+    if (fileOwnerMode()) return authJson({ closed: true });
     await closeInvitations();
     return authJson({ closed: true });
   } catch { return authJson({ error: "Registration could not be closed." }, 503); }

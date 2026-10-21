@@ -8,12 +8,13 @@ export function BondRegistrationSettings() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [available, setAvailable] = useState<boolean | null>(null);
   useEffect(() => {
     let active = true;
     const refresh = () => fetch("/api/bonds/auth/registration", { cache: "no-store" }).then(async (response) => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
-      if (active) { setInvitation(data.invitation); if (!data.invitation) setLink(""); }
+      if (active) { setAvailable(data.available !== false); setInvitation(data.invitation); if (!data.invitation) setLink(""); }
     }).catch(() => { if (active) setError("Could not load account creation settings."); });
     void refresh();
     window.addEventListener("focus", refresh);
@@ -34,6 +35,10 @@ export function BondRegistrationSettings() {
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not update registration."); }
     finally { setBusy(false); }
   }
+  if (available !== true) return <section className="mt-4 rounded-2xl border border-outline/15 bg-[var(--md-sys-color-surface-container-lowest)] p-4">
+    <h3 className="font-black">Account creation</h3>
+    <p className="mt-2 text-xs leading-relaxed text-on-surface-variant">{available === false ? "Your existing owner account is available. New accounts need persistent account storage, which is not connected on this deployment." : error || "Loading account settings…"}</p>
+  </section>;
   return <section className="mt-4 rounded-2xl border border-outline/15 bg-[var(--md-sys-color-surface-container-lowest)] p-4">
     <h3 className="font-black">Account creation</h3>
     <p className="mt-2 text-xs leading-relaxed text-on-surface-variant">Invite your friend by email. The link expires after 48 hours and closes automatically when the account is created. Creating a new link replaces the previous one.</p>

@@ -28,6 +28,26 @@ test.before(async () => {
 });
 test.after(async () => { process.env = originalEnv; await pg.close(); });
 
+test('auth diagnostics identify database failures without logging credentials or error messages', () => {
+  const { reportAuthFailure } = load('lib/bonds/auth-diagnostics.ts');
+  const messages = [];
+  const originalError = console.error;
+  console.error = (...args) => messages.push(args);
+  try {
+    reportAuthFailure('login', 'rate_limit_storage', { code: '42501', message: 'secret connection string', query: 'private SQL' });
+    assert.equal(messages[0][1].reason, 'insufficient_database_permissions');
+    assert.equal(messages[0][1].databaseConfigured, true);
+    reportAuthFailure('login', 'session_creation', { code: '42703', detail: 'private token' });
+    assert.equal(messages[1][1].reason, 'missing_column');
+    reportAuthFailure('login', 'session_creation', { code: 'secret-code', message: 'private password' });
+    assert.equal(messages[2][1].reason, 'unclassified_server_error');
+    const output = JSON.stringify(messages);
+    for (const secret of ['secret connection string', 'private SQL', 'private token', 'secret-code', 'private password', process.env.BONDS_ADMIN_PASSWORD_HASH, process.env.BONDS_DATABASE_URL]) {
+      assert.equal(output.includes(secret), false);
+    }
+  } finally { console.error = originalError; }
+});
+
 test('passwords use randomized scrypt hashes, reject wrong passwords, and accept legacy owner hashes', async () => {
   const first = await crypto.hashPassword(password), second = await crypto.hashPassword(password);
   assert.notEqual(first, second);

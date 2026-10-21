@@ -17,7 +17,7 @@ subdomain URL, preserving bookmarks while keeping one public bond-site address.
 - Private real purchase log backed by Neon or a local JSON file
 - Saved RSE bond-market observations for recent secondary-market activity
 - Protected market snapshot endpoint for scheduled RSE captures
-- Invite-only user accounts with revocable HTTP-only sessions
+- Existing owner login for JSON deployments; invite-only accounts with revocable sessions in database mode
 - Responsive layout suitable for installation from a phone browser
 
 ## PDF bond import
@@ -111,7 +111,36 @@ Use a separate Neon role for this application when possible. Grant it only
 
 ## Accounts and invitations
 
-Before enabling accounts on a deployed website:
+The existing production JSON deployment works without a database. Configure only
+`BONDS_ADMIN_EMAIL` and `BONDS_ADMIN_PASSWORD_HASH` as private Vercel environment
+variables. The old password was exposed in public Git history, so this repair
+replaces it with a new random password, delivered locally outside the repository
+at `/private/tmp/gabo-bonds-owner-login.txt`. The matching private Vercel import
+file is `/private/tmp/gabo-bonds-owner.env`. Import that file into Vercel's
+Production environment and redeploy. Neither file, the password, nor its verifier
+is committed or included in public assets. Save the password in a password
+manager, since the OS may clear temporary files.
+Owner sign-in reads the existing JSON portfolio, documents, and equities. Unknown
+accounts cannot sign in, and new account creation is closed until persistent
+storage is connected. Setting `BONDS_PORTFOLIO_DATABASE=database` explicitly
+continues to require a database; a database outage never falls back to JSON auth.
+
+`npm run build` generates a random, private signing key for this owner-only mode.
+The ignored `.data/bonds-deployment-key.json` is traced into the server deployment
+and standalone output, never the public assets or Git. Every function in that
+deployment uses the same key, so owner sessions do not depend on temporary files
+or a particular server instance. Rebuilding rotates the key and invalidates prior
+sessions. Do not share server build artifacts. Run the build through the npm
+script so preparation runs; a missing key fails closed.
+
+Owner-only sessions expire after one hour. Logout clears the browser cookie;
+without shared storage it cannot revoke a copied cookie on every server instance.
+Password changes and a new build invalidate those sessions. Login attempt limits
+are bounded and per-instance in this legacy mode. Database mode provides shared
+rate limits and server-side session revocation. Every mode requires both private
+owner credential variables; there is no fallback to credentials exposed in Git.
+
+Before enabling multi-user accounts on a deployed website:
 
 1. Configure `BONDS_DATABASE_URL` with a durable Neon/Postgres database.
 2. Run the complete `db/bonds-schema.sql`. The migration is additive: existing SQL
@@ -142,7 +171,7 @@ new users see an empty library/equity list. PDF imports remain local to the
 browser, with reviewed purchase values saved in that user’s portfolio. Signed-in
 users’ real purchases are also loaded in the simulator.
 
-Production accounts require Postgres: there is no fallback to serverless files
+Multi-user production accounts require Postgres: there is no fallback to serverless files
 for credentials, sessions, invitations, rate limits, or newly registered users’
 purchases. The owner’s legacy file portfolio can continue to be read with
 `BONDS_PORTFOLIO_DATABASE=file`; runtime changes to that legacy file are still
@@ -154,12 +183,13 @@ Without a database, development keeps its auth file in a project-specific
 `gabo-bonds-auth` directory under the OS temporary directory, outside Next’s
 watched source tree, and portfolios in ignored `.data/bonds-users/<user-id>.json`
 files. Temporary-directory auth data can be cleared by the OS. These are for a single local process;
-do not commit them or deploy them as an account database. No default password
-or signing secret is built in. `BONDS_SESSION_SECRET` is no longer used. Existing
-signed cookies are intentionally invalidated on upgrade: everyone signs in again.
+do not commit them or deploy them as an account database. Every mode requires
+private owner credentials and rejects the old predictable signing secret.
+`BONDS_SESSION_SECRET` is no longer used. Old signed cookies are intentionally
+invalidated on upgrade: everyone signs in again.
 Passwords are hashed with scrypt; session and invitation tokens are random, and
-only token hashes are stored. Logout revokes the server session as well as the
-cookie. Disabling a user in `bond_users.disabled_at` blocks their sessions, and
+only token hashes are stored. Database logout revokes the server session as well
+as the cookie. Disabling a user in `bond_users.disabled_at` blocks their sessions, and
 changing an owner password hash invalidates existing owner sessions.
 
 There is no automated password-reset or email-verification service in this
@@ -174,6 +204,18 @@ CSRF, and rate-limit checks against an embedded PostgreSQL engine. The HTTP suit
 requires an isolated development server and `BONDS_AUTH_TEST_URL`; never aim it
 at a real portfolio. Expired auth-attempt records are pruned during requests.
 Periodically delete expired `bond_sessions` rows as database maintenance.
+
+If sign-in returns “Check the account database configuration”, inspect the
+deployment's function logs for `[bonds-auth]`. The diagnostic includes the failing
+stage, configuration presence (booleans only), and a safe failure category.
+`missing_table` or `missing_column` means the connected database needs the latest
+schema; `insufficient_database_permissions` means the application role needs the
+grants listed above. `missing_BONDS_DATABASE_URL` means the running deployment
+does not have that exact variable name. Verify the variable is enabled for the
+deployment's Production/Preview environment and redeploy after changing it.
+Diagnostics never log raw errors, passwords, emails, session tokens, or connection
+strings. An unclassified error still requires checking the database connection
+and hosting environment; it does not establish that a password is incorrect.
 
 ## RSE market snapshots
 
@@ -200,14 +242,17 @@ project and continues serving the portfolio website.
 ## Security boundary
 
 - All private purchase APIs derive the user from a valid server-side session.
-- Sessions use 256-bit random tokens, expire after 12 hours, and are revocable.
+- Database sessions use 256-bit random tokens, expire after 12 hours, and are
+  revocable. Owner-only JSON sessions use a private deployment signing key and
+  expire after one hour, with the logout limitations described above.
 - Cookies are HTTP-only, SameSite Strict, and Secure with a host-only `__Host-`
   name in production. No session tokens are put in browser local storage.
 - Every mutation checks the complete request origin and uses a bounded JSON body.
 - Invitation redemption and consumption are atomic in Postgres; duplicate
   registration cannot create two accounts from one link.
-- Login and registration are limited by account identity, IP, and a global budget
-  using persistent storage. Proxy IP headers are supplemental; identity and
+- Database login and registration are limited by account identity, IP, and a global budget
+  using persistent storage. JSON owner login uses bounded per-instance counters.
+  Proxy IP headers are supplemental; identity and
   global limits still apply if an IP header is spoofed. Hosting firewall limits
   can add protection against distributed abuse.
 - Simulator assumptions and cash injections use account-scoped browser storage keys; private purchases

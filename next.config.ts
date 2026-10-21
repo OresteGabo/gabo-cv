@@ -2,10 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingExcludes: {
+    "/*": ["./.data/bonds-owner-login.txt"],
+  },
   outputFileTracingIncludes: {
     "/*": [
       "./.data/bonds-portfolio.json",
       "./.data/equity-portfolio.json",
+      "./.data/bonds-deployment-key.json",
       "./private/bonds/bond-documents.json",
       "./private/bonds/documents/*.pdf",
     ],

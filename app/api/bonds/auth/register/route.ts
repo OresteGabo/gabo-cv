@@ -4,9 +4,11 @@ import { activeInvitation, redeemInvitation } from "@/lib/bonds/auth-store";
 import { hashPassword, normalizeEmail, tokenHash } from "@/lib/bonds/auth-crypto";
 import { authJson, authRateLimited } from "@/lib/bonds/auth-http";
 import { isSameOriginRequest, readBoundedJsonBody } from "@/lib/bonds/request";
+import { fileOwnerMode } from "@/lib/bonds/auth-mode";
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) return authJson({ error: "Invalid request origin." }, 403);
+  if (fileOwnerMode()) return authJson({ error: "Account creation is unavailable on this JSON deployment. Existing owner sign-in remains available." }, 403);
   const body = await readBoundedJsonBody(request, 4096);
   if (!body.ok) return authJson({ error: body.error }, body.status);
   const input = body.data && typeof body.data === "object" ? body.data as Record<string, unknown> : {};
