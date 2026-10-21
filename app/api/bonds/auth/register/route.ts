@@ -5,6 +5,7 @@ import { hashPassword, normalizeEmail, tokenHash } from "@/lib/bonds/auth-crypto
 import { authJson, authRateLimited } from "@/lib/bonds/auth-http";
 import { isSameOriginRequest, readBoundedJsonBody } from "@/lib/bonds/request";
 import { fileOwnerMode } from "@/lib/bonds/auth-mode";
+import { configuredFriend } from "@/lib/bonds/friend-account";
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) return authJson({ error: "Invalid request origin." }, 403);
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     if (!email || typeof input.password !== "string" || input.password.length < 15 || input.password.length > 128) return authJson({ error: "Use a valid email and a password between 15 and 128 characters." }, 400);
     const token = typeof input.invite === "string" && /^[A-Za-z0-9_-]{43}$/.test(input.invite) ? input.invite : "";
     const invitation = await activeInvitation();
-    if (!token || !invitation || invitation.email !== email || invitation.tokenHash !== tokenHash(token) || email === ownerEmail()) return authJson({ error: "Account creation is closed, or this invitation is invalid or expired." }, 403);
+    if (!token || !invitation || (invitation.email && invitation.email !== email) || invitation.tokenHash !== tokenHash(token) || email === ownerEmail() || email === configuredFriend()?.email) return authJson({ error: "Account creation is closed, or this invitation is invalid or expired." }, 403);
     const account = await redeemInvitation(tokenHash(token), email, await hashPassword(input.password));
     if (!account) return authJson({ error: "This invitation cannot be used. Ask the owner for a new one." }, 403);
     await revokeSession();

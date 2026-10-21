@@ -96,7 +96,7 @@ export async function redeemInvitation(hash: string, email: string, passwordHash
   const sql = sqlClient();
   if (!sql) return local((data) => {
     const invitation = data.invitation;
-    if (!invitation || invitation.used || invitation.tokenHash !== hash || invitation.email !== email || invitation.expiresAt <= Date.now() || data.users.some((user) => user.email === email)) return null;
+    if (!invitation || invitation.used || invitation.tokenHash !== hash || (invitation.email && invitation.email !== email) || invitation.expiresAt <= Date.now() || data.users.some((user) => user.email === email)) return null;
     const user = { id, email, passwordHash };
     data.users.push(user);
     invitation.used = true;
@@ -105,7 +105,7 @@ export async function redeemInvitation(hash: string, email: string, passwordHash
   // Lock the invitation and consume it in the same statement as account creation.
   const rows = await sql`
     WITH usable AS (
-      SELECT id FROM bond_registration WHERE id = true AND token_hash = ${hash} AND email = ${email} AND used_at IS NULL AND expires_at > now() FOR UPDATE
+      SELECT id FROM bond_registration WHERE id = true AND token_hash = ${hash} AND (email = '' OR email = ${email}) AND used_at IS NULL AND expires_at > now() FOR UPDATE
     ), created AS (
       INSERT INTO bond_users (id, email, password_hash) SELECT ${id}, ${email}, ${passwordHash} FROM usable ON CONFLICT (email) DO NOTHING RETURNING id, email, password_hash AS "passwordHash"
     ), consumed AS (

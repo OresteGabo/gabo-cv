@@ -28,8 +28,10 @@ export async function POST(request: NextRequest) {
     if (fileOwnerMode()) return authJson({ error: "Invitations require persistent account storage. This deployment uses the original owner-only JSON portfolio." }, 409);
     const body = await readBoundedJsonBody(request, 1024);
     if (!body.ok) return authJson({ error: body.error }, body.status);
-    const email = normalizeEmail((body.data as Record<string, unknown> | null)?.email);
-    if (!email || email === ownerEmail() || await accountByEmail(email)) return authJson({ error: "Use a valid email that does not already have access." }, 400);
+    const input = body.data && typeof body.data === "object" ? body.data as Record<string, unknown> : {};
+    const supplied = input.email;
+    const email = supplied === undefined || supplied === "" || (typeof supplied === "string" && !supplied.trim()) ? "" : normalizeEmail(supplied);
+    if (email === null || (email && (email === ownerEmail() || email === configuredFriend()?.email || await accountByEmail(email)))) return authJson({ error: "Use a valid email that does not already have access, or leave it blank so your friend can choose." }, 400);
     const token = newToken();
     const expiresAt = Date.now() + 48 * 60 * 60_000;
     await putInvitation({ tokenHash: tokenHash(token), email, expiresAt, used: false });

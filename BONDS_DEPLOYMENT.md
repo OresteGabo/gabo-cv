@@ -111,8 +111,32 @@ Use a separate Neon role for this application when possible. Grant it only
 
 ## Accounts and invitations
 
+### Invite a friend to create an account
+
+This is the primary onboarding flow. Sign in as the owner and select
+**Portfolio → Invite a friend → Create private invitation**. The email is
+optional: leave it empty so the recipient can choose their email, or enter an
+email to restrict the invitation to that address. Copy the generated
+`/join#invite=...` link and share it privately with the intended friend.
+
+The link opens an account-creation form. The recipient chooses an email and a
+password, confirms the password, and is signed in to their new private portfolio.
+Their account is saved directly in Postgres, with a scrypt password hash and a
+normal user role. They can import PDFs, save/edit/delete their own purchases,
+sign out and back in, and see those bonds in the simulator. No friend password
+or hash needs to be given to the owner or added to Vercel. PDF extraction happens
+on the recipient's device; the reviewed bond data is saved to their account.
+
+Each invitation is random, expires in 48 hours, and creates one account only.
+An unbound link is a bearer invitation: anyone holding it can claim that one
+account, so send it directly to the intended recipient. Only token hashes are
+stored. Creating a replacement link invalidates the previous one, and successful
+registration closes it automatically. Only the owner can issue or cancel links;
+normal users cannot promote themselves or access the owner's data.
+
 ### Friend access with an email and password hash
 
+This optional manual alternative is under **Advanced: manual Vercel account**.
 Share `https://bonds.orestegabo.dev/create-password` after deploying this feature.
 The friend enters an email and chooses and confirms a password. The browser uses
 Web Crypto PBKDF2-HMAC-SHA256 with 600,000 iterations and a fresh 16-byte random
@@ -197,11 +221,11 @@ Before enabling multi-user accounts on a deployed website:
 4. Optionally set `BONDS_APP_ORIGIN=https://bonds.orestegabo.dev` for a fixed origin
    behind a proxy. Leave it unset for local development unless it matches the
    actual local URL exactly.
-5. Deploy and sign in. Open **Portfolio → Settings → Account creation**, enter
-   your friend’s email, and select **Create invitation**. Copy the link and share
+5. Deploy and sign in. Open **Portfolio → Invite a friend**, optionally enter
+   your friend’s email, and select **Create private invitation**. Copy the link and share
    it directly with that friend. The website does not send email.
 
-Invitations are bound to the entered email, expire in 48 hours, and can create
+Invitations are bound to the entered email when supplied, expire in 48 hours, and can create
 one account only. Successful registration closes account creation automatically.
 Creating a new invitation invalidates the previous one. **Close account creation**
 revokes any unused link immediately; existing accounts can still sign in. No

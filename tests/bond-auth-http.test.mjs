@@ -74,3 +74,18 @@ test('logout revokes copied session cookies and friend can sign in again indepen
  assert.equal((await friend.request(`/api/bonds/purchases/${friendPurchase.id}`,'DELETE')).status,200);
  assert.equal((await owner.request(`/api/bonds/purchases/${ownerPurchase.id}`,'DELETE')).status,200);
 });
+test('a private link creates an independent account with a chosen email and persistent purchases',async()=>{
+ const issue=await owner.request('/api/bonds/auth/registration','POST',{});assert.equal(issue.status,201);
+ const newFriend=client();
+ const email='gorki-invited@example.test',password='gorki disposable invitation test password';
+ const created=await newFriend.request('/api/bonds/auth/register','POST',{email,password,invite:issue.data.invite,isOwner:true});
+ assert.equal(created.status,201);assert.equal(created.data.user.isOwner,false);
+ assert.deepEqual((await newFriend.request('/api/bonds/purchases')).data.purchases,[]);
+ const saved=await newFriend.request('/api/bonds/purchases','POST',purchase);assert.equal(saved.status,201);
+ assert.equal((await owner.request(`/api/bonds/purchases/${saved.data.purchase.id}`)).status,404);
+ assert.equal((await newFriend.request('/api/bonds/auth/logout','POST')).status,200);
+ assert.equal((await newFriend.request('/api/bonds/auth/login','POST',{email,password})).status,200);
+ assert.deepEqual((await newFriend.request('/api/bonds/purchases')).data.purchases.map(row=>row.id),[saved.data.purchase.id]);
+ assert.equal((await anon.request('/api/bonds/auth/register','POST',{email:'reused-invitation@example.test',password,invite:issue.data.invite})).status,403);
+ assert.equal((await newFriend.request(`/api/bonds/purchases/${saved.data.purchase.id}`,'DELETE')).status,200);
+});

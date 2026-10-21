@@ -24,6 +24,7 @@ import {
   Target,
   Trash2,
   WalletCards,
+  UserPlus,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -2702,6 +2703,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 </section>
               )}
               <div className="mt-6 flex flex-wrap justify-end gap-2">
+                {accountUser?.isOwner && <button type="button" onClick={() => setPortfolioSettingsOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-black text-primary"><UserPlus size={17} />Invite a friend</button>}
                 <Link
                   href="/documents"
                   className="inline-flex items-center gap-2 rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:border-primary/30 hover:text-primary"

@@ -143,6 +143,50 @@ test('invitations bind email, expire, are revoked, and can be redeemed only once
   await store.closeInvitations();
   assert.equal(await store.redeemInvitation(hash,'revoked@example.test',passwordHash),null);
 });
+test('a private invitation can let the recipient choose an email, but still creates only one account', async () => {
+  const hash = crypto.tokenHash(crypto.newToken()), passwordHash = await crypto.hashPassword(password);
+  await store.putInvitation({ tokenHash: hash, email: '', expiresAt: Date.now() + 60000, used: false });
+  assert.equal(await store.redeemInvitation(crypto.tokenHash('incorrect invitation'), 'chosen@example.test', passwordHash), null);
+  const results = await Promise.all([
+    store.redeemInvitation(hash, 'chosen-first@example.test', passwordHash),
+    store.redeemInvitation(hash, 'chosen-second@example.test', passwordHash),
+  ]);
+  assert.equal(results.filter(Boolean).length, 1);
+  assert.equal(await store.activeInvitation(), null);
+  await store.putInvitation({ tokenHash: hash, email: '', expiresAt: Date.now() - 1, used: false });
+  assert.equal(await store.redeemInvitation(hash, 'expired-choice@example.test', passwordHash), null);
+});
+test('owner-issued no-email links register a normal account directly, without Vercel credentials', async () => {
+  const { NextRequest } = await import('next/server.js');
+  const request = (path, data) => new NextRequest(`https://bonds.example.test${path}`, {
+    method: 'POST', headers: { origin: 'https://bonds.example.test', 'content-type': 'application/json' }, body: JSON.stringify(data),
+  });
+  const registration = load('app/api/bonds/auth/registration/route.ts');
+  cookieValues.set('bonds_session_v2', await auth.createSession(await auth.authenticate('owner@example.test', password)));
+  const issued = await registration.POST(request('/api/bonds/auth/registration', {}));
+  assert.equal(issued.status, 201);
+  const { invite } = await issued.json();
+  assert.equal((await store.activeInvitation()).email, '');
+  cookieValues.clear();
+  const register = load('app/api/bonds/auth/register/route.ts').POST;
+  const protectedOwner = await register(request('/api/bonds/auth/register', { email: 'owner@example.test', password, invite }));
+  assert.equal(protectedOwner.status, 403);
+  const created = await register(request('/api/bonds/auth/register', { email: 'gorki-invited@example.test', password, invite, isOwner: true, userId: 'owner' }));
+  assert.equal(created.status, 201);
+  const user = (await created.json()).user;
+  assert.equal(user.isOwner, false);
+  assert.notEqual(user.id, 'owner');
+  const account = await store.accountByEmail('gorki-invited@example.test');
+  assert.equal(account.id, user.id);
+  assert.notEqual(account.passwordHash, password);
+  assert.ok(await crypto.verifyPasswordHash(password, account.passwordHash));
+  cookieValues.set('bonds_session_v2', created.cookies.get('bonds_session_v2').value);
+  assert.equal((await auth.getBondSession()).userId, user.id);
+  assert.equal(await store.activeInvitation(), null);
+  assert.equal((await registration.POST(request('/api/bonds/auth/registration', {}))).status, 403);
+  assert.equal((await register(request('/api/bonds/auth/register', { email: 'another-invited@example.test', password, invite }))).status, 403);
+  cookieValues.clear();
+});
 test('each SQL purchase operation requires the current owner, including mutations by guessed ID', async () => {
   const a=await db.createPurchase(userA,purchase), b=await db.createPurchase(userB,purchase), owner=await db.createPurchase('owner',purchase);
   assert.deepEqual((await db.listPurchases(userA)).map(p=>p.id),[a.id]);
