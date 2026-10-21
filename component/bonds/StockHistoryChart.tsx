@@ -26,7 +26,7 @@ export default function StockHistoryChart({ observations, holdings, period, late
       <path d={costPath} fill="none" stroke={outline} strokeWidth="2" aria-label="Cumulative purchase cash cost" />
       {cost.map((point) => <rect key={point.date} x={x(point.date) - 3} y={y(point.value) - 3} width="6" height="6" fill={outline}><title>{`${point.date}: purchase cash cost ${money(point.value)} for ${point.shares} shares`}</title></rect>)}
       {anchor && firstMarket && <polyline points={coordinates([anchor, firstMarket])} fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="5 5" aria-label="Purchase cost to first available quoted value comparison" />}
-      {sampled.length >= 2 && <polyline points={coordinates(sampled)} fill="none" stroke="currentColor" strokeWidth="2.5" aria-label="Recorded RSE value observations" />}
+      {quotes.length >= 2 && <polyline points={coordinates(quotes)} fill="none" stroke="currentColor" strokeWidth="2.5" aria-label="Recorded RSE value observations" />}
       {sampled.map((point) => <circle key={point.date} cx={x(point.date)} cy={y(point.value)} r="3.5" fill="currentColor"><title>{`${point.date}: recorded quote, ${money(point.value)}, ${point.shares} shares at ${point.closing}`}</title></circle>)}
       {current && <>
         {lastMarket && (lastMarket.date !== current.date || lastMarket.value !== current.value) && <polyline points={coordinates([lastMarket, current])} fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="5 5" aria-label="Today estimate using the latest available quote" />}

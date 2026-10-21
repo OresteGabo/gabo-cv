@@ -4,8 +4,8 @@ import { parseBondQuotes, parseEquityQuotes, parseListedBonds, publishedEquityDa
 const BASE = "https://rse.rw";
 const TTL = 15 * 60_000;
 type PageSet = { pages: string[]; failed: number; checkedAt: string };
-async function page(url: string) {
-  const response = await fetch(url, { next: { revalidate: 900 }, signal: AbortSignal.timeout(8_000), headers: { Accept: "text/html", "User-Agent": "orestegabo.dev optional market reader" } });
+async function page(url: string, fresh = false) {
+  const response = await fetch(url, { ...(fresh ? { cache: "no-store" as const } : { next: { revalidate: 900 } }), signal: AbortSignal.timeout(8_000), headers: { Accept: "text/html", "User-Agent": "orestegabo.dev optional market reader" } });
   if (!response.ok) throw new Error("RSE is unavailable.");
   const html = await response.text();
   if (html.length > 1_500_000) throw new Error("Market response is too large.");
@@ -49,10 +49,13 @@ export function getBondQuotes(): Promise<BondQuotes> {
     return { source: source("bond-market", market, quotes.length), listingSource: source("outstanding-bonds", listing, listings.length), quotes, listings };
   });
 }
-export function getEquityQuotes(): Promise<EquityQuotes> {
-  return cached("equities", async () => {
-    const result = await pages("equities-market").catch(() => null);
+export function getEquityQuotes(options: { fresh?: boolean } = {}): Promise<EquityQuotes> {
+  const fetcher = async (): Promise<EquityQuotes> => {
+    // Equities are a single table; bond pagination does not apply here.
+    const result = await page(`${BASE}/equities-market`, options.fresh).then((html) => ({ pages: [html], failed: 0, checkedAt: new Date().toISOString() })).catch(() => null);
     const quotes = result?.pages.flatMap(parseEquityQuotes) ?? [];
     return { source: { ...source("equities-market", result, quotes.length), publishedAt: result ? publishedEquityDate(result.pages[0], result.checkedAt) : null }, quotes };
-  });
+  };
+  // Scheduled collection must bypass both caches and never fall back to stale data.
+  return options.fresh ? fetcher() : cached("equities", fetcher);
 }

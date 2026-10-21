@@ -130,8 +130,8 @@ automatic currency conversion is applied.
 The public RSE pages provide current quotes rather than a complete historical
 time series. `equity_market_observations` stores at most one public closing
 quote per ticker and source date, updated only by a newer observation. Snapshots
-are collected when the stock page requests quotes; there is no new scheduled
-job. Daily history is read in a later optional request. Monthly/yearly filters
+are collected daily by the protected Vercel job described below and optionally
+when the stock page requests quotes. History is read in a later optional request. Month/year filters
 show recorded quotes alongside purchase-cost anchors and today's estimated
 value. A graph can render before two quote dates have accumulated: purchase
 cash cost is a stepped line, recorded RSE values are dots/solid segments, and
@@ -363,7 +363,45 @@ Diagnostics never log raw errors, passwords, emails, session tokens, or connecti
 strings. An unclassified error still requires checking the database connection
 and hosting environment; it does not establish that a password is incorrect.
 
-## RSE market snapshots
+## Daily equity prices
+
+`vercel.json` schedules `/api/bonds/rse/daily` every day at 18:00 UTC
+(20:00 in Kigali). On Hobby, Vercel may invoke it within that hour.
+The schedule runs on Production after deploying this commit, without a visitor.
+Set a private random `CRON_SECRET` in Vercel's Production environment and redeploy;
+Vercel sends it automatically as an Authorization Bearer header. A missing or
+incorrect secret returns 401 and never fetches or writes data. Do not put it in
+a URL, client code, or Git. The database connection already used for accounts is
+also used for public price history; no additional service is needed.
+
+The job fetches only the equity table, bypasses quote caches, retries an unusable
+upstream response once, and waits for database writes before reporting success.
+Each RSE symbol has one row per **published market date**, including unchanged
+prices on a new date. Repeated runs update that date without duplicate rows;
+older fetches cannot overwrite newer ones. An unchanged publication date is not
+stamped with today's date. Undated, stale, partial, empty or failed sources are
+not persisted. Missing database configuration and collection errors return 503.
+Vercel does not automatically retry a failed cron invocation; inspect the Cron
+Jobs/function logs for `[rse-daily]` and invoke it again after fixing the issue.
+Logs contain status, market date and row count only, never credentials.
+
+Build migrations create `equity_market_observations` and the singleton
+`equity_market_collection` health record (last attempt, last successful attempt,
+latest market date, status). Runtime roles need SELECT/INSERT/UPDATE permissions
+on these tables. The health record retains one row, including when the same RSE
+market date is checked repeatedly. Price rows contain no accounts or holdings
+and are shared across portfolios. Optional page visits can also save dated quotes.
+
+Raw daily observations are retained. Month/year requests return daily rows;
+histories over 400 observations per symbol return each month's first and last
+actual observations. Their original dates are preserved, with no fixed
+400-day cutoff. The client requests only held symbols and the selected range,
+after holdings and quotes load and the page is idle. Empty history and failures
+leave the holdings/current valuation usable. Collection starts with available
+RSE updates; historical daily prices cannot be invented or backfilled from a
+current closing quote.
+
+## RSE bond market snapshots
 
 The public bond page requests fresh official RSE data on every page load. To
 keep a durable record when the RSE bond-market page resets, schedule

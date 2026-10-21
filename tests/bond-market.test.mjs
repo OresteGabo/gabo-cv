@@ -148,16 +148,84 @@ test('daily public quote observations are idempotent, reject older overwrites, a
     await pg.exec(readFileSync('db/bonds-schema.sql','utf8').replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;',''));
     const store=makeLoader({'@neondatabase/serverless':{neon:()=>sql}})('lib/bonds/equity-observations.ts');
     const data={source:{status:'available',checkedAt:'2026-10-21T14:00:00Z',publishedAt:'2026-10-21T12:27:00Z',stale:false},quotes:quotes.parseEquityQuotes(equityRows)};
-    await store.recordEquityQuotes(data);await store.recordEquityQuotes(data);
+    assert.deepEqual(await store.recordEquityQuotes(data),{status:'saved',marketDate:'2026-10-21',written:2});
+    assert.equal((await store.recordEquityQuotes(data)).written,0);
     assert.equal((await store.listEquityObservations(['BOK','IMR'])).observations.length,2);
     await store.recordEquityQuotes({...data,source:{...data.source,checkedAt:'2026-10-21T13:00:00Z'},quotes:[{ticker:'BOK',closing:1}]});
     assert.equal((await store.listEquityObservations(['BOK'])).observations[0].closing,700);
     await store.recordEquityQuotes({...data,source:{...data.source,checkedAt:'2026-10-22T14:00:00Z',publishedAt:'2026-10-22T12:00:00Z'}});
     assert.equal((await store.listEquityObservations(['BOK'])).observations.length,2);
+    for(const source of [{...data.source,publishedAt:null},{...data.source,publishedAt:'invalid'},{...data.source,publishedAt:'2026-10-23T12:00:00Z'},{...data.source,stale:true},{...data.source,status:'partial'}]) {
+      assert.notEqual((await store.recordEquityQuotes({...data,source})).status,'saved');
+    }
+    assert.equal((await store.listEquityObservations(['BOK'])).observations.length,2);
+    await store.recordEquityCollectionRun('2026-10-22T18:00:00Z','saved','2026-10-22');
+    await store.recordEquityCollectionRun('2026-10-23T18:00:00Z','unusable-source',null);
+    await store.recordEquityCollectionRun('2026-10-21T18:00:00Z','saved','2026-10-21');
+    const health=(await pg.query('SELECT status, succeeded_at::text, market_date::text FROM equity_market_collection')).rows;
+    assert.equal(health.length,1);assert.equal(health[0].status,'unusable-source');assert.equal(health[0].market_date,'2026-10-22');assert.match(health[0].succeeded_at,/2026-10-22/);
     assert.deepEqual((await store.listEquityObservations(['NOTHELD'])).observations,[]);
     delete process.env.BONDS_DATABASE_URL;delete process.env.DATABASE_URL;
     assert.equal((await store.listEquityObservations(['BOK'])).available,false);
   } finally {process.env=originalEnv;await pg.close();}
+});
+test('long histories keep all raw rows and return real monthly endpoints, with daily month/year views', async () => {
+  const pg=new PGlite(), originalEnv={...process.env};
+  const sql=async(strings,...values)=>(await pg.query(strings.reduce((text,part,index)=>text+part+(index<values.length?`$${index+1}`:''),''),values)).rows;
+  try {
+    process.env.BONDS_DATABASE_URL='postgresql://test.invalid/mock';
+    await pg.exec(readFileSync('db/bonds-schema.sql','utf8').replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;',''));
+    await pg.exec(`INSERT INTO equity_market_observations (ticker,observed_date,closing_price,observed_at)
+      SELECT 'BOK', day::date, 700, day FROM generate_series('2022-01-01'::timestamp,'2026-10-22'::timestamp,'1 day') day`);
+    const store=makeLoader({'@neondatabase/serverless':{neon:()=>sql}})('lib/bonds/equity-observations.ts');
+    const now=new Date('2026-10-22T18:00:00Z');
+    const all=await store.listEquityObservations(['BOK'],'all',now);
+    assert.equal(all.resolution,'monthly');assert.equal(all.observations[0].date,'2022-01-01');assert.equal(all.observations.at(-1).date,'2026-10-22');assert.ok(all.observations.length<120);
+    const year=await store.listEquityObservations(['BOK'],'year',now);
+    assert.equal(year.resolution,'daily');assert.equal(year.observations.length,366);
+    const month=await store.listEquityObservations(['BOK'],'month',now);
+    assert.equal(month.resolution,'daily');assert.equal(month.observations.length,31);
+    assert.ok((await pg.query('SELECT count(*)::int AS count FROM equity_market_observations')).rows[0].count>1700);
+    assert.equal(quotes.equityHistorySeries(year.observations.concat(all.observations),'BOK','all',now)[0].date,'2022-01-01');
+  } finally {process.env=originalEnv;await pg.close();}
+});
+test('scheduled fetching bypasses both caches and never returns a stale success', async () => {
+  const originalFetch=global.fetch;let calls=0,fail=false;
+  global.fetch=async(url,options)=>{
+    calls++;assert.equal(String(url),'https://rse.rw/equities-market');
+    if(calls>1) {assert.equal(options.cache,'no-store');assert.equal(options.next,undefined);}
+    if(fail)throw new Error('offline');
+    return new Response(equityRows+'<a href="?page_bonds-trades=3">3</a>');
+  };
+  try {
+    const service=makeLoader()('lib/bonds/rse-quotes.ts');
+    await service.getEquityQuotes();await service.getEquityQuotes();assert.equal(calls,1);
+    await service.getEquityQuotes({fresh:true});assert.equal(calls,2);
+    fail=true;const failed=await service.getEquityQuotes({fresh:true});assert.equal(failed.source.status,'error');assert.equal(failed.source.stale,false);assert.deepEqual(failed.quotes,[]);
+  } finally {global.fetch=originalFetch;}
+});
+test('daily cron fails closed, retries upstream once, awaits persistence and reports failures', async () => {
+  const {NextRequest}=await import('next/server.js');const originalEnv={...process.env};
+  let fetches=0,writes=0,failWrite=false,sourceStatus='available';const health=[],freshOptions=[];
+  const route=makeLoader({
+    '@/lib/bonds/rse-quotes':{getEquityQuotes:async options=>{fetches++;freshOptions.push(options);return {source:{status:sourceStatus,publishedAt:'2026-10-21T12:00:00Z'},quotes:[]};}},
+    '@/lib/bonds/equity-observations':{
+      recordEquityQuotes:async()=>{await Promise.resolve();writes++;if(failWrite)throw new Error('private connection error');return {status:sourceStatus==='available'?'saved':'unusable-source',marketDate:'2026-10-21',written:2};},
+      recordEquityCollectionRun:async(...args)=>{health.push(args);},
+    },
+  })('app/api/bonds/rse/daily/route.ts');
+  const req=token=>new NextRequest('https://bonds.example.test/api/bonds/rse/daily',{headers:token?{authorization:`Bearer ${token}`}:{}});
+  try {
+    delete process.env.CRON_SECRET;assert.equal((await route.GET(req('secret'))).status,401);
+    process.env.CRON_SECRET='test-cron-secret';assert.equal((await route.GET(req())).status,401);assert.equal((await route.GET(req('wrong'))).status,401);assert.equal(fetches,0);assert.equal(writes,0);
+    const ok=await route.GET(req('test-cron-secret'));assert.equal(ok.status,200);assert.equal(writes,1);assert.equal(health[0][1],'saved');assert.equal(ok.headers.get('cache-control'),'no-store');assert.deepEqual(freshOptions,[{fresh:true}]);
+    sourceStatus='error';const before=fetches;assert.equal((await route.GET(req('test-cron-secret'))).status,503);assert.equal(fetches-before,2);
+    sourceStatus='available';failWrite=true;const failed=await route.GET(req('test-cron-secret'));assert.equal(failed.status,503);assert.deepEqual(await failed.json(),{status:'collection-failed'});assert.equal(health.at(-1)[1],'collection-failed');
+    const history=makeLoader({'@/lib/bonds/equity-observations':{listEquityObservations:async(tickers,period)=>({tickers,period})}})('app/api/bonds/rse/equity-history/route.ts');
+    const historyReq=period=>new NextRequest(`https://bonds.example.test/api/bonds/rse/equity-history?tickers=BOK&period=${period}`);
+    assert.equal((await history.GET(historyReq('bad'))).status,400);assert.deepEqual(await (await history.GET(historyReq('year'))).json(),{tickers:['BOK'],period:'year'});
+    const config=JSON.parse(readFileSync('vercel.json','utf8'));assert.deepEqual(config.crons,[{path:'/api/bonds/rse/daily',schedule:'0 18 * * *'}]);
+  } finally {process.env=originalEnv;}
 });
 test('optional work waits for document load, visible page, quiet resources and an idle slot, and cancels cleanly', async () => {
   const originals={window:global.window,document:global.document,setTimeout:global.setTimeout,clearTimeout:global.clearTimeout,performance:Object.getOwnPropertyDescriptor(global,'performance')};

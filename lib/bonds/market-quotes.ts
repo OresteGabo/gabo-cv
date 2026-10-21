@@ -103,5 +103,5 @@ export function equityHistorySeries(observations: EquityObservation[], ticker: s
     const old = byDate.get(observation.date);
     if (!old || observation.observedAt > old.observedAt) byDate.set(observation.date, observation);
   }
-  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-400);
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }

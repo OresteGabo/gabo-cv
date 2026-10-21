@@ -173,3 +173,12 @@ CREATE TABLE IF NOT EXISTS equity_market_observations (
   published_at TIMESTAMPTZ,
   PRIMARY KEY (ticker, observed_date)
 );
+
+-- A singleton: checking an unchanged RSE page does not create a new market day.
+CREATE TABLE IF NOT EXISTS equity_market_collection (
+  id BOOLEAN PRIMARY KEY DEFAULT true CHECK (id = true),
+  attempted_at TIMESTAMPTZ NOT NULL,
+  succeeded_at TIMESTAMPTZ,
+  market_date DATE,
+  status TEXT NOT NULL CHECK (status IN ('saved', 'database-unavailable', 'unusable-source', 'missing-market-date', 'collection-failed'))
+);
