@@ -147,6 +147,15 @@ Only the owner can list or delete accounts, and the owner cannot be deleted.
 The optional legacy account configured in Vercel is shown separately; revoke
 that account by removing its friend credential variables and redeploying.
 
+Each row also shows the total bond principal (face value of all saved purchases,
+including sold and matured records), with each currency totaled separately,
+the number of saved purchases, and the latest added purchase's bond name,
+ISIN/security code, trade date, and added date. Latest means most recently saved,
+so importing an older trade still shows that recent account activity. The
+figures refresh when opening deletion confirmation and are repeated before the
+permanent-delete button. Summaries use the owner's existing JSON portfolio when
+applicable and the database for registered users; they remain owner-only.
+
 ### Friend access with an email and password hash
 
 This optional manual alternative is under **Advanced: manual Vercel account**.

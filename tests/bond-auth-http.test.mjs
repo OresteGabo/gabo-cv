@@ -21,6 +21,10 @@ test('owner sign-in has an HTTP-only cookie and creates an email-bound invitatio
  assert.equal(result.status,200);assert.equal(result.data.user.isOwner,true);
  assert.ok(result.headers.get('set-cookie').includes('HttpOnly'));assert.ok(result.headers.get('set-cookie').includes('SameSite=strict'));
  const created=await owner.request('/api/bonds/purchases','POST',purchase);assert.equal(created.status,201);ownerPurchase=created.data.purchase;
+ const accounts=await owner.request('/api/bonds/auth/accounts');assert.equal(accounts.status,200);
+ const ownerSummary=accounts.data.accounts.find(account=>account.id==='owner').portfolio;
+ assert.equal(ownerSummary.purchaseCount,1);assert.deepEqual(ownerSummary.principalByCurrency,[{currency:'RWF',amount:1000000}]);
+ assert.equal(ownerSummary.latestPurchase.isin,purchase.isin);
  const invited=await owner.request('/api/bonds/auth/registration','POST',{email:'friend@example.test'});assert.equal(invited.status,201);invite=invited.data.invite;
  assert.equal((await anon.request('/api/bonds/auth/register','POST',{email:'wrong@example.test',password:'a secure test password 2026',invite})).status,403);
 });
@@ -100,6 +104,9 @@ test('owner can remove a test account while member account administration stays 
  assert.equal((await disposable.request(`/api/bonds/auth/accounts/${id}`,'DELETE',{email})).status,403);
  const listed=await owner.request('/api/bonds/auth/accounts');assert.equal(listed.status,200);
  assert.ok(listed.data.accounts.some(account=>account.id===id&&account.email===email&&account.deletable));
+ const summary=listed.data.accounts.find(account=>account.id===id).portfolio;
+ assert.equal(summary.purchaseCount,1);assert.deepEqual(summary.principalByCurrency,[{currency:'RWF',amount:1000000}]);
+ assert.equal(summary.latestPurchase.bondName,purchase.bondName);assert.equal(summary.latestPurchase.isin,purchase.isin);assert.equal(summary.latestPurchase.purchaseDate,purchase.purchaseDate);
  assert.equal(JSON.stringify(listed.data).includes('passwordHash'),false);
  assert.equal((await owner.request('/api/bonds/auth/accounts/owner','DELETE',{email:'owner@example.test'})).status,403);
  assert.equal((await owner.request(`/api/bonds/auth/accounts/${id}`,'DELETE',{email:'wrong@example.test'})).status,404);

@@ -187,6 +187,26 @@ test('owner-issued no-email links register a normal account directly, without Ve
   assert.equal((await register(request('/api/bonds/auth/register', { email: 'another-invited@example.test', password, invite }))).status, 403);
   cookieValues.clear();
 });
+test('account activity totals face value per currency and finds the latest added purchase without mixing users', async () => {
+  const firstId = randomUUID(), secondId = randomUUID(), emptyId = randomUUID();
+  const oldest = await db.createPurchase(firstId, { ...purchase, faceValue: 1000000, amountInvested: 950000, pricePercent: 95, bondName: 'Older active bond', isin: 'OLD-CODE' });
+  const newest = await db.createPurchase(firstId, { ...purchase, purchaseDate: '2025-12-01', faceValue: 2000000, status: 'sold', bondName: 'Latest imported bond', isin: 'LATEST-CODE' });
+  const foreign = await db.createPurchase(firstId, { ...purchase, currency: 'USD', faceValue: 1250.50, status: 'matured', bondName: 'USD bond' });
+  await db.createPurchase(secondId, { ...purchase, faceValue: 7000000 });
+  await pg.query("UPDATE bond_purchases SET created_at='2026-01-01T00:00:00Z' WHERE id=$1", [oldest.id]);
+  await pg.query("UPDATE bond_purchases SET created_at='2026-03-01T00:00:00Z' WHERE id=$1", [newest.id]);
+  await pg.query("UPDATE bond_purchases SET created_at='2026-02-01T00:00:00Z' WHERE id=$1", [foreign.id]);
+  const summaries = await db.accountPortfolioSummaries([firstId, secondId, emptyId]);
+  assert.equal(summaries.size, 3);
+  assert.equal(summaries.get(firstId).purchaseCount, 3);
+  assert.deepEqual(summaries.get(firstId).principalByCurrency, [{ currency: 'RWF', amount: 3000000 }, { currency: 'USD', amount: 1250.50 }]);
+  assert.deepEqual(summaries.get(firstId).latestPurchase, { bondName: 'Latest imported bond', isin: 'LATEST-CODE', purchaseDate: '2025-12-01', createdAt: '2026-03-01T00:00:00.000Z' });
+  assert.deepEqual(summaries.get(secondId).principalByCurrency, [{ currency: 'RWF', amount: 7000000 }]);
+  assert.deepEqual(summaries.get(emptyId), { purchaseCount: 0, principalByCurrency: [], latestPurchase: null });
+  assert.equal((await db.accountPortfolioSummaries([firstId])).has(secondId), false);
+  assert.equal((await db.accountPortfolioSummaries([])).size, 0);
+  await assert.rejects(db.accountPortfolioSummaries(['../owner']));
+});
 test('only the owner can list accounts or delete a member, their purchases, and all sessions', async () => {
   const { NextRequest } = await import('next/server.js');
   const listing = load('app/api/bonds/auth/accounts/route.ts').GET;
@@ -219,6 +239,11 @@ test('only the owner can list accounts or delete a member, their purchases, and 
   assert.equal(summary.status, 'disabled');
   assert.equal(summary.deletable, true);
   assert.ok(summary.createdAt);
+  assert.equal(summary.portfolio.purchaseCount, 1);
+  assert.deepEqual(summary.portfolio.principalByCurrency, [{ currency: 'RWF', amount: 1000000 }]);
+  assert.equal(summary.portfolio.latestPurchase.bondName, purchase.bondName);
+  assert.equal(summary.portfolio.latestPurchase.isin, purchase.isin);
+  assert.equal(summary.portfolio.latestPurchase.purchaseDate, purchase.purchaseDate);
   assert.equal(data.accounts.find(account => account.id === 'owner').deletable, false);
   const serialized = JSON.stringify(data);
   for (const secret of ['passwordHash', 'password_hash', member.passwordHash, firstSession, secondSession, 'tokenHash']) assert.equal(serialized.includes(secret), false);

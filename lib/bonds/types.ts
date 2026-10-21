@@ -146,6 +146,12 @@ export type BondPurchase = {
 
 export type BondPurchaseInput = Omit<BondPurchase, "id" | "createdAt">;
 
+export type AccountPortfolioSummary = {
+  purchaseCount: number;
+  principalByCurrency: { currency: string; amount: number }[];
+  latestPurchase: Pick<BondPurchase, "bondName" | "isin" | "purchaseDate" | "createdAt"> | null;
+};
+
 export type EquityHolding = {
   id: string;
   instrumentType: "equity";

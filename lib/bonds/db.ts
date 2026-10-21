@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { neon } from "@neondatabase/serverless";
 import { bondsDatabaseUrl } from "./database-config";
 import { canonicalPurchaseFromCatalog } from "./catalog";
-import type { BondPurchase, BondPurchaseInput } from "./types";
+import type { AccountPortfolioSummary, BondPurchase, BondPurchaseInput } from "./types";
 
 type BondFileDatabase = {
   purchases: BondPurchase[];
@@ -237,6 +237,49 @@ export async function listPurchases(userId: string): Promise<BondPurchase[]> {
   return rows
     .map((row) => normalizePurchase(row))
     .filter((purchase): purchase is BondPurchase => Boolean(purchase));
+}
+
+// Called only after the account-management API has verified owner access.
+export async function accountPortfolioSummaries(userIds: string[]): Promise<Map<string, AccountPortfolioSummary>> {
+  const summaries = new Map<string, AccountPortfolioSummary>();
+  const databaseIds: string[] = [];
+  for (const userId of new Set(userIds)) {
+    summaries.set(userId, { purchaseCount: 0, principalByCurrency: [], latestPurchase: null });
+    if (!shouldUseFileDatabase(userId)) { databaseIds.push(userId); continue; }
+    const purchases = await listFilePurchases(userId);
+    const totals = new Map<string, number>();
+    for (const purchase of purchases) totals.set(purchase.currency, (totals.get(purchase.currency) ?? 0) + purchase.faceValue);
+    const latest = [...purchases].sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))[0];
+    summaries.set(userId, {
+      purchaseCount: purchases.length,
+      principalByCurrency: [...totals].sort(([a], [b]) => a.localeCompare(b)).map(([currency, amount]) => ({ currency, amount: Math.round(amount * 100) / 100 })),
+      latestPurchase: latest ? { bondName: latest.bondName, isin: latest.isin, purchaseDate: latest.purchaseDate, createdAt: latest.createdAt } : null,
+    });
+  }
+  if (!databaseIds.length) return summaries;
+  const sql = database();
+  const rows = await sql`
+    WITH scoped AS (
+      SELECT owner_id, currency, face_value, bond_name, isin, purchase_date, created_at, id
+      FROM bond_purchases WHERE owner_id IN (SELECT jsonb_array_elements_text(${JSON.stringify(databaseIds)}::jsonb))
+    ), totals AS (
+      SELECT owner_id, currency, SUM(face_value)::float8 AS principal, COUNT(*)::int AS count
+      FROM scoped GROUP BY owner_id, currency
+    ), latest AS (
+      SELECT DISTINCT ON (owner_id) owner_id, bond_name, isin, purchase_date, created_at
+      FROM scoped ORDER BY owner_id, created_at DESC, id DESC
+    )
+    SELECT totals.owner_id AS "userId", totals.currency, totals.principal, totals.count,
+      latest.bond_name AS "bondName", latest.isin, latest.purchase_date::text AS "purchaseDate", latest.created_at::text AS "createdAt"
+    FROM totals JOIN latest ON latest.owner_id = totals.owner_id
+    ORDER BY totals.owner_id, totals.currency`;
+  for (const row of rows) {
+    const summary = summaries.get(String(row.userId))!;
+    summary.purchaseCount += Number(row.count);
+    summary.principalByCurrency.push({ currency: String(row.currency).trim(), amount: Number(row.principal) });
+    summary.latestPurchase = { bondName: String(row.bondName), isin: String(row.isin), purchaseDate: String(row.purchaseDate), createdAt: new Date(String(row.createdAt)).toISOString() };
+  }
+  return summaries;
 }
 
 export async function createPurchase(
