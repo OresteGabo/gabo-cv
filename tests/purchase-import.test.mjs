@@ -87,6 +87,45 @@ test('share API enforces session/origin and saves only validated account-scoped 
   assert.deepEqual((await (await route.GET()).json()).holdings, []);
   assert.equal((await route.POST(request('/api/bonds/equities', equity))).status, 201);
 });
+test('the original padded BK PDF imports into separate member accounts even when the owner already holds it', async () => {
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL('../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs', import.meta.url).href;
+  // Replace browser-only asset URLs, keeping the actual PDF parser and checks.
+  const pdfLoad = makeLoader({ 'pdfjs-dist/legacy/build/pdf.mjs': {
+    ...pdfjs, GlobalWorkerOptions: {}, getDocument: options => pdfjs.getDocument({
+      ...options, useWorkerFetch: false,
+      standardFontDataUrl: new URL('../node_modules/pdfjs-dist/standard_fonts/', import.meta.url).pathname,
+    }),
+  } });
+  const bytes = readFileSync('private/bonds/documents/bank-of-kigali-equity-contract-2026-09-24.pdf');
+  const end = bytes.lastIndexOf('%%EOF');
+  assert.ok(bytes.length - end > 1024, 'Exercise the broker padding that broke the old tail check.');
+  const result = await pdfLoad('lib/bonds/pdf-import.ts').importBondPdf(
+    new File([bytes], 'broker-contract.pdf', { type: 'application/pdf' }), new AbortController().signal, () => {},
+  );
+  assert.equal(result.kind, 'equity');
+  assert.deepEqual(result.missingFields, []);
+  assert.ok(validation.parseEquityPurchase(result.fields));
+  const ownerBefore = await equities.listEquityHoldings('owner');
+  assert.ok(ownerBefore.some(holding => identity.sameEquityPurchase(holding, result.fields)));
+  const route = load('app/api/bonds/equities/route.ts');
+  const firstAccount = session;
+  const first = await route.POST(request('/api/bonds/equities', result.fields));
+  assert.equal(first.status, 201);
+  const firstHolding = (await first.json()).holding;
+  assert.deepEqual((await (await route.GET()).json()).holdings.map(holding => holding.id), [firstHolding.id]);
+  assert.equal((await route.POST(request('/api/bonds/equities', result.fields))).status, 409);
+  session = { userId: randomUUID(), isOwner: false };
+  assert.deepEqual((await (await route.GET()).json()).holdings, []);
+  const second = await route.POST(request('/api/bonds/equities', result.fields));
+  assert.equal(second.status, 201);
+  const secondHolding = (await second.json()).holding;
+  assert.notEqual(secondHolding.id, firstHolding.id);
+  assert.deepEqual((await (await route.GET()).json()).holdings.map(holding => holding.id), [secondHolding.id]);
+  session = firstAccount;
+  assert.deepEqual((await (await route.GET()).json()).holdings.map(holding => holding.id), [firstHolding.id]);
+  assert.deepEqual(await equities.listEquityHoldings('owner'), ownerBefore);
+});
 test('parallel share imports save once and contract/report identities survive changed numbers', async () => {
   const attempts = await Promise.allSettled([equities.createEquityPurchase(session.userId, equity), equities.createEquityPurchase(session.userId, equity)]);
   assert.equal(attempts.filter(result => result.status === 'fulfilled').length, 1);
