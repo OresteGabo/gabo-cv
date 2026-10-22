@@ -30,7 +30,9 @@ export function bondPdfImportErrorMessage(error: unknown) {
 }
 
 export function validateBondPdfMetadata(file: Pick<File, "name" | "type" | "size">) {
-  if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== "application/pdf")) throw new BondPdfImportError("file_type");
+  // Generic provider metadata is not a content verdict. The bytes and parsed
+  // structure are still checked before extracting anything from the document.
+  if (!/\.pdf$/i.test(file.name) || !["", "application/pdf", "application/octet-stream"].includes(file.type.toLowerCase())) throw new BondPdfImportError("file_type");
   if (!file.size || file.size > MAX_BOND_PDF_BYTES) throw new BondPdfImportError("file_size");
 }
 

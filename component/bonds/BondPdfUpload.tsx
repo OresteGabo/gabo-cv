@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import { CircleAlert, FileText, LoaderCircle, Upload, X } from "lucide-react";
 import type { PurchasePdfImport } from "@/lib/bonds/equity-pdf-parser";
 import { bondPdfImportErrorMessage, PDF_FILE_ERROR_MESSAGE, validateBondPdfMetadata } from "@/lib/bonds/pdf-import-errors";
+import { readBondPdfBytes } from "@/lib/bonds/pdf-file";
 
 export function BondPdfUpload({ onImport, onBusyChange, onSelectFile }: {
   onImport: (result: PurchasePdfImport, fileName: string) => void;
@@ -39,8 +40,10 @@ export function BondPdfUpload({ onImport, onBusyChange, onSelectFile }: {
     setProgress("Opening PDF…");
     const timeout = window.setTimeout(() => current.abort(), 120_000);
     try {
+      // Read while the picker still owns its selection, before lazy downloads.
+      const bytes = await readBondPdfBytes(file, current.signal);
       const { importBondPdf } = await import("@/lib/bonds/pdf-import");
-      const result = await importBondPdf(file, current.signal, setProgress);
+      const result = await importBondPdf(file, current.signal, setProgress, bytes);
       if (!current.signal.aborted) onImport(result, file.name);
     } catch (cause) {
       if (controller.current === current) {
@@ -131,9 +134,9 @@ export function BondPdfUpload({ onImport, onBusyChange, onSelectFile }: {
         </div>
         <input ref={input} type="file" aria-label="Purchase PDF" accept=".pdf,application/pdf" disabled={busy} className="hidden"
           onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) void readFile(file);
+            const element = event.currentTarget;
+            const file = element.files?.[0];
+            if (file) void readFile(file).finally(() => { element.value = ""; });
           }} />
         <p className="pointer-events-none mt-4 text-[11px] text-on-surface-variant">Up to 10 MB · Scanned PDFs supported</p>
       </div>

@@ -1,6 +1,7 @@
 import { parsePurchasePdfText, type PurchasePdfImport } from "./equity-pdf-parser";
 import { parseBondPdfText } from "./pdf-import-parser";
 import { BondPdfImportError, hasPdfEntries, validateBondPdfEnvelope, validateBondPdfMetadata } from "./pdf-import-errors";
+import { readBondPdfBytes } from "./pdf-file";
 
 export { MAX_BOND_PDF_BYTES } from "./pdf-import-errors";
 const MAX_PAGES = 10;
@@ -12,6 +13,7 @@ export async function importBondPdf(
   file: File,
   signal: AbortSignal,
   onProgress: (message: string) => void,
+  preparedBytes?: Uint8Array,
 ): Promise<PurchasePdfImport> {
   let loading: import("pdfjs-dist").PDFDocumentLoadingTask | undefined;
   let ocr: Awaited<ReturnType<typeof import("tesseract.js")["createWorker"]>> | undefined;
@@ -34,8 +36,9 @@ export async function importBondPdf(
   try {
     validateBondPdfMetadata(file);
     signal.throwIfAborted();
-    const bytes = new Uint8Array(await file.arrayBuffer());
+    const bytes = preparedBytes ?? await readBondPdfBytes(file, signal);
     signal.throwIfAborted();
+    if (bytes.byteLength !== file.size) throw new BondPdfImportError("unreadable");
     validateBondPdfEnvelope(bytes);
     onProgress("Checking PDF structure…");
     // Safari needs PDF.js's supported compatibility build in both threads.

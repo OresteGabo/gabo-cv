@@ -137,7 +137,7 @@ test('the upload component shows a safe error and resets its busy state when a d
   try {
     global.window={setTimeout,clearTimeout};
     const input=find(render(),node=>node.type==='input'&&node.props.type==='file');
-    input.props.onChange({target:{files:[file()],value:'result.pdf'}});
+    input.props.onChange({currentTarget:{files:[file()],value:'result.pdf'}});
     await new Promise(resolve=>setImmediate(resolve));
     const alert=find(render(),node=>node.props?.role==='alert');
     assert.equal(alert.props.children,'❌Wrong file.');assert.equal(alert.props.children.includes('getOrInsertComputed'),false);assert.equal(alert.props.children.includes('private document'),false);
@@ -149,6 +149,97 @@ test('the upload component shows a safe error and resets its busy state when a d
     }
     assert.equal(imports,1);
   } finally {global.window=originalWindow;}
+});
+
+test('the picker retains its selection while file bytes are read and snapshots them before importing PDF code', async () => {
+  const React = await import('react');
+  const originalWindow = global.window;
+  const states = [], references = [];
+  let cursor = 0, refCursor = 0, releaseRead, imported = 0;
+  const bytes = pdfBytes();
+  const selected = file(bytes, 'icloud-contract.pdf', 'application/octet-stream');
+  const target = { files: [selected], value: 'icloud-contract.pdf' };
+  selected.arrayBuffer = () => new Promise(resolve => {
+    assert.equal(target.value, 'icloud-contract.pdf');
+    releaseRead = () => {
+      assert.equal(target.value, 'icloud-contract.pdf');
+      resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+    };
+  });
+  const load = makeLoader({ react: {
+    ...React, useEffect() {},
+    useRef(value) { const index = refCursor++; return references[index] ??= { current: value }; },
+    useState(initial) { const index = cursor++; if (!(index in states)) states[index] = initial; return [states[index], value => { states[index] = typeof value === 'function' ? value(states[index]) : value; }]; },
+  }, '@/lib/bonds/pdf-import': { importBondPdf: async (_file, _signal, _progress, snapshot) => {
+    imported++;
+    assert.deepEqual(Buffer.from(snapshot), bytes);
+    assert.equal(target.value, 'icloud-contract.pdf');
+    return { kind: 'bond', fields: {}, missingFields: [], warnings: [], usedOcr: false };
+  } } });
+  const Upload = load('component/bonds/BondPdfUpload.tsx').BondPdfUpload;
+  const find = (node, predicate) => {
+    if (!node || typeof node !== 'object') return null;
+    if (predicate(node)) return node;
+    for (const child of [node.props?.children].flat(Infinity)) { const result = find(child, predicate); if (result) return result; }
+    return null;
+  };
+  try {
+    global.window = { setTimeout, clearTimeout };
+    const render = () => { cursor = 0; refCursor = 0; return Upload({ onImport() {}, onBusyChange() {} }); };
+    find(render(), node => node.type === 'input').props.onChange({ currentTarget: target });
+    assert.equal(imported, 0);
+    assert.equal(target.value, 'icloud-contract.pdf');
+    releaseRead();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(imported, 1);
+    assert.equal(target.value, '');
+    assert.equal(find(render(), node => node.props?.role === 'alert'), null);
+  } finally { global.window = originalWindow; }
+});
+
+test('provider reads accept generic PDF metadata, retry failed or partial Blob reads, and abort the fallback', async () => {
+  const { readBondPdfBytes } = makeLoader()('lib/bonds/pdf-file.ts');
+  const originalReader = global.FileReader;
+  const bytes = pdfBytes();
+  let fallbackReads = 0, aborted = 0;
+  class Reader {
+    result = null;
+    readAsArrayBuffer() {
+      fallbackReads++;
+      queueMicrotask(() => {
+        this.result = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+        this.onload?.();
+      });
+    }
+    abort() { aborted++; this.onabort?.(); }
+  }
+  try {
+    global.FileReader = Reader;
+    for (const type of ['application/pdf', 'application/octet-stream', '']) {
+      const selected = file(bytes, 'result.pdf', type);
+      assert.deepEqual(Buffer.from(await readBondPdfBytes(selected, new AbortController().signal)), bytes);
+    }
+    assert.equal(fallbackReads, 0);
+    for (const initial of [async () => { throw new DOMException('private provider details', 'NotReadableError'); }, async () => new ArrayBuffer(0), async () => new ArrayBuffer(7)]) {
+      const selected = file(bytes);
+      selected.arrayBuffer = initial;
+      assert.deepEqual(Buffer.from(await readBondPdfBytes(selected, new AbortController().signal)), bytes);
+    }
+    assert.equal(fallbackReads, 3);
+    global.FileReader = class extends Reader { readAsArrayBuffer() {} };
+    const controller = new AbortController();
+    const selected = file(bytes);
+    selected.arrayBuffer = async () => new ArrayBuffer(0);
+    const reading = readBondPdfBytes(selected, controller.signal);
+    await new Promise(resolve => setImmediate(resolve));
+    controller.abort();
+    await assert.rejects(reading, error => error.code === 'cancelled');
+    assert.equal(aborted, 1);
+    global.FileReader = class extends Reader { readAsArrayBuffer() { this.result = new ArrayBuffer(2); this.onload(); } };
+    await assert.rejects(readBondPdfBytes(selected, new AbortController().signal));
+    // Generic MIME metadata never lets renamed HTML/executables into the parser.
+    for (const contents of ['MZ executable', '<html>not a PDF</html>']) await assert.rejects(readBondPdfBytes(file(Buffer.from(contents), 'result.pdf', 'application/octet-stream'), new AbortController().signal));
+  } finally { global.FileReader = originalReader; }
 });
 
 test('real PDF parser rejects malformed structure, unrelated content, compressed JavaScript and embedded executables', async () => {

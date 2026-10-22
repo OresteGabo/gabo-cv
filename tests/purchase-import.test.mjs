@@ -100,9 +100,11 @@ test('the original padded BK PDF imports into separate member accounts even when
   const bytes = readFileSync('private/bonds/documents/bank-of-kigali-equity-contract-2026-09-24.pdf');
   const end = bytes.lastIndexOf('%%EOF');
   assert.ok(bytes.length - end > 1024, 'Exercise the broker padding that broke the old tail check.');
-  const result = await pdfLoad('lib/bonds/pdf-import.ts').importBondPdf(
-    new File([bytes], 'broker-contract.pdf', { type: 'application/pdf' }), new AbortController().signal, () => {},
-  );
+  const selected = new File([bytes], 'broker-contract.pdf', { type: 'application/octet-stream' });
+  const controller = new AbortController();
+  const snapshot = await pdfLoad('lib/bonds/pdf-file.ts').readBondPdfBytes(selected, controller.signal);
+  selected.arrayBuffer = () => { throw new Error('Do not reopen the provider file after taking its snapshot.'); };
+  const result = await pdfLoad('lib/bonds/pdf-import.ts').importBondPdf(selected, controller.signal, () => {}, snapshot);
   assert.equal(result.kind, 'equity');
   assert.deepEqual(result.missingFields, []);
   assert.ok(validation.parseEquityPurchase(result.fields));

@@ -57,6 +57,15 @@ libraries load only after file selection; scans download additional language and
 WASM assets on first use. The production CSP permits same-origin workers and
 WASM compilation.
 
+Selected bytes are read before loading PDF/OCR libraries, and the file input is
+cleared only after processing finishes. Generic `application/octet-stream` file
+metadata is accepted for `.pdf` names, followed by the same byte and structure
+checks. Failed or incomplete Blob reads retry once through FileReader; both
+paths respect cancellation and reject incomplete contents. This avoids relying
+on a cloud provider's file handle during worker downloads. It cannot force an
+unavailable cloud placeholder to download: selecting a fully downloaded copy
+in Files is a useful check if an iPhone still cannot supply the document bytes.
+
 Run parser regression checks with `npm run test:bond-import` (Node 22.13+).
 These also exercise the real reader with malformed PDFs, compressed JavaScript,
 attachments and signatures. Both the browser API and worker use PDF.js's legacy
