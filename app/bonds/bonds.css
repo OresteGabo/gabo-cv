@@ -103,7 +103,7 @@
   .portfolio-table tbody tr {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: 8px 12px;
     padding: 12px;
   }
 
@@ -139,6 +139,40 @@
 
   .portfolio-table td > div {
     min-width: 0;
+  }
+
+  .portfolio-table tr:not([data-expanded="true"]) [data-mobile-detail] {
+    display: none;
+  }
+
+  .portfolio-table .holding-disclosure {
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .portfolio-table td[data-label="Shares / price"]::before {
+    content: "Shares";
+  }
+
+  .portfolio-table--bonds tbody tr {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 8px;
+  }
+
+  .portfolio-table--bonds td:first-child { order: 0; }
+  .portfolio-table--bonds td[data-label="Principal / cost"] { order: 1; }
+  .portfolio-table--bonds td[data-label="Expected coupon"] { order: 2; }
+  .portfolio-table--bonds td[data-label="Next payment"] { order: 3; }
+  .portfolio-table--bonds td[data-label="Price"] { order: 4; }
+  .portfolio-table--bonds td[data-label="Schedule"] { order: 5; }
+  .portfolio-table--bonds td[data-label="RSE listed price"] { order: 6; }
+
+  .portfolio-table--bonds td[data-label="Principal / cost"]::before {
+    content: "Cash cost";
+  }
+
+  .portfolio-table--bonds td[data-label="Expected coupon"]::before {
+    content: "Next coupon";
   }
 
   .portfolio-actions > :is(button, a) {

@@ -225,6 +225,17 @@ function DetailPanel({
   );
 }
 
+function HoldingDisclosure({ label, expanded, controls, onToggle }: { label: string; expanded: boolean; controls: string; onToggle: () => void }) {
+  return <button type="button" onClick={onToggle} aria-expanded={expanded} aria-controls={controls} aria-label={`${expanded ? "Hide" : "Show"} details for ${label}`} className="holding-disclosure flex min-h-11 w-full items-center justify-between gap-3 rounded-lg text-left text-sm font-black sm:hidden">
+    <span className="min-w-0 break-words">{label}</span>
+    <ChevronDown size={18} aria-hidden="true" className={`shrink-0 transition-transform motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`} />
+  </button>;
+}
+
+function HoldingAmount({ value }: { value: number }) {
+  return <>{formatRwf(value).split(/\s+/).map((part, index) => <Fragment key={index}>{index > 0 && " "}<span className="inline-block">{part}</span></Fragment>)}</>;
+}
+
 function DetailLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-[11px]">
@@ -637,6 +648,14 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   const [sessionLoading, setSessionLoading] = useState(true);
   const [purchases, setPurchases] = useState<BondPurchase[]>([]);
   const [equities, setEquities] = useState<EquityHolding[]>([]);
+  const [expandedHoldings, setExpandedHoldings] = useState<Set<string>>(() => new Set());
+  function toggleHolding(key: string) {
+    setExpandedHoldings((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
   const [portfolioError, setPortfolioError] = useState("");
   const [purchase, setPurchase] = useState<BondPurchaseInput>(() => ({
     ...EMPTY_PURCHASE,
@@ -1167,6 +1186,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       setAccountUser(null);
       setPurchases([]);
       setEquities([]);
+      setExpandedHoldings(new Set());
       setPurchasePanelOpen(false);
       setPurchase({ ...EMPTY_PURCHASE, couponDates: [] });
       setPdfReview(null);
@@ -2609,7 +2629,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
             <div className="mt-4 rounded-xl border border-outline/10 p-4 text-sm text-[var(--md-sys-color-on-surface-variant)] sm:mt-8 sm:rounded-3xl sm:p-8">Checking private session…</div>
           ) : !authenticated ? (
             <BondAccountAccess onAuthenticated={(user) => {
-              setPurchases([]); setEquities([]); setAccountUser(user); setAuthenticated(true); setPortfolioError("");
+              setPurchases([]); setEquities([]); setExpandedHoldings(new Set()); setAccountUser(user); setAuthenticated(true); setPortfolioError("");
             }} />
           ) : (
             <>
@@ -2740,40 +2760,42 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       </thead>
                       <tbody role="rowgroup">
                         {equities.map((item) => (
-                          <tr role="row" key={item.id} className="border-t border-outline/10 text-xs">
-                            <td role="cell" data-label="Security" className="px-4 py-4">
-                              <strong className="block text-sm text-on-surface">
+                          <tr role="row" key={item.id} data-expanded={expandedHoldings.has(`equity-${item.id}`)} className="border-t border-outline/10 text-xs">
+                            <td role="cell" aria-colindex={1} data-label="Security" className="px-4 py-4">
+                              <HoldingDisclosure label={item.securityName} expanded={expandedHoldings.has(`equity-${item.id}`)} controls={`equity-${item.id}-identity equity-${item.id}-trade equity-${item.id}-broker equity-${item.id}-status`} onToggle={() => toggleHolding(`equity-${item.id}`)} />
+                              <strong className="hidden text-sm text-on-surface sm:block">
                                 {item.securityName}
                               </strong>
-                              <span className="mt-1 block text-[10px] text-on-surface-variant">
+                              {item.status !== "active" && <span className="text-[10px] font-bold uppercase text-on-surface-variant sm:hidden">{item.status}</span>}
+                              <span id={`equity-${item.id}-identity`} data-mobile-detail className="mt-1 block text-[10px] text-on-surface-variant">
                                 {item.exchange} · {item.isin}
                               </span>
                             </td>
-                            <td role="cell" data-label="Shares / price" className="px-4 py-4">
+                            <td role="cell" aria-colindex={2} data-label="Shares / price" className="px-4 py-4">
                               <strong className="block">{item.shares.toLocaleString()}</strong>
-                              <span className="text-[10px] text-on-surface-variant">
+                              <span data-mobile-detail className="text-[10px] text-on-surface-variant">
                                 {formatRwf(item.pricePerShare)} per share
                               </span>
                             </td>
-                            <td role="cell" data-label="Cash cost" className="px-4 py-4">
-                              <strong className="block">{formatRwf(item.netAmountPayable)}</strong>
-                              <span className="text-[10px] text-on-surface-variant">
+                            <td role="cell" aria-colindex={3} data-label="Cash cost" className="px-4 py-4">
+                              <strong className="block"><HoldingAmount value={item.netAmountPayable} /></strong>
+                              <span data-mobile-detail className="text-[10px] text-on-surface-variant">
                                 {formatRwf(item.totalCharges)} charges
                               </span>
                             </td>
-                            <td role="cell" data-label="Trade" className="px-4 py-4">
+                            <td id={`equity-${item.id}-trade`} data-mobile-detail role="cell" aria-colindex={4} data-label="Trade" className="px-4 py-4">
                               <strong className="block">{item.tradeDate}</strong>
                               <span className="text-[10px] text-on-surface-variant">
                                 Settled {item.settlementDate}
                               </span>
                             </td>
-                            <td role="cell" data-label="Broker note" className="px-4 py-4">
+                            <td id={`equity-${item.id}-broker`} data-mobile-detail role="cell" aria-colindex={5} data-label="Broker note" className="px-4 py-4">
                               <strong className="block">{item.broker}</strong>
                               <span className="text-[10px] text-on-surface-variant">
                                 {item.contractNote}
                               </span>
                             </td>
-                            <td role="cell" data-label="Status" className="px-4 py-4">
+                            <td id={`equity-${item.id}-status`} data-mobile-detail role="cell" aria-colindex={6} data-label="Status" className="px-4 py-4">
                               <span className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-black uppercase text-primary">
                                 {item.status}
                               </span>
@@ -3139,7 +3161,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       </div>
                     </div>
                   ) : (
-                    <table role="table" aria-label="Bond purchases" className="portfolio-table w-full border-collapse text-left sm:min-w-[980px]">
+                    <table role="table" aria-label="Bond purchases" className="portfolio-table portfolio-table--bonds w-full border-collapse text-left sm:min-w-[980px]">
                       <thead role="rowgroup" className="bg-[var(--md-sys-color-surface-container)] text-[10px] uppercase tracking-[0.14em] text-[var(--md-sys-color-on-surface-variant)]">
                         <tr role="row">
                           <th scope="col" role="columnheader" className="px-4 py-3">Bond</th>
@@ -3169,14 +3191,18 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                 displayItem,
                                 new Date().toISOString().slice(0, 10),
                               );
+                          const nextCouponDate = displayItem.status === "sold" || displayItem.status === "matured" ? null : tracking?.nextCouponDate;
                           return (
-                            <tr role="row" key={item.id} className="border-t border-outline/10 text-xs">
-                              <td role="cell" data-label="Bond" className="px-4 py-4">
+                            <tr role="row" key={item.id} data-expanded={expandedHoldings.has(`bond-${item.id}`)} className="border-t border-outline/10 text-xs">
+                              <td role="cell" aria-colindex={1} data-label="Bond" className="px-4 py-4">
+                                <HoldingDisclosure label={issuanceNumber} expanded={expandedHoldings.has(`bond-${item.id}`)} controls={`bond-${item.id}-links bond-${item.id}-price bond-${item.id}-schedule bond-${item.id}-market`} onToggle={() => toggleHolding(`bond-${item.id}`)} />
+                                {displayItem.status !== "active" && <span className="text-[10px] font-bold uppercase text-on-surface-variant sm:hidden">{displayItem.status}</span>}
+                                <div id={`bond-${item.id}-links`} data-mobile-detail>
                                 <Link
                                   href={`/purchases/${item.id}`}
                                   className="inline-flex items-center gap-1.5 text-sm font-black text-on-surface hover:text-[var(--md-sys-color-primary)]"
                                 >
-                                  {issuanceNumber}
+                                  <span className="hidden sm:inline">{issuanceNumber}</span><span className="sm:hidden">Open purchase</span>
                                   <ChevronRight size={14} />
                                 </Link>
                                 <button
@@ -3191,34 +3217,42 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                     <Copy size={12} />
                                   )}
                                 </button>
+                                </div>
                               </td>
-                              <td role="cell" data-label="Principal / cost" className="px-4 py-4">
-                                <strong className="block">{formatRwf(displayItem.faceValue)}</strong>
-                                <span className="text-[10px] text-on-surface-variant">{formatRwf(displayItem.amountInvested)} cash cost</span>
+                              <td role="cell" aria-colindex={2} data-label="Principal / cost" className="px-4 py-4">
+                                <strong className="hidden sm:block">{formatRwf(displayItem.faceValue)}</strong>
+                                <strong className="block sm:hidden"><HoldingAmount value={displayItem.amountInvested} /></strong>
+                                <span className="hidden text-[10px] text-on-surface-variant sm:inline">{formatRwf(displayItem.amountInvested)} cash cost</span>
+                                <span data-mobile-detail className="block text-[10px] text-on-surface-variant sm:hidden">{formatRwf(displayItem.faceValue)} principal</span>
                               </td>
-                              <td role="cell" data-label="Price" className="px-4 py-4">{displayItem.pricePercent.toFixed(3)}%</td>
-                              <td role="cell" data-label="Expected coupon" className="px-4 py-4">
+                              <td id={`bond-${item.id}-price`} data-mobile-detail role="cell" aria-colindex={3} data-label="Price" className="px-4 py-4">{displayItem.pricePercent.toFixed(3)}%</td>
+                              <td role="cell" aria-colindex={4} data-label="Expected coupon" className="px-4 py-4">
+                                <strong className="block sm:hidden">{couponPending ? "Pending" : nextCouponDate ? <HoldingAmount value={displayItem.faceValue * netRate / displayItem.couponFrequency} /> : "—"}</strong>
+                                <div data-mobile-detail>
                                 {couponPending ? (
                                   <>
-                                    <strong className="block text-tertiary">Coupon pending</strong>
+                                    <strong className="hidden text-tertiary sm:block">Coupon pending</strong>
                                     <span className="text-[10px] text-on-surface-variant">Update after issuance</span>
                                   </>
                                 ) : (
                                   <>
-                                    <strong className="block text-primary">{formatRwf(displayItem.faceValue * netRate / displayItem.couponFrequency)}</strong>
+                                    <strong className="hidden text-primary sm:block">{formatRwf(displayItem.faceValue * netRate / displayItem.couponFrequency)}</strong>
+                                    {!nextCouponDate && <span className="block text-[10px] text-on-surface-variant sm:hidden">Per coupon: <HoldingAmount value={displayItem.faceValue * netRate / displayItem.couponFrequency} /></span>}
                                     <span className="text-[10px] text-on-surface-variant">{formatPercent(netRate)} net rate</span>
                                   </>
                                 )}
+                                </div>
                               </td>
-                              <td role="cell" data-label="Next payment" className="px-4 py-4 text-on-surface-variant">
-                                {tracking?.nextCouponDate ?? "Pending issuance"}
+                              <td role="cell" aria-colindex={5} data-label="Next payment" className="px-4 py-4 text-on-surface-variant">
+                                <span className="hidden sm:inline">{tracking?.nextCouponDate ?? "Pending issuance"}</span>
+                                <span className="sm:hidden">{nextCouponDate ?? (couponPending ? "Pending issuance" : "No future coupons")}</span>
                               </td>
-                              <td role="cell" data-label="Schedule" className="px-4 py-4">
+                              <td id={`bond-${item.id}-schedule`} data-mobile-detail role="cell" aria-colindex={6} data-label="Schedule" className="px-4 py-4">
                                 <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${displayItem.scheduleConfidence === "confirmed" ? "bg-primary/10 text-primary" : "bg-tertiary/10 text-tertiary"}`}>
                                   {displayItem.scheduleConfidence}
                                 </span>
                               </td>
-                              <td role="cell" data-label="RSE listed price" className="px-4 py-4">
+                              <td id={`bond-${item.id}-market`} data-mobile-detail role="cell" aria-colindex={7} data-label="RSE listed price" className="px-4 py-4">
                                 <BondMarketQuote purchase={item} {...bondMarket} />
                               </td>
                             </tr>
