@@ -1,17 +1,19 @@
 export const MAX_BOND_PDF_BYTES = 10 * 1024 * 1024;
 
+export const PDF_FILE_ERROR_MESSAGE = "❌Wrong file.";
+
 const MESSAGES = {
-  file_type: "Choose a PDF document. Other file types are not accepted.",
-  file_size: "Choose a non-empty PDF smaller than 10 MB.",
-  invalid_pdf: "❌Wrong file.",
-  unreadable: "We couldn’t read this PDF. Please export a new plain PDF and try again.",
-  password: "Unlock the password-protected PDF before importing it.",
-  unsafe_content: "Only plain PDFs without scripts, attachments or interactive annotations can be imported. Export a flattened PDF and try again.",
-  page_limit: "Use a purchase PDF with at most 10 pages.",
-  scan_limit: "Use a PDF with at most 5 scanned pages. Split a larger document first.",
-  text_limit: "This PDF contains too much text. Use the purchase document only.",
-  not_bond_result: "This PDF is not a supported purchase document. Choose a BNR bond result or an RSE equity purchase contract note.",
-  cancelled: "PDF import was cancelled or took too long. You can try again with a smaller document.",
+  file_type: PDF_FILE_ERROR_MESSAGE,
+  file_size: PDF_FILE_ERROR_MESSAGE,
+  invalid_pdf: PDF_FILE_ERROR_MESSAGE,
+  unreadable: PDF_FILE_ERROR_MESSAGE,
+  password: PDF_FILE_ERROR_MESSAGE,
+  unsafe_content: PDF_FILE_ERROR_MESSAGE,
+  page_limit: PDF_FILE_ERROR_MESSAGE,
+  scan_limit: PDF_FILE_ERROR_MESSAGE,
+  text_limit: PDF_FILE_ERROR_MESSAGE,
+  not_bond_result: PDF_FILE_ERROR_MESSAGE,
+  cancelled: PDF_FILE_ERROR_MESSAGE,
 } as const;
 
 export class BondPdfImportError extends Error {

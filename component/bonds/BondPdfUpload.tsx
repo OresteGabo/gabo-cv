@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { CircleAlert, FileText, LoaderCircle, Upload, X } from "lucide-react";
 import type { PurchasePdfImport } from "@/lib/bonds/equity-pdf-parser";
-import { bondPdfImportErrorMessage, validateBondPdfMetadata } from "@/lib/bonds/pdf-import-errors";
+import { bondPdfImportErrorMessage, PDF_FILE_ERROR_MESSAGE, validateBondPdfMetadata } from "@/lib/bonds/pdf-import-errors";
 
 export function BondPdfUpload({ onImport, onBusyChange, onSelectFile }: {
   onImport: (result: PurchasePdfImport, fileName: string) => void;
@@ -100,11 +100,11 @@ export function BondPdfUpload({ onImport, onBusyChange, onSelectFile }: {
             .map((item) => item.getAsFile())
             .filter((file): file is File => file !== null);
           if (files.length > 1) {
-            setError("Drop one PDF at a time.");
+            setError(PDF_FILE_ERROR_MESSAGE);
             return;
           }
           if (!files.length) {
-            setError("No readable file was received. Please use Choose PDF to select your file.");
+            setError(PDF_FILE_ERROR_MESSAGE);
             return;
           }
           void readFile(files[0]);
@@ -118,10 +118,10 @@ export function BondPdfUpload({ onImport, onBusyChange, onSelectFile }: {
           {busy ? <LoaderCircle size={26} className="animate-spin motion-reduce:animate-none" /> : dragState === "invalid" ? <CircleAlert size={26} /> : dragState === "ready" ? <Upload size={26} /> : <FileText size={26} />}
         </div>
         <p role="status" aria-live="polite" className="pointer-events-none text-base font-black">
-          {busy ? "Reading your purchase PDF…" : dragState === "ready" ? "Release to read your PDF" : dragState === "invalid" ? "Use a PDF document" : "Drop your purchase PDF here"}
+          {busy ? "Reading your purchase PDF…" : dragState === "ready" ? "Release to read your PDF" : dragState === "invalid" ? PDF_FILE_ERROR_MESSAGE : "Drop your purchase PDF here"}
         </p>
         <p className="pointer-events-none mt-2 max-w-sm text-xs leading-relaxed text-on-surface-variant">
-          {dragState === "invalid" ? "Only PDF documents are accepted." : "Use a BNR bond result or RSE equity purchase contract note. We’ll detect the purchase type for you."}
+          {dragState === "invalid" ? "" : "Use a BNR bond result or RSE equity purchase contract note. We’ll detect the purchase type for you."}
         </p>
         <div className="mt-4 flex items-center justify-center gap-3">
           <button type="button" disabled={busy} onClick={() => input.current?.click()} className="inline-flex items-center gap-2 rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-2.5 text-xs font-black text-[var(--md-sys-color-on-primary)] transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:opacity-40">

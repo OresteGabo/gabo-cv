@@ -82,6 +82,18 @@ test('document, form and page/annotation scripts or attachments are rejected bef
   }
 });
 
+test('every PDF failure uses the same fixed public message while preserving internal rejection codes', () => {
+  const {policy}=scenario();
+  for (const code of ['file_type','file_size','invalid_pdf','unreadable','password','unsafe_content','page_limit','scan_limit','text_limit','not_bond_result','cancelled']) {
+    const error=new policy.BondPdfImportError(code);
+    assert.equal(error.code,code);
+    assert.equal(error.message,'❌Wrong file.');
+    error.message='private parser diagnostics';
+    assert.equal(policy.bondPdfImportErrorMessage(error),'❌Wrong file.');
+  }
+  for (const cause of [null, undefined, new Error('private details'), {code:'unreadable',message:'private details'}]) assert.equal(policy.bondPdfImportErrorMessage(cause),'❌Wrong file.');
+});
+
 test('unexpected reader errors and cleanup failures never expose raw diagnostics or replace a safe failure', async () => {
   for(const cause of [new TypeError('this.#nb.getOrInsertComputed is not a function'),new Error('<script>private document content</script>')]) {
     const {importPdf,policy}=scenario({fail:cause});
@@ -128,8 +140,14 @@ test('the upload component shows a safe error and resets its busy state when a d
     input.props.onChange({target:{files:[file()],value:'result.pdf'}});
     await new Promise(resolve=>setImmediate(resolve));
     const alert=find(render(),node=>node.props?.role==='alert');
-    assert.match(alert.props.children,/couldn’t read this PDF/);assert.equal(alert.props.children.includes('getOrInsertComputed'),false);assert.equal(alert.props.children.includes('private document'),false);
+    assert.equal(alert.props.children,'❌Wrong file.');assert.equal(alert.props.children.includes('getOrInsertComputed'),false);assert.equal(alert.props.children.includes('private document'),false);
     assert.equal(imports,1);assert.equal(completed,0);assert.deepEqual(busy,[true,false]);assert.equal(states[0],false);
+    for (const files of [[file(), file()], []]) {
+      const dropzone=find(render(),node=>node.props?.['data-testid']==='bond-pdf-dropzone');
+      dropzone.props.onDrop({preventDefault(){},stopPropagation(){},dataTransfer:{files,items:[]}});
+      assert.equal(find(render(),node=>node.props?.role==='alert').props.children,'❌Wrong file.');
+    }
+    assert.equal(imports,1);
   } finally {global.window=originalWindow;}
 });
 
