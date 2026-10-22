@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { BarChart3, RefreshCw } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { BondAccountAccess } from "./BondAccountAccess";
 import { BondPortfolioChrome } from "./BondSiteChrome";
 import { useDeferredMarket } from "./useDeferredMarket";
@@ -11,6 +11,7 @@ import type { EquityHolding } from "@/lib/bonds/types";
 import { localStockDate } from "@/lib/bonds/stock-chart";
 
 const HistoryChart = dynamic(() => import("./StockHistoryChart"), { ssr: false, loading: () => <p className="py-6 text-sm text-on-surface-variant">Preparing graph…</p> });
+const EquityMarket = dynamic(() => import("./RseEquityMarket"), { ssr: false, loading: () => <p role="status" className="mt-8 py-6 text-sm text-on-surface-variant">Preparing market table…</p> });
 const money = (amount: number, currency = "RWF") => `${currency} ${amount.toLocaleString("en", { maximumFractionDigits: 2 })}`;
 
 export function StockPerformance() {
@@ -31,29 +32,25 @@ export function StockPerformance() {
   }, [attempt]);
   const valuationDate = localStockDate();
   const active = holdings.filter((holding) => holding.status === "active" && holding.tradeDate <= valuationDate);
-  const market = useDeferredMarket<EquityQuotes>("/api/bonds/rse/quotes?kind=equities", status === "ready" && active.length > 0);
+  const market = useDeferredMarket<EquityQuotes>("/api/bonds/rse/quotes?kind=equities", status === "ready");
   const tickers = [...new Set(active.map((holding) => holding.ticker))].sort().join(",");
   const history = useDeferredMarket<{ available: boolean; resolution: "daily" | "monthly"; observations: EquityObservation[] }>(`/api/bonds/rse/equity-history?tickers=${encodeURIComponent(tickers)}&period=${period}`, status === "ready" && Boolean(market.data) && Boolean(tickers));
   const groups = new Map<string, EquityHolding[]>();
   for (const holding of active) { const key = `${holding.ticker}-${holding.currency}`; groups.set(key, [...(groups.get(key) ?? []), holding]); }
-  const unavailable = market.error || market.data?.source.status === "error";
   const reset = () => { setStatus("loading"); setAttempt((value) => value + 1); };
   return <main className="bond-app min-h-screen bg-background pb-28 text-on-background">
     <BondPortfolioChrome active="/stocks" authenticated={authenticated} />
-    <section className="mx-auto max-w-6xl px-4 py-10">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary"><BarChart3 size={16} />Your stocks</p>
-      <h1 className="mt-3 text-3xl font-black tracking-tight">Stock performance</h1>
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-on-surface-variant">See how your shares compare with their purchase cost. Holdings load first; optional RSE prices and graphs follow when the page is idle. Estimated values exclude dividends and selling fees.</p>
+      <h1 className="mt-3 text-3xl font-black tracking-tight">Stocks & market prices</h1>
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-on-surface-variant">Follow ten RSE companies and compare your shares with their purchase cost. Holdings load first; market tables and graphs follow when the page is idle. Estimated values exclude dividends and selling fees.</p>
       {status === "loading" && <p role="status" className="mt-8 rounded-2xl border border-outline/10 p-6">Loading your saved shares…</p>}
       {status === "signed-out" && <div className="mt-6 max-w-lg"><BondAccountAccess onAuthenticated={() => { setAuthenticated(true); reset(); }} /></div>}
       {status === "error" && <div role="alert" className="mt-8 rounded-2xl border border-outline/10 p-6">Your holdings could not be loaded. <button type="button" onClick={reset} className="font-bold underline">Try again</button></div>}
+      {status === "ready" && (market.data || market.error ? <EquityMarket data={market.data} error={market.error} loading={market.loading} onRetry={() => { market.retry(); history.retry(); }} /> : <p role="status" className="mt-8 rounded-xl border border-outline/10 p-4 text-sm text-on-surface-variant">{market.loading ? "Loading optional RSE prices…" : "Market prices will load when the page is idle…"}</p>)}
       {status === "ready" && !active.length && <div className="mt-8 rounded-3xl border border-outline/10 p-8"><h2 className="text-xl font-black">No active stock holdings</h2><p className="mt-3 text-sm text-on-surface-variant">Your account has no saved active shares to chart. Your bonds remain available in the portfolio.</p><Link href="/portfolio" prefetch={false} className="mt-4 inline-block text-sm font-bold underline">Back to portfolio</Link></div>}
       {status === "ready" && active.length > 0 && <>
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-outline/10 p-4">
-          <p role="status" className="text-xs text-on-surface-variant">{unavailable ? "RSE prices are unavailable. Your saved holdings are still shown." : market.data?.source.status === "empty" ? "RSE has no usable equity quotes in its current update." : market.data ? `${market.data.source.stale ? "Cached RSE prices" : "RSE prices"} · ${market.data.source.publishedAt ? `Published ${new Date(market.data.source.publishedAt).toLocaleString()}` : `Observed ${new Date(market.data.source.checkedAt).toLocaleString()} (publication date unavailable)`}` : market.loading ? "Loading optional RSE prices…" : "Waiting for an idle moment to load RSE prices…"}</p>
-          <button type="button" disabled={market.loading} onClick={() => { market.retry(); history.retry(); }} className="inline-flex items-center gap-2 text-xs font-bold underline"><RefreshCw size={14} />Retry market data</button>
-          <a href="https://rse.rw/equities-market" target="_blank" rel="noreferrer" className="text-xs underline">Source: RSE equities market</a>
-        </div>
+        <h2 className="mt-10 text-xl font-black">Your stock performance</h2>
         <div className="mt-6 flex flex-wrap items-center gap-2" aria-label="Chart time range">{([["month", "Last month"], ["year", "Last year"], ["all", "All collected"]] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={period === value} onClick={() => setPeriod(value)} style={period === value ? { color: "var(--md-sys-color-on-primary)", backgroundColor: "var(--md-sys-color-primary)" } : undefined} className="rounded-xl border border-outline/15 px-4 py-2 text-xs font-bold">{label}</button>)}</div>
         <p className="mt-3 text-xs leading-5 text-on-surface-variant">Each company combines your purchases. Graphs start with recorded purchase costs and extend to today’s estimate using the latest RSE quote. Daily collection builds price history from RSE’s published market dates; dashed comparisons do not represent daily price history. Only currently active positions are included.</p>
         {history.data?.resolution === "monthly" && <p className="mt-2 text-xs text-on-surface-variant">Long histories show each month’s first and last recorded prices to keep the graph light. Choose Last month or Last year for daily observations.</p>}

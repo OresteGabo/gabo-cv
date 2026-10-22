@@ -6,6 +6,7 @@ import makeLoader from './helpers/load-ts.mjs';
 
 const load = makeLoader();
 const quotes = load('lib/bonds/market-quotes.ts');
+const equityMarket = load('lib/bonds/equity-market.ts');
 const table = rows => `<table><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 const bondRows = table([
   ['FXD1/2024/20Yrs (Re-opened)<span>TREASURY</span>','102.50','102.70','(0.19%)','3,500,000','3,587,500'],
@@ -17,6 +18,43 @@ const equityRows = 'Last updated - 21 October 14:27 GMT+2' + table([
   ['<img src="logo.png">Bank of Kigali Group PLC <span>BOK</span>','700','690','1%','0','0'],
   ['I&amp;M Bank Rwanda PLC IMR','115','115','0%','8,100','931,500'],
 ]);
+const allEquityRows = 'Last updated - 21 October 2026 14:27 GMT+2' + table([
+  ['BRALIRWA PLC BLR','526','550','-4.36%','47100','24774600'],
+  ['I&amp;M Bank Rwanda PLC IMR','115','115','0%','8100','931500'],
+  ['CIMERWA PLC CMR','165','165','0%','0','0'],
+  ['RH Bophelo PLC RHB','526','526','0%','0','0'],
+  ['Nation Media Group PLC NMG','1200','1200','0%','0','0'],
+  ['Uchumi Supermarket PLC USL','104','104','0%','0','0'],
+  ['Bank of Kigali Group PLC BOK','700','700','0%','0','0'],
+  ['Kenya Commercial Bank PLC KCB','500','500','0%','0','0'],
+  ['MTN Rwanda PLC MTNR','200','200','0%','13200','2640000'],
+  ['Equity Bank Group PLC EQTY','900','900','0%','0','0'],
+]);
+test('the requested ten companies match RSE symbols and changes retain their financial sign', () => {
+  const values = quotes.parseEquityQuotes(allEquityRows);
+  assert.equal(values.length,10);
+  assert.deepEqual(values.map(row=>row.ticker),equityMarket.RSE_EQUITIES.map(row=>row.ticker));
+  const change = equityMarket.equityPriceChange(values[0]);
+  assert.equal(change.amount,-24);assert.ok(Math.abs(change.percent-(-24/550*100))<0.00001);
+  assert.deepEqual(equityMarket.equityPriceChange(values[6]),{amount:0,percent:0});
+  assert.equal(equityMarket.equityPriceChange(undefined),null);
+  for(const previous of [null,0,NaN]) assert.equal(equityMarket.equityPriceChange({...values[0],previous}),null);
+  assert.equal(equityMarket.equityMarketDate('2026-10-21T22:30:00Z'),'2026-10-22');
+  assert.equal(equityMarket.equityMarketDate(null),null);
+});
+test('daily table keeps only actual prices, leaves missing companies blank and uses Kigali dates', () => {
+  const point=(date,closing,ticker='BOK',observedAt=date+'T14:00:00Z')=>({date,closing,ticker,observedAt});
+  const observations=[point('2026-10-20',700),point('2026-10-20',710,'BOK','2026-10-21T15:00:00Z'),point('2026-10-22',115,'IMR'),point('2026-10-23',999),point('2026-10-21',0),point('2026-09-01',500),point('2026-10-21',900,'UNKNOWN'),point('2026-02-30',100)];
+  const now=new Date('2026-10-21T23:00:00Z');
+  const rows=equityMarket.equityDailyRows(observations,['BOK','IMR'],'month',now);
+  assert.deepEqual(rows.map(row=>row.date),['2026-10-22','2026-10-20']);
+  assert.deepEqual([...rows[0].prices],[['IMR',115]]);
+  assert.equal(rows[1].prices.get('BOK'),710);assert.equal(rows[1].prices.has('IMR'),false);
+  assert.deepEqual(equityMarket.equityDailyRows([],['BOK'],'month',now),[]);
+  const year=equityMarket.equityDailyRows(observations,['BOK'],'year',now);
+  assert.equal(year.some(row=>row.date==='2026-02-30'),false);
+  assert.equal(year.at(-1).date,'2026-09-01');
+});
 test('parsers retain genuine prices, ignore zero placeholders, and preserve equity symbols', () => {
   assert.equal(quotes.parseBondQuotes(bondRows).length,2);
   assert.equal(quotes.parseBondQuotes(table([['FXD0/2026/15Yrs','0','0','0','0','0']])).length,0);
@@ -165,6 +203,15 @@ test('daily public quote observations are idempotent, reject older overwrites, a
     const health=(await pg.query('SELECT status, succeeded_at::text, market_date::text FROM equity_market_collection')).rows;
     assert.equal(health.length,1);assert.equal(health[0].status,'unusable-source');assert.equal(health[0].market_date,'2026-10-22');assert.match(health[0].succeeded_at,/2026-10-22/);
     assert.deepEqual((await store.listEquityObservations(['NOTHELD'])).observations,[]);
+    const allData={source:{...data.source,checkedAt:'2026-10-22T18:00:00Z',publishedAt:'2026-10-22T12:27:00Z'},quotes:quotes.parseEquityQuotes(allEquityRows)};
+    assert.equal((await store.recordEquityQuotes(allData)).written,10);
+    const nextDay={...allData,source:{...allData.source,checkedAt:'2026-10-23T18:00:00Z',publishedAt:'2026-10-23T12:27:00Z'}};
+    assert.equal((await store.recordEquityQuotes(nextDay)).written,10);
+    assert.equal((await store.recordEquityQuotes(nextDay)).written,0);
+    const fullHistory=await store.listEquityObservations(equityMarket.RSE_EQUITIES.map(company=>company.ticker),'month',new Date('2026-10-24T10:00:00Z'));
+    const days=equityMarket.equityDailyRows(fullHistory.observations,equityMarket.RSE_EQUITIES.map(company=>company.ticker),'month',new Date('2026-10-24T10:00:00Z'));
+    assert.deepEqual(days.slice(0,2).map(day=>[day.date,day.prices.size]),[['2026-10-23',10],['2026-10-22',10]]);
+    assert.equal(days[0].prices.get('BOK'),days[1].prices.get('BOK'));
     delete process.env.BONDS_DATABASE_URL;delete process.env.DATABASE_URL;
     assert.equal((await store.listEquityObservations(['BOK'])).available,false);
   } finally {process.env=originalEnv;await pg.close();}

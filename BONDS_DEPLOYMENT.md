@@ -437,6 +437,22 @@ leave the holdings/current valuation usable. Collection starts with available
 RSE updates; historical daily prices cannot be invented or backfilled from a
 current closing quote.
 
+The Stocks page also displays a market table for BLR, IMR, CMR, RHB, NMG, USL,
+BOK, KCB, MTNR and EQTY, including for accounts without stock purchases. Symbol
+mapping follows the official RSE equities table. Closing/previous prices, the
+calculated change, and reported trading volume are shown with the publication
+date; zero volume is explicitly labelled as no trades reported. Missing quotes
+remain unavailable. The collector already saves every valid quoted symbol,
+independently of holdings, so this feature needs no new cron or migration.
+
+The market table module loads after the deferred quote request completes.
+Expanding Saved daily price history requests all ten symbols for the last month
+or year through the existing idle queue. Its date-by-company table shows only
+saved observations, newest first, with a company filter and dashes for missing
+prices. It does not relabel an old publication as today's data or invent prices
+for weekends, holidays, or missed collection days. Tables scroll horizontally
+on narrow screens and the history table has a bounded scrolling height.
+
 ## RSE bond market snapshots
 
 The public bond page requests fresh official RSE data on every page load. To
