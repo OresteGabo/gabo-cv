@@ -181,25 +181,27 @@ function Metric({
   value,
   detail,
   accent = false,
+  compact = false,
 }: {
   label: string;
   value: string;
   detail?: string;
   accent?: boolean;
+  compact?: boolean;
 }) {
   return (
     <article
-      className={`rounded-3xl border p-5 md:p-6 ${
+      className={`border ${compact ? "min-w-0 rounded-xl p-3 sm:rounded-3xl sm:p-5 md:p-6" : "rounded-3xl p-5 md:p-6"} ${
         accent
           ? "border-[var(--md-sys-color-primary)]/35 bg-[var(--md-sys-color-primary)]/10"
           : "border-outline/10 bg-surface-container-lowest"
       }`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.19em] text-[var(--md-sys-color-on-surface-variant)]">
+      <p className={`${compact ? "text-[11px] font-bold leading-4 sm:text-[10px] sm:font-black sm:uppercase sm:tracking-[0.19em]" : "text-[10px] font-black uppercase tracking-[0.19em]"} text-[var(--md-sys-color-on-surface-variant)]`}>
         {label}
       </p>
-      <p className="mt-3 break-words text-2xl font-black tracking-tight md:text-3xl">
-        {value}
+      <p className={`${compact ? "mt-1.5 text-[clamp(0.875rem,3.8vw,1.125rem)] leading-snug tabular-nums sm:mt-3 sm:text-2xl md:text-3xl" : "mt-3 text-2xl md:text-3xl"} break-words font-black tracking-tight`}>
+        {compact ? value.split(/\s+/).map((part, index) => <Fragment key={index}>{index > 0 && " "}<span className="inline-block">{part}</span></Fragment>) : value}
       </p>
       {detail && <p className="mt-2 text-xs text-[var(--md-sys-color-on-surface-variant)]">{detail}</p>}
     </article>
@@ -2580,18 +2582,18 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
 
       {view === "portfolio" && (
       <section id="portfolio" className="scroll-mt-24 border-y border-outline/10 bg-[var(--md-sys-color-surface-container-low)]/72">
-        <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+        <div className="mx-auto max-w-7xl px-3 py-5 sm:px-4 sm:py-14 md:px-8 md:py-20">
+          <div className="flex items-start justify-between gap-3 md:items-end">
             <div>
               <div className="flex items-center gap-2 text-[var(--md-sys-color-primary)]">
                 <LockKeyhole size={16} />
                 <p className="text-[10px] font-black uppercase tracking-[0.22em]">Private portfolio</p>
               </div>
-              <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Track real bond purchases</h2>
-              {accountUser && <p className="mt-2 text-xs text-on-surface-variant">Signed in as {accountUser.email}</p>}
+              <h2 className="mt-1 text-xl font-black tracking-tight sm:mt-2 sm:text-3xl md:text-4xl"><span className="sm:hidden">Your portfolio</span><span className="hidden sm:inline">Track real bond purchases</span></h2>
+              {accountUser && <p className="mt-1 break-all text-[11px] text-on-surface-variant sm:mt-2 sm:text-xs"><span className="hidden sm:inline">Signed in as </span>{accountUser.email}</p>}
             </div>
             {authenticated && (
-              <button onClick={logout} className="flex w-fit items-center gap-2 rounded-xl border border-outline/10 px-3 py-2 text-xs font-black text-[var(--md-sys-color-on-surface-variant)] hover:text-on-surface">
+              <button onClick={logout} className="flex min-h-11 w-fit shrink-0 items-center gap-2 rounded-lg border border-outline/10 px-3 py-2 text-xs font-black text-[var(--md-sys-color-on-surface-variant)] hover:text-on-surface sm:rounded-xl">
                 <LogOut size={15} /> Sign out
               </button>
             )}
@@ -2604,108 +2606,47 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
           )}
 
           {sessionLoading ? (
-            <div className="mt-8 rounded-3xl border border-outline/10 p-8 text-sm text-[var(--md-sys-color-on-surface-variant)]">Checking private session…</div>
+            <div className="mt-4 rounded-xl border border-outline/10 p-4 text-sm text-[var(--md-sys-color-on-surface-variant)] sm:mt-8 sm:rounded-3xl sm:p-8">Checking private session…</div>
           ) : !authenticated ? (
             <BondAccountAccess onAuthenticated={(user) => {
               setPurchases([]); setEquities([]); setAccountUser(user); setAuthenticated(true); setPortfolioError("");
             }} />
           ) : (
             <>
-              <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <Metric label="Bond principal" value={formatRwf(actualPortfolio)} accent />
-                <Metric label="RSE equity cost" value={formatRwf(actualEquityCost)} />
-                <Metric label="Total cash cost" value={formatRwf(actualInvestmentCashCost)} />
-                <Metric label="Saved annual net coupons" value={formatRwf(actualAnnualIncome)} />
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-8 sm:gap-3 xl:grid-cols-4">
+                <Metric label="Bond principal" value={formatRwf(actualPortfolio)} accent compact />
+                <Metric label="RSE equity cost" value={formatRwf(actualEquityCost)} compact />
+                <Metric label="Total cash cost" value={formatRwf(actualInvestmentCashCost)} compact />
+                <Metric label="Saved annual net coupons" value={formatRwf(actualAnnualIncome)} compact />
               </div>
-              {equities.length > 0 && (
-                <section className="mt-4 overflow-hidden rounded-3xl border border-outline/10 bg-surface-container-lowest/75">
-                  <div className="flex flex-col gap-2 border-b border-outline/10 p-5 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 text-primary">
-                        <Landmark size={16} />
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em]">
-                          RSE equities
-                        </p>
-                      </div>
-                      <h3 className="mt-1 text-xl font-black">Listed shares</h3>
-                    </div>
-                    <Link href="/stocks" prefetch={false} className="inline-flex items-center gap-2 rounded-xl border border-outline/15 px-3 py-2 text-xs font-black text-primary"><BarChart3 size={15} />Stock performance</Link>
-                    <span className="rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant">
-                      {actualEquityShares.toLocaleString()} shares
-                    </span>
-                  </div>
-                  <div className="bond-scrollbar overflow-x-auto">
-                    <table className="w-full min-w-[780px] border-collapse text-left">
-                      <thead className="bg-[var(--md-sys-color-surface-container)] text-[10px] uppercase tracking-[0.14em] text-[var(--md-sys-color-on-surface-variant)]">
-                        <tr>
-                          <th className="px-4 py-3">Security</th>
-                          <th className="px-4 py-3">Shares / price</th>
-                          <th className="px-4 py-3">Cash cost</th>
-                          <th className="px-4 py-3">Trade</th>
-                          <th className="px-4 py-3">Broker note</th>
-                          <th className="px-4 py-3">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {equities.map((item) => (
-                          <tr key={item.id} className="border-t border-outline/10 text-xs">
-                            <td className="px-4 py-4">
-                              <strong className="block text-sm text-on-surface">
-                                {item.securityName}
-                              </strong>
-                              <span className="mt-1 block text-[10px] text-on-surface-variant">
-                                {item.exchange} · {item.isin}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <strong className="block">{item.shares.toLocaleString()}</strong>
-                              <span className="text-[10px] text-on-surface-variant">
-                                {formatRwf(item.pricePerShare)} per share
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <strong className="block">{formatRwf(item.netAmountPayable)}</strong>
-                              <span className="text-[10px] text-on-surface-variant">
-                                {formatRwf(item.totalCharges)} charges
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <strong className="block">{item.tradeDate}</strong>
-                              <span className="text-[10px] text-on-surface-variant">
-                                Settled {item.settlementDate}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <strong className="block">{item.broker}</strong>
-                              <span className="text-[10px] text-on-surface-variant">
-                                {item.contractNote}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <span className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-black uppercase text-primary">
-                                {item.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              )}
-              <div className="mt-6 flex flex-wrap justify-end gap-2">
-                {accountUser?.isOwner && <button type="button" onClick={() => setPortfolioSettingsOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-black text-primary"><UserPlus size={17} />Invite a friend</button>}
-                {accountUser?.isOwner && <button type="button" onClick={() => setAccountManagementOpen((open) => !open)} aria-expanded={accountManagementOpen} aria-controls="account-management" className="inline-flex items-center gap-2 rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:border-primary/30 hover:text-primary"><Users size={17} />Manage accounts</button>}
+              <div className="portfolio-actions mt-4 flex flex-wrap gap-2 sm:mt-6 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={startNewPurchase}
+                  disabled={importingPdf}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-sm font-black text-[var(--md-sys-color-on-primary)] transition hover:opacity-90"
+                >
+                  <Plus size={17} />
+                  Add purchase
+                </button>
+                {accountUser?.isOwner && <button type="button" onClick={() => setPortfolioSettingsOpen(true)} className="hidden items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-black text-primary sm:inline-flex"><UserPlus size={17} />Invite a friend</button>}
+                {accountUser?.isOwner && <button type="button" onClick={() => setAccountManagementOpen((open) => !open)} aria-expanded={accountManagementOpen} aria-controls="account-management" className="hidden items-center gap-2 rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:border-primary/30 hover:text-primary sm:inline-flex"><Users size={17} />Manage accounts</button>}
                 <Link
                   href="/documents"
+                  aria-label="Documents"
+                  title="Documents"
                   className="inline-flex items-center gap-2 rounded-xl border border-outline/10 px-4 py-3 text-sm font-black text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
                 >
                   <FileText size={17} />
-                  Documents
+                  <span className="sr-only sm:not-sr-only">Documents</span>
                 </Link>
                 <button
                   type="button"
                   onClick={() => setPortfolioSettingsOpen((open) => !open)}
+                  aria-label="Portfolio settings"
+                  aria-expanded={portfolioSettingsOpen}
+                  aria-controls="portfolio-settings"
+                  title="Portfolio settings"
                   className={`inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-black transition ${
                     portfolioSettingsOpen
                       ? "border-primary/25 bg-primary/10 text-primary"
@@ -2713,21 +2654,12 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   }`}
                 >
                   <Settings size={17} />
-                  Settings
-                </button>
-                <button
-                  type="button"
-                  onClick={startNewPurchase}
-                  disabled={importingPdf}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90"
-                >
-                  <Plus size={17} />
-                  Add purchase
+                  <span className="sr-only sm:not-sr-only">Settings</span>
                 </button>
               </div>
               {accountManagementOpen && accountUser?.isOwner && <BondAccountManagement />}
               {portfolioSettingsOpen && (
-                <div className="mt-4 rounded-3xl border border-outline/10 bg-surface-container-lowest/75 p-5">
+                <div id="portfolio-settings" className="mt-4 rounded-xl border border-outline/10 bg-surface-container-lowest/75 p-3 sm:rounded-3xl sm:p-5">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
@@ -2739,7 +2671,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       {purchases.length + equities.length} saved
                     </span>
                   </div>
-                  {accountUser?.isOwner && <BondRegistrationSettings />}
+                  {accountUser?.isOwner && <><button type="button" onClick={() => setAccountManagementOpen((open) => !open)} aria-expanded={accountManagementOpen} aria-controls="account-management" className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg border border-outline/15 px-3 py-2 text-xs font-bold sm:hidden"><Users size={16} />Manage accounts</button><BondRegistrationSettings /></>}
                   {purchases.length === 0 ? (
                     <p className="mt-4 text-sm text-on-surface-variant">
                       No saved records.
@@ -2776,6 +2708,82 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                     </div>
                   )}
                 </div>
+              )}
+              {equities.length > 0 && (
+                <section className="mt-4 overflow-hidden rounded-xl border border-outline/10 bg-surface-container-lowest/75 sm:rounded-3xl">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline/10 p-3 sm:items-end sm:p-5">
+                    <div>
+                      <div className="flex items-center gap-2 text-primary">
+                        <Landmark size={16} />
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em]">
+                          RSE equities
+                        </p>
+                      </div>
+                      <h3 className="mt-1 text-base font-black sm:text-xl">Listed shares</h3>
+                    </div>
+                    <Link href="/stocks" prefetch={false} aria-label="Stock performance" className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-outline/15 px-3 py-2 text-xs font-black text-primary sm:min-h-0 sm:rounded-xl"><BarChart3 size={15} /><span className="min-[375px]:hidden">Performance</span><span className="hidden min-[375px]:inline">Stock performance</span></Link>
+                    <span className="hidden rounded-full bg-surface-container px-3 py-1 text-[10px] font-black uppercase text-on-surface-variant sm:inline">
+                      {actualEquityShares.toLocaleString()} shares
+                    </span>
+                  </div>
+                  <div className="bond-scrollbar sm:overflow-x-auto">
+                    <table role="table" aria-label="Listed shares" className="portfolio-table w-full border-collapse text-left sm:min-w-[780px]">
+                      <thead role="rowgroup" className="bg-[var(--md-sys-color-surface-container)] text-[10px] uppercase tracking-[0.14em] text-[var(--md-sys-color-on-surface-variant)]">
+                        <tr role="row">
+                          <th scope="col" role="columnheader" className="px-4 py-3">Security</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Shares / price</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Cash cost</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Trade</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Broker note</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody role="rowgroup">
+                        {equities.map((item) => (
+                          <tr role="row" key={item.id} className="border-t border-outline/10 text-xs">
+                            <td role="cell" data-label="Security" className="px-4 py-4">
+                              <strong className="block text-sm text-on-surface">
+                                {item.securityName}
+                              </strong>
+                              <span className="mt-1 block text-[10px] text-on-surface-variant">
+                                {item.exchange} · {item.isin}
+                              </span>
+                            </td>
+                            <td role="cell" data-label="Shares / price" className="px-4 py-4">
+                              <strong className="block">{item.shares.toLocaleString()}</strong>
+                              <span className="text-[10px] text-on-surface-variant">
+                                {formatRwf(item.pricePerShare)} per share
+                              </span>
+                            </td>
+                            <td role="cell" data-label="Cash cost" className="px-4 py-4">
+                              <strong className="block">{formatRwf(item.netAmountPayable)}</strong>
+                              <span className="text-[10px] text-on-surface-variant">
+                                {formatRwf(item.totalCharges)} charges
+                              </span>
+                            </td>
+                            <td role="cell" data-label="Trade" className="px-4 py-4">
+                              <strong className="block">{item.tradeDate}</strong>
+                              <span className="text-[10px] text-on-surface-variant">
+                                Settled {item.settlementDate}
+                              </span>
+                            </td>
+                            <td role="cell" data-label="Broker note" className="px-4 py-4">
+                              <strong className="block">{item.broker}</strong>
+                              <span className="text-[10px] text-on-surface-variant">
+                                {item.contractNote}
+                              </span>
+                            </td>
+                            <td role="cell" data-label="Status" className="px-4 py-4">
+                              <span className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-black uppercase text-primary">
+                                {item.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
               )}
               <div className="mt-4">
                 {purchasePanelOpen && (
@@ -3122,28 +3130,28 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 </BondPurchaseDialog>
                 )}
 
-                <div className="bond-scrollbar order-1 overflow-x-auto rounded-3xl border border-outline/10">
+                <div className="bond-scrollbar order-1 overflow-hidden rounded-xl border border-outline/10 sm:overflow-x-auto sm:rounded-3xl">
                   {purchases.length === 0 ? (
-                    <div className="grid min-h-64 place-items-center p-8 text-center">
+                    <div className="grid min-h-36 place-items-center p-4 text-center sm:min-h-64 sm:p-8">
                       <div>
                         <WalletCards className="mx-auto text-[var(--md-sys-color-outline)]" />
                         <p className="mt-3 font-bold">No purchases recorded yet</p>
                       </div>
                     </div>
                   ) : (
-                    <table className="w-full min-w-[980px] border-collapse text-left">
-                      <thead className="bg-[var(--md-sys-color-surface-container)] text-[10px] uppercase tracking-[0.14em] text-[var(--md-sys-color-on-surface-variant)]">
-                        <tr>
-                          <th className="px-4 py-3">Bond</th>
-                          <th className="px-4 py-3">Principal / cost</th>
-                          <th className="px-4 py-3">Price</th>
-                          <th className="px-4 py-3">Expected coupon</th>
-                          <th className="px-4 py-3">Next payment</th>
-                          <th className="px-4 py-3">Schedule</th>
-                          <th className="px-4 py-3">RSE listed price</th>
+                    <table role="table" aria-label="Bond purchases" className="portfolio-table w-full border-collapse text-left sm:min-w-[980px]">
+                      <thead role="rowgroup" className="bg-[var(--md-sys-color-surface-container)] text-[10px] uppercase tracking-[0.14em] text-[var(--md-sys-color-on-surface-variant)]">
+                        <tr role="row">
+                          <th scope="col" role="columnheader" className="px-4 py-3">Bond</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Principal / cost</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Price</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Expected coupon</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Next payment</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">Schedule</th>
+                          <th scope="col" role="columnheader" className="px-4 py-3">RSE listed price</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody role="rowgroup">
                         {purchases.map((item) => {
                           const catalogEntry = catalogEntryForPurchase(item);
                           const displayItem = item;
@@ -3162,8 +3170,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                 new Date().toISOString().slice(0, 10),
                               );
                           return (
-                            <tr key={item.id} className="border-t border-outline/10 text-xs">
-                              <td className="px-4 py-4">
+                            <tr role="row" key={item.id} className="border-t border-outline/10 text-xs">
+                              <td role="cell" data-label="Bond" className="px-4 py-4">
                                 <Link
                                   href={`/purchases/${item.id}`}
                                   className="inline-flex items-center gap-1.5 text-sm font-black text-on-surface hover:text-[var(--md-sys-color-primary)]"
@@ -3184,12 +3192,12 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                   )}
                                 </button>
                               </td>
-                              <td className="px-4 py-4">
+                              <td role="cell" data-label="Principal / cost" className="px-4 py-4">
                                 <strong className="block">{formatRwf(displayItem.faceValue)}</strong>
                                 <span className="text-[10px] text-on-surface-variant">{formatRwf(displayItem.amountInvested)} cash cost</span>
                               </td>
-                              <td className="px-4 py-4">{displayItem.pricePercent.toFixed(3)}%</td>
-                              <td className="px-4 py-4">
+                              <td role="cell" data-label="Price" className="px-4 py-4">{displayItem.pricePercent.toFixed(3)}%</td>
+                              <td role="cell" data-label="Expected coupon" className="px-4 py-4">
                                 {couponPending ? (
                                   <>
                                     <strong className="block text-tertiary">Coupon pending</strong>
@@ -3202,15 +3210,15 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                   </>
                                 )}
                               </td>
-                              <td className="px-4 py-4 text-on-surface-variant">
+                              <td role="cell" data-label="Next payment" className="px-4 py-4 text-on-surface-variant">
                                 {tracking?.nextCouponDate ?? "Pending issuance"}
                               </td>
-                              <td className="px-4 py-4">
+                              <td role="cell" data-label="Schedule" className="px-4 py-4">
                                 <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${displayItem.scheduleConfidence === "confirmed" ? "bg-primary/10 text-primary" : "bg-tertiary/10 text-tertiary"}`}>
                                   {displayItem.scheduleConfidence}
                                 </span>
                               </td>
-                              <td className="px-4 py-4">
+                              <td role="cell" data-label="RSE listed price" className="px-4 py-4">
                                 <BondMarketQuote purchase={item} {...bondMarket} />
                               </td>
                             </tr>
