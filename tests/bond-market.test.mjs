@@ -7,6 +7,7 @@ import makeLoader from './helpers/load-ts.mjs';
 const load = makeLoader();
 const quotes = load('lib/bonds/market-quotes.ts');
 const equityMarket = load('lib/bonds/equity-market.ts');
+const priceChart = load('lib/bonds/equity-price-chart.ts');
 const table = rows => `<table><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 const bondRows = table([
   ['FXD1/2024/20Yrs (Re-opened)<span>TREASURY</span>','102.50','102.70','(0.19%)','3,500,000','3,587,500'],
@@ -54,6 +55,40 @@ test('daily table keeps only actual prices, leaves missing companies blank and u
   const year=equityMarket.equityDailyRows(observations,['BOK'],'year',now);
   assert.equal(year.some(row=>row.date==='2026-02-30'),false);
   assert.equal(year.at(-1).date,'2026-09-01');
+});
+test('company price graphs preserve years, isolate symbols and rebase percentages within each selected range', () => {
+  const point=(date,closing,ticker='BOK',observedAt=date+'T14:00:00Z')=>({date,closing,ticker,observedAt});
+  const values=[point('2022-01-03',500),point('2023-04-05',600),point('2026-10-20',700),point('2026-10-20',750,'BOK','2026-10-21T15:00:00Z'),point('2026-10-21',100,'IMR'),point('2026-10-22',110,'IMR'),point('2026-10-23',999),point('2026-10-21',0),point('2026-02-30',400)];
+  const now=new Date('2026-10-22T10:00:00Z');
+  const all=priceChart.equityPriceChartData(values,['BOK','IMR'],'all','price',now);
+  assert.equal(all.startDate,'2022-01-03');assert.equal(all.endDate,'2026-10-22');
+  assert.deepEqual(all.series[0].points.map(point=>point.value),[500,600,750]);
+  assert.equal(all.series[0].points.some(point=>point.date==='2026-10-21'),false);
+  const rebased=priceChart.equityPriceChartData(values,['BOK','IMR'],'all','change',now);
+  assert.equal(rebased.series[0].last.value,50);
+  assert.ok(Math.abs(rebased.series[1].last.value-10)<0.00001);
+  assert.equal(rebased.series[1].first.date,'2026-10-21');
+  const month=priceChart.equityPriceChartData(values,['BOK'],'month','change',now);
+  assert.equal(month.series.length,1);assert.deepEqual(month.series[0].points,[{date:'2026-10-20',closing:750,value:0}]);
+  assert.ok(month.minimum<month.maximum);
+  assert.equal(priceChart.equityPriceChartData([],['BOK'],'all','price',now),null);
+  assert.equal(priceChart.equityPriceChartData(values,['UNKNOWN'],'all','price',now),null);
+  assert.equal(priceChart.nearestEquityPriceDate(all.dates,Date.parse('2023-04-04')),'2023-04-05');
+  assert.equal(priceChart.nearestEquityPriceDate(all.dates,0),'2022-01-03');
+  assert.equal(priceChart.nearestEquityPriceDate(all.dates,Date.parse('2030-01-01')),'2026-10-22');
+  assert.equal(priceChart.nearestEquityPriceDate([],0),null);
+});
+test('price graph renders years and exact-date inspection, with honest empty and single-date states', async () => {
+  const {createElement}=await import('react');const {renderToStaticMarkup}=await import('react-dom/server');
+  const Chart=makeLoader()('component/bonds/EquityPriceHistoryChart.tsx').default;
+  const point=(date,closing,ticker='BOK')=>({date,closing,ticker,observedAt:date+'T14:00:00Z'});
+  const props={observations:[point('2022-01-03',500),point('2026-10-20',750),point('2026-10-21',110,'IMR')],tickers:['BOK','IMR'],period:'all',mode:'price',now:new Date('2026-10-22T10:00:00Z')};
+  const html=renderToStaticMarkup(createElement(Chart,props));
+  assert.match(html,/<polyline/);assert.match(html,/03\/01\/2022/);assert.match(html,/No recorded price on this date/);assert.match(html,/type="range"/);assert.equal(html.includes('NaN'),false);
+  const single=renderToStaticMarkup(createElement(Chart,{...props,observations:[point('2026-10-21',700)],tickers:['BOK'],mode:'change'}));
+  assert.match(single,/<circle/);assert.equal(single.includes('<polyline'),false);assert.match(single,/Only one market date/);assert.equal(single.includes('NaN'),false);assert.equal(single.includes('type="range"'),false);
+  const empty=renderToStaticMarkup(createElement(Chart,{...props,observations:[]}));
+  assert.equal(empty.includes('<svg'),false);assert.match(empty,/Earlier years need historical price data/);
 });
 test('parsers retain genuine prices, ignore zero placeholders, and preserve equity symbols', () => {
   assert.equal(quotes.parseBondQuotes(bondRows).length,2);

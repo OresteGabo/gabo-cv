@@ -26,7 +26,7 @@ export function equityMarketDate(timestamp: string | null | undefined) {
   return Number.isFinite(time) ? new Date(time + 2 * 3600000).toISOString().slice(0, 10) : null;
 }
 
-export function equityDailyRows(observations: EquityObservation[], tickers: string[], period: "month" | "year", now = new Date()) {
+export function equityDailyRows(observations: EquityObservation[], tickers: string[], period: "month" | "year" | "all", now = new Date()) {
   const rows = new Map<string, Map<string, number>>();
   // Align the day boundary with Kigali, including around midnight UTC.
   const today = new Date(now.getTime() + 2 * 3600000);

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { ChevronDown, RefreshCw } from "lucide-react";
 import { RSE_EQUITIES, equityDailyRows, equityMarketDate, equityPriceChange } from "@/lib/bonds/equity-market";
 import type { EquityObservation, EquityQuotes } from "@/lib/bonds/market-quotes";
+import type { EquityPriceMode, EquityPricePeriod } from "@/lib/bonds/equity-price-chart";
 import { useDeferredMarket } from "./useDeferredMarket";
 
 const number = (value: number) => value.toLocaleString("en", { maximumFractionDigits: 2 });
@@ -11,13 +13,15 @@ const dateLabel = (date: string) => date.split("-").reverse().join("/");
 const signed = (value: number) => `${value > 0 ? "+" : value < 0 ? "−" : ""}${number(Math.abs(value))}`;
 type History = { available: boolean; resolution: "daily" | "monthly"; observations: EquityObservation[] };
 type Props = { data: EquityQuotes | null; error: boolean; loading: boolean; onRetry: () => void };
+const PriceHistoryChart = dynamic(() => import("./EquityPriceHistoryChart"), { ssr: false, loading: () => <p role="status" className="py-6 text-sm text-on-surface-variant">Preparing price history graph…</p> });
 
 export default function RseEquityMarket({ data, error, loading, onRetry }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const [period, setPeriod] = useState<"month" | "year">("month");
+  const [period, setPeriod] = useState<EquityPricePeriod>("all");
+  const [mode, setMode] = useState<EquityPriceMode>("price");
   const [selected, setSelected] = useState("all");
   const symbols = RSE_EQUITIES.map((company) => company.ticker).join(",");
-  const history = useDeferredMarket<History>(`/api/bonds/rse/equity-history?tickers=${symbols}&period=${period}`, expanded && !loading);
+  const history = useDeferredMarket<History>(`/api/bonds/rse/equity-history?tickers=${symbols}&period=${period}`, !loading);
   const companies = RSE_EQUITIES.filter((company) => selected === "all" || selected === company.ticker);
   const days = equityDailyRows(history.data?.observations ?? [], companies.map((company) => company.ticker), period);
   const marketDate = equityMarketDate(data?.source.publishedAt);
@@ -35,12 +39,29 @@ export default function RseEquityMarket({ data, error, loading, onRetry }: Props
         <p className="mt-2 text-xs leading-5 text-on-surface-variant">All ten companies, whether or not you own their shares. Prices per share in RWF.</p>
       </div>
       <div className="flex items-center gap-4 text-xs">
-        <button type="button" disabled={loading} onClick={() => { onRetry(); if (expanded) history.retry(); }} className="inline-flex min-h-10 items-center gap-2 font-bold underline disabled:opacity-50"><RefreshCw size={14} />Refresh prices</button>
+        <button type="button" disabled={loading || history.loading} onClick={() => { onRetry(); history.retry(); }} className="inline-flex min-h-10 items-center gap-2 font-bold underline disabled:opacity-50"><RefreshCw size={14} />Refresh prices</button>
         <a href="https://rse.rw/equities-market" target="_blank" rel="noreferrer" className="underline">View RSE source</a>
       </div>
     </div>
     <div role="status" className="border-y border-outline/10 bg-surface-container-low/50 px-4 py-3 text-xs leading-5 text-on-surface-variant sm:px-6">
       {loading ? "Refreshing RSE prices…" : unavailable ? data?.quotes.length ? "RSE could not be refreshed. Previously loaded quotes are still shown." : "RSE prices are unavailable. You can retry or open saved daily history below." : data?.source.status === "empty" ? "RSE returned no usable prices. No prices have been filled in." : <>{quoted} of {RSE_EQUITIES.length} companies quoted · {marketDate ? <>Published <strong>{dateLabel(marketDate)}</strong> (Kigali)</> : "Publication date unavailable"}{data?.source.stale ? " · Cached after an RSE error" : ""}{data?.source.status === "partial" ? " · Incomplete RSE update" : ""}</>}
+    </div>
+    <div className="border-b border-outline/15 p-4 sm:p-6" aria-labelledby="rse-price-evolution-title">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div><h3 id="rse-price-evolution-title" className="text-lg font-black">Share price evolution</h3><p className="mt-1 text-xs leading-5 text-on-surface-variant">Explore saved prices across the months and years collected.</p></div>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-xs font-bold">Company <select value={selected} onChange={(event) => setSelected(event.target.value)} className="ml-2 rounded-lg border border-outline/20 bg-background px-2 py-2 font-normal"><option value="all">All companies</option>{RSE_EQUITIES.map((company) => <option key={company.ticker} value={company.ticker}>{company.name}</option>)}</select></label>
+          <label className="text-xs font-bold">Period <select value={period} onChange={(event) => setPeriod(event.target.value as EquityPricePeriod)} className="ml-2 rounded-lg border border-outline/20 bg-background px-2 py-2 font-normal"><option value="month">Last month</option><option value="year">Last year</option><option value="all">All collected years</option></select></label>
+          <label className="text-xs font-bold">Show <select value={mode} onChange={(event) => setMode(event.target.value as EquityPriceMode)} className="ml-2 rounded-lg border border-outline/20 bg-background px-2 py-2 font-normal"><option value="price">Price (RWF)</option><option value="change">Price change (%)</option></select></label>
+        </div>
+      </div>
+      <div className="mt-5">
+        {history.error || history.data?.available === false ? <p role="alert" className="py-6 text-sm text-on-surface-variant">Saved price history is unavailable. <button type="button" onClick={history.retry} className="font-bold underline">Try again</button></p> : !history.data ? <p role="status" className="py-6 text-sm text-on-surface-variant">{history.loading ? "Loading recorded price history…" : "Price history will load when the page is idle…"}</p> : <>
+          {history.loading && <p role="status" className="mb-3 text-xs text-on-surface-variant">Refreshing recorded prices…</p>}
+          <PriceHistoryChart observations={history.data.observations} tickers={companies.map((company) => company.ticker)} period={period} mode={mode} />
+          {history.data.resolution === "monthly" && <p className="mt-3 text-xs leading-5 text-on-surface-variant">Long histories show each month’s first and last recorded prices. Choose Last month or Last year for daily observations.</p>}
+        </>}
+      </div>
     </div>
     <div className="overflow-x-auto" role="region" aria-label="RSE company prices, scroll horizontally for more columns" tabIndex={0}>
       <table className="w-full min-w-[820px] border-collapse">
@@ -67,16 +88,10 @@ export default function RseEquityMarket({ data, error, loading, onRetry }: Props
     <p className="px-4 py-3 text-xs leading-5 text-on-surface-variant sm:px-6">Change compares closing with the previous price published by RSE. A closing quote can stay unchanged when no shares trade.</p>
     <div className="border-t border-outline/15">
       <button type="button" aria-expanded={expanded} aria-controls="rse-daily-history" onClick={() => setExpanded((value) => !value)} className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-4 text-left text-sm font-bold sm:px-6">
-        Saved daily price history <ChevronDown size={18} className={expanded ? "rotate-180" : ""} />
+        Recorded price details <ChevronDown size={18} className={expanded ? "rotate-180" : ""} />
       </button>
       {expanded && <div id="rse-daily-history" className="border-t border-outline/10">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:px-6">
-          <p className="max-w-xl text-xs leading-5 text-on-surface-variant">Collection is scheduled daily around 20:00 Kigali time. Dates below are RSE publication dates; missing prices are shown as —. History builds as updates are collected.</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-xs font-bold">Company <select value={selected} onChange={(event) => setSelected(event.target.value)} className="ml-2 rounded-lg border border-outline/20 bg-background px-2 py-2 font-normal"><option value="all">All companies</option>{RSE_EQUITIES.map((company) => <option key={company.ticker} value={company.ticker}>{company.name}</option>)}</select></label>
-            <label className="text-xs font-bold">Period <select value={period} onChange={(event) => setPeriod(event.target.value as "month" | "year")} className="ml-2 rounded-lg border border-outline/20 bg-background px-2 py-2 font-normal"><option value="month">Last month</option><option value="year">Last year</option></select></label>
-          </div>
-        </div>
+        <p className="p-4 text-xs leading-5 text-on-surface-variant sm:px-6">The graph and table use the same company and period selection. Collection is scheduled daily around 20:00 Kigali time. Dates below are RSE publication dates; missing prices are shown as —.{history.data?.resolution === "monthly" ? " This long-range view lists monthly first and last observations." : ""}</p>
         {history.error || history.data?.available === false ? <p role="alert" className="px-4 pb-4 text-sm text-on-surface-variant sm:px-6">Saved price history is unavailable. <button type="button" onClick={history.retry} className="font-bold underline">Try again</button></p> : !history.data ? <p role="status" className="px-4 pb-4 text-sm text-on-surface-variant sm:px-6">{history.loading ? "Loading saved daily prices…" : "Waiting for an idle moment to load history…"}</p> : <>
           {history.loading && <p role="status" className="px-4 pb-3 text-xs text-on-surface-variant sm:px-6">Refreshing saved daily prices…</p>}
           {days.length === 0 ? <p className="px-4 pb-4 text-sm text-on-surface-variant sm:px-6">No saved prices for this selection yet. The daily collector will add new published market dates.</p> : <div className="max-h-[32rem] overflow-auto" role="region" aria-label="Saved daily prices, scroll for more dates and companies" tabIndex={0}>

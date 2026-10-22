@@ -445,13 +445,24 @@ date; zero volume is explicitly labelled as no trades reported. Missing quotes
 remain unavailable. The collector already saves every valid quoted symbol,
 independently of holdings, so this feature needs no new cron or migration.
 
-The market table module loads after the deferred quote request completes.
-Expanding Saved daily price history requests all ten symbols for the last month
-or year through the existing idle queue. Its date-by-company table shows only
-saved observations, newest first, with a company filter and dashes for missing
-prices. It does not relabel an old publication as today's data or invent prices
-for weekends, holidays, or missed collection days. Tables scroll horizontally
-on narrow screens and the history table has a bounded scrolling height.
+The market table module loads after the deferred quote request completes, then
+requests price history through the existing idle queue. Share price evolution
+defaults to all collected years, with last-month/year ranges and an all-company
+or single-company selector. This plots prices per share, independently of the
+user's purchases. RWF mode uses actual closing prices; percentage mode rebases
+each company to its own first observation in the selected range. The graph
+module loads only once history is available and adds no charting dependency.
+Pointer inspection and a keyboard/touch date slider show exact recorded values;
+a company missing on the inspected date remains unavailable, without carrying
+an older quote forward. Lines connect observations rather than reconstructing
+missing daily prices. Long histories label the monthly endpoint resolution.
+
+Empty history and a single market date have explicit states. A single date is
+shown with dots, never a fabricated earlier date or trend. Older years require
+historical observations to be imported; enabling the graph cannot create them.
+The expandable Recorded price details table shares the graph's company/range
+selection, lists newest dates first and leaves dashes for missing prices. Tables
+scroll horizontally on narrow screens and history has a bounded scrolling height.
 
 ## RSE bond market snapshots
 
