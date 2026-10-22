@@ -2,6 +2,7 @@ import { parsePurchasePdfText, type PurchasePdfImport } from "./equity-pdf-parse
 import { parseBondPdfText } from "./pdf-import-parser";
 import { BondPdfImportError, hasPdfEntries, validateBondPdfEnvelope, validateBondPdfMetadata } from "./pdf-import-errors";
 import { readBondPdfBytes } from "./pdf-file";
+import { pdfFailureReason, type PdfImportStage } from "./pdf-import-diagnostics";
 
 export { MAX_BOND_PDF_BYTES } from "./pdf-import-errors";
 const MAX_PAGES = 10;
@@ -33,18 +34,23 @@ export async function importBondPdf(
   let usedOcr = false;
   let ocrPages = 0;
   const texts: string[] = [];
+  let stage: PdfImportStage = "metadata";
   try {
     validateBondPdfMetadata(file);
     signal.throwIfAborted();
+    stage = "file-read";
     const bytes = preparedBytes ?? await readBondPdfBytes(file, signal);
     signal.throwIfAborted();
     if (bytes.byteLength !== file.size) throw new BondPdfImportError("unreadable");
+    stage = "file-envelope";
     validateBondPdfEnvelope(bytes);
     onProgress("Checking PDF structure…");
     // Safari needs PDF.js's supported compatibility build in both threads.
+    stage = "parser-load";
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
     signal.throwIfAborted();
-    pdfjs.GlobalWorkerOptions.workerSrc = "/bond-import/pdf.worker.legacy.min.mjs";
+    pdfjs.GlobalWorkerOptions.workerSrc = `/bond-import/pdf.worker.legacy.min.mjs?v=${encodeURIComponent(pdfjs.version)}`;
+    stage = "document-open";
     loading = pdfjs.getDocument({
       data: bytes,
       stopAtErrors: true,
@@ -64,6 +70,7 @@ export async function importBondPdf(
     signal.throwIfAborted();
     if (pdf.numPages > MAX_PAGES) throw new BondPdfImportError("page_limit");
     if (pdf.numPages < 1) throw new BondPdfImportError("invalid_pdf");
+    stage = "document-policy";
     const [actions, attachments, fieldObjects] = await wait(Promise.all([pdf.getJSActions(), pdf.getAttachments(), pdf.getFieldObjects()]));
     const fields = [...(fieldObjects?.values() ?? [])].flat() as { id?: string; type?: string; actions?: unknown }[];
     if (hasPdfEntries(actions) || hasPdfEntries(attachments) || fields.some((field) => field.type !== "signature" || !field.id || hasPdfEntries(field.actions))) throw new BondPdfImportError("unsafe_content");
@@ -71,7 +78,9 @@ export async function importBondPdf(
     for (let index = 1; index <= pdf.numPages; index++) {
       signal.throwIfAborted();
       onProgress(`Reading page ${index} of ${pdf.numPages}…`);
+      stage = "page-open";
       const page = await wait(pdf.getPage(index));
+      stage = "page-policy";
       const [pageActions, annotations] = await wait(Promise.all([page.getJSActions(), page.getAnnotations({ intent: "any" })]));
       // Non-widget annotations can hide actions omitted by PDF.js's public output.
       // Accept passive signature widgets only; never mount annotation/scripting UI.
@@ -80,6 +89,7 @@ export async function importBondPdf(
         hasPdfEntries(annotation.actions) || annotation.file || annotation.attachment || annotation.attachmentId,
       )) throw new BondPdfImportError("unsafe_content");
       for (const annotation of annotations) signatures.add(annotation.id);
+      stage = "page-text";
       const content = await wait(page.getTextContent());
       if (content.items.length > 50_000) throw new BondPdfImportError("text_limit");
       // Reconstruct rows so table columns stay together while field labels retain line breaks.
@@ -99,6 +109,7 @@ export async function importBondPdf(
         if (++ocrPages > MAX_OCR_PAGES) throw new BondPdfImportError("scan_limit");
         usedOcr = true;
         if (!ocr) {
+          stage = "ocr-load";
           onProgress("Loading text recognition on your device…");
           const { createWorker, PSM } = await import("tesseract.js");
           signal.throwIfAborted();
@@ -130,8 +141,10 @@ export async function importBondPdf(
         canvas.width = Math.ceil(viewport.width);
         canvas.height = Math.ceil(viewport.height);
         try {
+          stage = "ocr-render";
           await wait(page.render({ canvas, viewport, annotationMode: pdfjs.AnnotationMode.DISABLE }).promise);
           signal.throwIfAborted();
+          stage = "ocr-read";
           const recognized = await wait(ocr.recognize(canvas, {}, { text: true, blocks: true }));
           text = recognized.data.text;
           const initial = parseBondPdfText(text, true);
@@ -165,16 +178,18 @@ export async function importBondPdf(
         throw new BondPdfImportError("text_limit");
       }
       texts.push(text);
+      stage = "page-cleanup";
       page.cleanup();
     }
     signal.throwIfAborted();
     if (fields.some((field) => !signatures.has(field.id!))) throw new BondPdfImportError("unsafe_content");
+    stage = "purchase-detection";
     return parsePurchasePdfText(texts.join("\n"), usedOcr);
   } catch (error) {
-    if (signal.aborted) throw new BondPdfImportError("cancelled");
-    if (error instanceof BondPdfImportError) throw error;
-    if (error instanceof Error && error.name === "PasswordException") throw new BondPdfImportError("password");
-    throw new BondPdfImportError("unreadable");
+    if (signal.aborted) throw new BondPdfImportError("cancelled", { stage, reason: "cancelled" });
+    if (error instanceof BondPdfImportError) throw new BondPdfImportError(error.code, error.diagnostic ?? { stage, reason: "validation" });
+    const reason = pdfFailureReason(error);
+    throw new BondPdfImportError(reason === "password" ? "password" : "unreadable", { stage, reason });
   } finally {
     signal.removeEventListener("abort", abort);
     await cleanup();

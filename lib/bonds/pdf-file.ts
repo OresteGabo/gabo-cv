@@ -11,7 +11,7 @@ function waitForRead<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
 
 function readWithFileReader(file: File, signal: AbortSignal): Promise<ArrayBuffer> {
   signal.throwIfAborted();
-  if (typeof FileReader === "undefined") throw new BondPdfImportError("unreadable");
+  if (typeof FileReader === "undefined") throw new BondPdfImportError("unreadable", { stage: "file-read", reason: "missing-browser-api" });
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     const finish = () => {
@@ -29,10 +29,10 @@ function readWithFileReader(file: File, signal: AbortSignal): Promise<ArrayBuffe
       if (result instanceof ArrayBuffer) resolve(result);
       else reject(new BondPdfImportError("unreadable"));
     };
-    reader.onerror = reader.onabort = () => { finish(); reject(new BondPdfImportError("unreadable")); };
+    reader.onerror = reader.onabort = () => { finish(); reject(new BondPdfImportError("unreadable", { stage: "file-read", reason: "file-unavailable" })); };
     signal.addEventListener("abort", cancel, { once: true });
     try { reader.readAsArrayBuffer(file); }
-    catch { finish(); reject(new BondPdfImportError("unreadable")); }
+    catch { finish(); reject(new BondPdfImportError("unreadable", { stage: "file-read", reason: "file-unavailable" })); }
   });
 }
 
@@ -50,7 +50,7 @@ export async function readBondPdfBytes(file: File, signal: AbortSignal): Promise
   // Retry incomplete/failed reads once through the browser's other file API.
   if (!buffer || buffer.byteLength !== file.size) buffer = await readWithFileReader(file, signal);
   signal.throwIfAborted();
-  if (buffer.byteLength !== file.size) throw new BondPdfImportError("unreadable");
+  if (buffer.byteLength !== file.size) throw new BondPdfImportError("unreadable", { stage: "file-read", reason: "file-unavailable" });
   const bytes = new Uint8Array(buffer);
   validateBondPdfEnvelope(bytes);
   return bytes;

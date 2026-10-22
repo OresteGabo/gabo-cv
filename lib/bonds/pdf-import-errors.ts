@@ -1,3 +1,5 @@
+import type { PdfImportDiagnostic } from "./pdf-import-diagnostics";
+
 export const MAX_BOND_PDF_BYTES = 10 * 1024 * 1024;
 
 export const PDF_FILE_ERROR_MESSAGE = "❌Wrong file.";
@@ -17,7 +19,7 @@ const MESSAGES = {
 } as const;
 
 export class BondPdfImportError extends Error {
-  constructor(readonly code: keyof typeof MESSAGES) {
+  constructor(readonly code: keyof typeof MESSAGES, readonly diagnostic?: PdfImportDiagnostic) {
     super(MESSAGES[code]);
     this.name = "BondPdfImportError";
   }
@@ -45,7 +47,7 @@ export function validateBondPdfEnvelope(bytes: Uint8Array) {
   if (bytes.length > MAX_BOND_PDF_BYTES ||
       !/^%PDF-(?:1\.[0-7]|2\.0)[\r\n\t ]/.test(decode.decode(bytes.subarray(0, 16))) ||
       !/%%EOF[\t\n\f\r \0]*$/.test(decode.decode(bytes.subarray(Math.max(0, end - 1024), end)))) {
-    throw new BondPdfImportError("invalid_pdf");
+    throw new BondPdfImportError("invalid_pdf", { stage: "file-envelope", reason: "validation" });
   }
 }
 

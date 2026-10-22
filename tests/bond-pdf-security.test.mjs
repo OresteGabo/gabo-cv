@@ -34,11 +34,12 @@ const file = (bytes = pdfBytes(), name = 'result.pdf', type = 'application/pdf')
 
 function scenario({ document = {}, page = {}, fail, failCleanup = false, ocrWorker } = {}) {
   const calls={reader:0,text:0,destroy:0,options:null};
+  const workerOptions = {};
   const doc={numPages:1,getJSActions:async()=>null,getAttachments:async()=>null,getFieldObjects:async()=>null,
     getPage:async()=>({getJSActions:async()=>null,getAnnotations:async()=>[],getTextContent:async()=>{calls.text++;return {items:terms.split('\n').map((str,i)=>({str,transform:[1,0,0,1,0,770-i*18]}))};},cleanup(){},...page}),...document};
-  const load=makeLoader({'tesseract.js':{PSM:{SPARSE_TEXT:11},createWorker:async()=>ocrWorker},'pdfjs-dist/legacy/build/pdf.mjs':{GlobalWorkerOptions:{},VerbosityLevel:{ERRORS:0},AnnotationMode:{DISABLE:0},AnnotationType:{WIDGET:20},
+  const load=makeLoader({'tesseract.js':{PSM:{SPARSE_TEXT:11},createWorker:async()=>ocrWorker},'pdfjs-dist/legacy/build/pdf.mjs':{version:'6.4.299',GlobalWorkerOptions:workerOptions,VerbosityLevel:{ERRORS:0},AnnotationMode:{DISABLE:0},AnnotationType:{WIDGET:20},
     getDocument(options){calls.reader++;calls.options=options;if(fail)throw fail;return {promise:Promise.resolve(doc),destroy:async()=>{calls.destroy++;if(failCleanup)throw new Error('private cleanup diagnostics');}};}}});
-  return {calls,importPdf:load('lib/bonds/pdf-import.ts').importBondPdf,policy:load('lib/bonds/pdf-import-errors.ts')};
+  return {calls,workerOptions,importPdf:load('lib/bonds/pdf-import.ts').importBondPdf,policy:load('lib/bonds/pdf-import-errors.ts')};
 }
 
 test('renamed executables, HTML, empty/oversized files and invalid PDF envelopes fail before the reader loads', async () => {
@@ -119,6 +120,25 @@ test('plain results remain importable; cancellation, password protection and unr
   await assert.rejects(unrelated.importPdf(file(),new AbortController().signal,()=>{}),error=>error.code==='not_bond_result');
   const excessive=scenario({page:{getTextContent:async()=>({items:[{str:'x'.repeat(200001),transform:[1,0,0,1,0,700]}]})}});
   await assert.rejects(excessive.importPdf(file(),new AbortController().signal,()=>{}),error=>error.code==='text_limit');
+});
+
+test('worker requests include the API version and failures retain only fixed stage/reason codes', async () => {
+  const normal = scenario();
+  await normal.importPdf(file(), new AbortController().signal, () => {});
+  const workerUrl = new URL(normal.workerOptions.workerSrc, 'https://bonds.example.test');
+  assert.equal(workerUrl.searchParams.get('v'), '6.4.299');
+  for (const [fixture, stage, reason] of [
+    [{ fail: new TypeError('private getOrInsertComputed details') }, 'document-open', 'missing-map-method'],
+    [{ fail: new Error('The API version "new" does not match the Worker version "old"') }, 'document-open', 'worker-version'],
+    [{ page: { getTextContent: async () => { throw new TypeError('privateMethod is not a function: private document contents'); } } }, 'page-text', 'missing-browser-api'],
+  ]) {
+    await assert.rejects(scenario(fixture).importPdf(file(), new AbortController().signal, () => {}), error => {
+      assert.deepEqual(error.diagnostic, { stage, reason });
+      assert.equal(error.message, '❌Wrong file.');
+      assert.equal(JSON.stringify(error).includes('private'), false);
+      return true;
+    });
+  }
 });
 
 test('the upload component shows a safe error and resets its busy state when a dependency throws diagnostics', async () => {

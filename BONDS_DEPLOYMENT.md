@@ -70,9 +70,25 @@ Run parser regression checks with `npm run test:bond-import` (Node 22.13+).
 These also exercise the real reader with malformed PDFs, compressed JavaScript,
 attachments and signatures. Both the browser API and worker use PDF.js's legacy
 compatibility build, including the Map-method polyfills required by Safari.
-Reader exceptions are mapped to fixed application messages. Raw exception text,
+The worker URL includes the installed PDF.js version so an older cached worker
+does not silently remain paired with a newer API bundle.
+Reader exceptions display only `❌Wrong file.`. Raw exception text,
 stack traces and document content are never displayed as upload errors, and
 cleanup failures cannot replace the original user-facing error.
+
+Failed imports can asynchronously POST fixed diagnostic codes to
+`/api/bonds/import-diagnostics`. This endpoint requires an authenticated session,
+checks origin, bounds the request to 1 KB, and accepts only the exact report
+schema. Vercel Runtime Logs show `[purchase-pdf-import]` with stage (for example
+`file-read` or `document-open`), failure category, reason category, broad platform
+(`ios`, `android`, `other`) and schema version. Reports never include PDF bytes,
+text, filename, financial values, account IDs, email, full user agent or raw
+exceptions. There is no API for reading reports. Logging suppresses repeats per
+account for 30 seconds within a server instance, with bounded memory. Cancelled
+imports are not reported, and reporting failures cannot affect the upload UI.
+After deploying diagnostic changes, reproduce on the failing device and use
+these codes to distinguish file-provider, parser-loading and parsing failures
+before changing document acceptance rules.
 Import saves into the signed-in user’s portfolio. Existing bundled documents
 and original equity JSON records remain private to the owner account. New share imports
 are saved separately for each signed-in account.

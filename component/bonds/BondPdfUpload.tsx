@@ -5,6 +5,7 @@ import { CircleAlert, FileText, LoaderCircle, Upload, X } from "lucide-react";
 import type { PurchasePdfImport } from "@/lib/bonds/equity-pdf-parser";
 import { bondPdfImportErrorMessage, PDF_FILE_ERROR_MESSAGE, validateBondPdfMetadata } from "@/lib/bonds/pdf-import-errors";
 import { readBondPdfBytes } from "@/lib/bonds/pdf-file";
+import { reportPdfImportFailure, type PdfImportStage } from "@/lib/bonds/pdf-import-diagnostics";
 
 export function BondPdfUpload({ onImport, onBusyChange, onSelectFile }: {
   onImport: (result: PurchasePdfImport, fileName: string) => void;
@@ -30,6 +31,7 @@ export function BondPdfUpload({ onImport, onBusyChange, onSelectFile }: {
     try { validateBondPdfMetadata(file); }
     catch (cause) {
       setError(bondPdfImportErrorMessage(cause));
+      reportPdfImportFailure(cause, "metadata");
       return;
     }
     const current = new AbortController();
@@ -39,15 +41,18 @@ export function BondPdfUpload({ onImport, onBusyChange, onSelectFile }: {
     setError("");
     setProgress("Opening PDF…");
     const timeout = window.setTimeout(() => current.abort(), 120_000);
+    let stage: PdfImportStage = "file-read";
     try {
       // Read while the picker still owns its selection, before lazy downloads.
       const bytes = await readBondPdfBytes(file, current.signal);
+      stage = "import-load";
       const { importBondPdf } = await import("@/lib/bonds/pdf-import");
       const result = await importBondPdf(file, current.signal, setProgress, bytes);
       if (!current.signal.aborted) onImport(result, file.name);
     } catch (cause) {
       if (controller.current === current) {
         setError(bondPdfImportErrorMessage(cause));
+        reportPdfImportFailure(cause, stage);
       }
     } finally {
       window.clearTimeout(timeout);
