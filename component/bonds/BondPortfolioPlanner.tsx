@@ -2730,7 +2730,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 </div>
               )}
               {equities.length > 0 && (
-                <section className="mt-4 overflow-hidden rounded-xl border border-outline/10 bg-surface-container-lowest/75 sm:rounded-3xl">
+                <section className="mt-4 overflow-hidden rounded-lg border border-outline/10 bg-surface-container-lowest/75 sm:rounded-3xl">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline/10 p-3 sm:items-end sm:p-5">
                     <div>
                       <div className="flex items-center gap-2 text-primary">
@@ -2763,6 +2763,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                           <tr role="row" key={item.id} data-expanded={expandedHoldings.has(`equity-${item.id}`)} className="border-t border-outline/10 text-xs">
                             <td role="cell" aria-colindex={1} data-label="Security" className="px-4 py-4">
                               <HoldingDisclosure label={item.securityName} expanded={expandedHoldings.has(`equity-${item.id}`)} controls={`equity-${item.id}-identity equity-${item.id}-trade equity-${item.id}-broker equity-${item.id}-status`} onToggle={() => toggleHolding(`equity-${item.id}`)} />
+                              <span className="holding-tile-caption hidden">{item.shares.toLocaleString()} shares</span>
                               <strong className="hidden text-sm text-on-surface sm:block">
                                 {item.securityName}
                               </strong>
@@ -3152,7 +3153,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                 </BondPurchaseDialog>
                 )}
 
-                <div className="bond-scrollbar order-1 overflow-hidden rounded-xl border border-outline/10 sm:overflow-x-auto sm:rounded-3xl">
+                <div className="bond-scrollbar order-1 overflow-hidden rounded-lg border border-outline/10 sm:overflow-x-auto sm:rounded-3xl">
                   {purchases.length === 0 ? (
                     <div className="grid min-h-36 place-items-center p-4 text-center sm:min-h-64 sm:p-8">
                       <div>
@@ -3192,10 +3193,16 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                 new Date().toISOString().slice(0, 10),
                               );
                           const nextCouponDate = displayItem.status === "sold" || displayItem.status === "matured" ? null : tracking?.nextCouponDate;
+                          const nextCouponAmount = !couponPending && nextCouponDate ? displayItem.faceValue * netRate / displayItem.couponFrequency : null;
+                          const nextPaymentLabel = nextCouponDate ?? (couponPending ? "Pending issuance" : "No future coupons");
                           return (
                             <tr role="row" key={item.id} data-expanded={expandedHoldings.has(`bond-${item.id}`)} className="border-t border-outline/10 text-xs">
                               <td role="cell" aria-colindex={1} data-label="Bond" className="px-4 py-4">
                                 <HoldingDisclosure label={issuanceNumber} expanded={expandedHoldings.has(`bond-${item.id}`)} controls={`bond-${item.id}-links bond-${item.id}-price bond-${item.id}-schedule bond-${item.id}-market`} onToggle={() => toggleHolding(`bond-${item.id}`)} />
+                                <span className="holding-tile-caption hidden">
+                                  {couponPending ? "Coupon pending" : nextCouponAmount !== null ? <span className="inline-block">Coupon <HoldingAmount value={nextCouponAmount} /></span> : "No future coupons"}
+                                  {nextCouponDate && <> · <time dateTime={nextCouponDate} className="inline-block">{nextCouponDate}</time></>}
+                                </span>
                                 {displayItem.status !== "active" && <span className="text-[10px] font-bold uppercase text-on-surface-variant sm:hidden">{displayItem.status}</span>}
                                 <div id={`bond-${item.id}-links`} data-mobile-detail>
                                 <Link
@@ -3227,7 +3234,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                               </td>
                               <td id={`bond-${item.id}-price`} data-mobile-detail role="cell" aria-colindex={3} data-label="Price" className="px-4 py-4">{displayItem.pricePercent.toFixed(3)}%</td>
                               <td role="cell" aria-colindex={4} data-label="Expected coupon" className="px-4 py-4">
-                                <strong className="block sm:hidden">{couponPending ? "Pending" : nextCouponDate ? <HoldingAmount value={displayItem.faceValue * netRate / displayItem.couponFrequency} /> : "—"}</strong>
+                                <strong className="block sm:hidden">{couponPending ? "Pending" : nextCouponAmount !== null ? <HoldingAmount value={nextCouponAmount} /> : "—"}</strong>
                                 <div data-mobile-detail>
                                 {couponPending ? (
                                   <>
@@ -3245,7 +3252,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                               </td>
                               <td role="cell" aria-colindex={5} data-label="Next payment" className="px-4 py-4 text-on-surface-variant">
                                 <span className="hidden sm:inline">{tracking?.nextCouponDate ?? "Pending issuance"}</span>
-                                <span className="sm:hidden">{nextCouponDate ?? (couponPending ? "Pending issuance" : "No future coupons")}</span>
+                                <span className="sm:hidden">{nextPaymentLabel}</span>
                               </td>
                               <td id={`bond-${item.id}-schedule`} data-mobile-detail role="cell" aria-colindex={6} data-label="Schedule" className="px-4 py-4">
                                 <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${displayItem.scheduleConfidence === "confirmed" ? "bg-primary/10 text-primary" : "bg-tertiary/10 text-tertiary"}`}>

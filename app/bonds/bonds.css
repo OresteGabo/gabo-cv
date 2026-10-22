@@ -175,6 +175,70 @@
     content: "Next coupon";
   }
 
+  .portfolio-table tbody tr:not([data-expanded="true"]) {
+    position: relative;
+    min-height: 64px;
+    grid-template-columns: minmax(0, 1fr) max-content 18px;
+    align-items: center;
+    gap: 2px 8px;
+    padding: 8px 12px;
+  }
+
+  .portfolio-table tr:not([data-expanded="true"]) td:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .portfolio-table tr:not([data-expanded="true"]) > td:not(:first-child):not([data-label="Cash cost"]):not([data-label="Principal / cost"]) {
+    display: none;
+  }
+
+  .portfolio-table tr:not([data-expanded="true"]) > :is(td[data-label="Cash cost"], td[data-label="Principal / cost"]) {
+    display: flex;
+    grid-column: 2;
+    grid-row: 1;
+    flex-direction: column-reverse;
+    max-width: 40vw;
+    text-align: right;
+  }
+
+  .portfolio-table tr:not([data-expanded="true"]) td::before {
+    margin-bottom: 0;
+  }
+
+  .portfolio-table tr:not([data-expanded="true"]) .holding-disclosure {
+    position: static;
+    min-height: 0;
+    padding: 0;
+  }
+
+  /* The whole closed tile is the touch target, including its cash value. */
+  .portfolio-table tr:not([data-expanded="true"]) .holding-disclosure::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .portfolio-table tr:not([data-expanded="true"]) .holding-disclosure svg {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .portfolio-table tr:not([data-expanded="true"]) .holding-tile-caption {
+    display: block;
+    margin-top: 2px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .portfolio-table tr:has(.holding-disclosure:focus-visible) {
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: -2px;
+  }
+
   .portfolio-actions > :is(button, a) {
     min-height: 44px;
     border-radius: 8px;
