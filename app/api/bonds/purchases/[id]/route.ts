@@ -1,3 +1,4 @@
+import { isDuplicatePurchaseError } from "@/lib/bonds/purchase-identity";
 import { NextRequest, NextResponse } from "next/server";
 import { getBondSession } from "@/lib/bonds/auth";
 import { deletePurchase, getPurchase, updatePurchase } from "@/lib/bonds/db";
@@ -30,7 +31,8 @@ export async function GET(
     return purchase
       ? NextResponse.json({ purchase })
       : NextResponse.json({ error: "Purchase not found." }, { status: 404 });
-  } catch {
+  } catch (error) {
+    if (isDuplicatePurchaseError(error)) return NextResponse.json({ error: "This purchase is already saved in your portfolio." }, { status: 409 });
     return NextResponse.json(
       { error: "The purchase could not be loaded." },
       { status: 503 },
@@ -63,7 +65,8 @@ export async function DELETE(
     return deleted
       ? NextResponse.json({ deleted: true })
       : NextResponse.json({ error: "Purchase not found." }, { status: 404 });
-  } catch {
+  } catch (error) {
+    if (isDuplicatePurchaseError(error)) return NextResponse.json({ error: "This purchase is already saved in your portfolio." }, { status: 409 });
     return NextResponse.json(
       { error: "The purchase could not be deleted." },
       { status: 503 },
@@ -111,7 +114,8 @@ export async function PUT(
     return updated
       ? NextResponse.json({ purchase: updated })
       : NextResponse.json({ error: "Purchase not found." }, { status: 404 });
-  } catch {
+  } catch (error) {
+    if (isDuplicatePurchaseError(error)) return NextResponse.json({ error: "This purchase is already saved in your portfolio." }, { status: 409 });
     return NextResponse.json(
       { error: "The transaction could not be updated." },
       { status: 503 },

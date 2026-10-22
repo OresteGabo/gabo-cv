@@ -1,4 +1,5 @@
-import { isRecognizedBondResult, parseBondPdfText, type BondPdfImport } from "./pdf-import-parser";
+import { parsePurchasePdfText, type PurchasePdfImport } from "./equity-pdf-parser";
+import { parseBondPdfText } from "./pdf-import-parser";
 import { BondPdfImportError, hasPdfEntries, validateBondPdfEnvelope, validateBondPdfMetadata } from "./pdf-import-errors";
 
 export { MAX_BOND_PDF_BYTES } from "./pdf-import-errors";
@@ -11,7 +12,7 @@ export async function importBondPdf(
   file: File,
   signal: AbortSignal,
   onProgress: (message: string) => void,
-): Promise<BondPdfImport> {
+): Promise<PurchasePdfImport> {
   let loading: import("pdfjs-dist").PDFDocumentLoadingTask | undefined;
   let ocr: Awaited<ReturnType<typeof import("tesseract.js")["createWorker"]>> | undefined;
   const cleanup = () => Promise.allSettled([
@@ -165,9 +166,7 @@ export async function importBondPdf(
     }
     signal.throwIfAborted();
     if (fields.some((field) => !signatures.has(field.id!))) throw new BondPdfImportError("unsafe_content");
-    const result = parseBondPdfText(texts.join("\n"), usedOcr);
-    if (!isRecognizedBondResult(result, texts.join("\n"))) throw new BondPdfImportError("not_bond_result");
-    return result;
+    return parsePurchasePdfText(texts.join("\n"), usedOcr);
   } catch (error) {
     if (signal.aborted) throw new BondPdfImportError("cancelled");
     if (error instanceof BondPdfImportError) throw error;

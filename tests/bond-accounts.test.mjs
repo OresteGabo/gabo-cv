@@ -26,6 +26,7 @@ test.before(async () => {
   process.env.BONDS_ADMIN_PASSWORD_HASH = await crypto.hashPassword(password);
   await pg.exec(readFileSync('db/bonds-schema.sql','utf8').replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;', ''));
 });
+test.beforeEach(async () => { await pg.exec('TRUNCATE bond_purchases, equity_purchases'); });
 test.after(async () => { process.env = originalEnv; await pg.close(); });
 
 test('auth diagnostics identify database failures without logging credentials or error messages', () => {
@@ -220,6 +221,9 @@ test('only the owner can list accounts or delete a member, their purchases, and 
   const member = await store.redeemInvitation(hash, email, await crypto.hashPassword(password));
   const firstSession = await auth.createSession(member), secondSession = await auth.createSession(member);
   const saved = await db.createPurchase(member.id, purchase);
+  const equityInput = load('lib/bonds/equity-pdf-parser.ts').parsePurchasePdfText(readFileSync('tests/fixtures/equity-purchase.txt', 'utf8')).fields;
+  const equityStore = load('lib/bonds/equities.ts');
+  await equityStore.createEquityPurchase(member.id, equityInput);
   const ownerSaved = await db.createPurchase('owner', purchase);
   cookieValues.clear();
   assert.equal((await listing()).status, 401);
@@ -240,6 +244,7 @@ test('only the owner can list accounts or delete a member, their purchases, and 
   assert.equal(summary.deletable, true);
   assert.ok(summary.createdAt);
   assert.equal(summary.portfolio.purchaseCount, 1);
+  assert.deepEqual(summary.portfolio.equityActivity, { purchaseCount:1, cashCost:340728.5, latestSecurity:'BANK OF KIGALI (BOK)' });
   assert.deepEqual(summary.portfolio.principalByCurrency, [{ currency: 'RWF', amount: 1000000 }]);
   assert.equal(summary.portfolio.latestPurchase.bondName, purchase.bondName);
   assert.equal(summary.portfolio.latestPurchase.isin, purchase.isin);
@@ -264,6 +269,7 @@ test('only the owner can list accounts or delete a member, their purchases, and 
   assert.equal((await deletion(request(email), context(member.id))).status, 200);
   assert.equal(await store.accountById(member.id), null);
   assert.deepEqual(await db.listPurchases(member.id), []);
+  assert.deepEqual(await equityStore.listEquityHoldings(member.id), []);
   assert.equal((await pg.query('SELECT * FROM bond_sessions WHERE user_id=$1', [member.id])).rows.length, 0);
   assert.ok(await db.getPurchase('owner', ownerSaved.id));
   assert.equal((await auth.getBondSession()).isOwner, true);
@@ -296,7 +302,7 @@ test('each SQL purchase operation requires the current owner, including mutation
 });
 test('legacy SQL purchases migrate to owner rather than becoming shared', async () => {
   const created=await db.createPurchase('owner',purchase);
-  await pg.exec('ALTER TABLE bond_purchases DROP COLUMN owner_id');
+  await pg.exec('ALTER TABLE bond_purchases DROP COLUMN owner_id, DROP COLUMN dedup_key');
   await pg.exec(readFileSync('db/bonds-schema.sql','utf8').replace('CREATE EXTENSION IF NOT EXISTS pgcrypto;', ''));
   assert.ok(await db.getPurchase('owner',created.id));
   assert.equal(await db.getPurchase(userA,created.id),null);

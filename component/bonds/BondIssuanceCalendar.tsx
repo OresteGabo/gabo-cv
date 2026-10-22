@@ -4,13 +4,12 @@ import {
   ArrowRight,
   BookOpenText,
   CalendarClock,
-  FileText,
+  ChevronDown,
   Landmark,
   LockKeyhole,
   LogOut,
   ShieldCheck,
   Sparkles,
-  WalletCards,
 } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -26,30 +25,8 @@ import {
 } from "@/lib/bonds/issuance-calendar";
 import type { BondIssuanceEvent } from "@/lib/bonds/issuance-calendar";
 import type { BondPurchase } from "@/lib/bonds/types";
-import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
+import { BondPortfolioChrome, GaboBrand } from "./BondSiteChrome";
 
-function NavLink({
-  href,
-  active = false,
-  children,
-}: {
-  href: string;
-  active?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-xl px-3 py-2 text-xs font-black transition ${
-        active
-          ? "bg-primary text-on-primary"
-          : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
-      }`}
-    >
-      {children}
-    </Link>
-  );
-}
 
 function StatusBadge({
   label,
@@ -104,7 +81,7 @@ function AlertCard({
         : "border-primary/20 bg-primary/10 text-on-surface";
 
   return (
-    <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${className}`}>
+    <div className={`mt-4 rounded-xl border px-4 py-3 text-sm ${className}`}>
       <p className="font-black">{title}</p>
       <p className="mt-1 text-xs leading-5 opacity-85">{message}</p>
     </div>
@@ -275,36 +252,13 @@ export function BondIssuanceCalendar() {
   }
 
   return (
-    <main className="bond-app relative min-h-screen overflow-x-clip bg-background font-sans text-on-background">
+    <main className="bond-app relative min-h-screen overflow-x-clip pb-24 bg-background font-sans text-on-background">
       <ImigongoBackground />
-      <header className="sticky top-0 z-50 border-b border-outline/5 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:block">
-              <GaboBrand />
-            </span>
-            <span className="sm:hidden">
-              <GaboBrand compact />
-            </span>
-            <span className="hidden h-5 w-px bg-outline/20 sm:block" />
-            <span className="hidden text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant sm:block">
-              Treasury Bond Lab
-            </span>
-          </div>
-          <nav className="hidden items-center gap-1 lg:flex">
-            <NavLink href="/portfolio">Portfolio</NavLink>
-            <NavLink href="/calendar" active>
-              Calendar
-            </NavLink>
-            <NavLink href="/documents">Documents</NavLink>
-          </nav>
-          <BondThemeToggle />
-        </div>
-      </header>
+      <BondPortfolioChrome active="/calendar" />
 
       {portfolioState.loading ? (
         <section className="mx-auto max-w-3xl px-6 py-20 md:px-8 md:py-28">
-          <div className="rounded-3xl border border-outline/10 bg-surface-container-lowest/80 p-6 text-sm text-on-surface-variant md:p-8">
+          <div className="rounded-xl sm:rounded-2xl border border-outline/10 bg-surface-container-lowest/80 p-6 text-sm text-on-surface-variant md:p-8">
             Checking private calendar access...
           </div>
         </section>
@@ -320,13 +274,12 @@ export function BondIssuanceCalendar() {
             <h1 className="mt-4 max-w-3xl text-4xl font-black uppercase leading-[0.95] tracking-tight md:text-6xl">
               Sign in to view your bond calendar.
             </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base">
+            <p className="mt-3 max-w-2xl text-xs leading-5 sm:text-sm text-on-surface-variant md:text-base">
               This calendar includes your recorded applications, purchase links,
-              and portfolio amounts, so it uses the same owner password as the
-              private portfolio.
+              and portfolio amounts. Sign in with your portfolio account.
             </p>
             {portfolioState.error && (
-              <div className="mt-6 rounded-2xl border border-error/20 bg-error-container/30 px-4 py-3 text-sm text-on-error-container">
+              <div className="mt-6 rounded-xl border border-error/20 bg-error-container/30 px-4 py-3 text-sm text-on-error-container">
                 {portfolioState.error}
               </div>
             )}
@@ -334,10 +287,10 @@ export function BondIssuanceCalendar() {
 
           <form
             onSubmit={login}
-            className="rounded-3xl border border-outline/10 bg-surface-container-lowest/80 p-5 shadow-sm md:p-7"
+            className="rounded-xl sm:rounded-2xl border border-outline/10 bg-surface-container-lowest/80 p-3 sm:p-5 shadow-sm md:p-7"
           >
             <div className="mb-6 flex items-center gap-3">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary">
                 <ShieldCheck size={21} />
               </span>
               <div>
@@ -375,8 +328,8 @@ export function BondIssuanceCalendar() {
         </section>
       ) : (
         <>
-      <section className="mx-auto max-w-7xl px-6 pb-10 pt-16 md:px-8 md:pb-14 md:pt-20">
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+      <section className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 md:px-8">
+        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
             <div className="flex items-center gap-2 text-primary">
               <CalendarClock size={18} />
@@ -384,14 +337,11 @@ export function BondIssuanceCalendar() {
                 BNR primary market calendar
               </p>
             </div>
-            <h1 className="mt-4 max-w-4xl text-4xl font-black uppercase leading-[0.95] tracking-tight md:text-6xl">
-              Treasury bond issuance calendar.
+            <h1 className="mt-2 max-w-4xl text-2xl font-black tracking-tight sm:text-4xl">
+              Your bond calendar
             </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base">
-              Official FY 2026/2027 auction dates extracted from the BNR PDF:
-              announcement, book opening, book closing, settlement, tenor, and
-              maturity. Use this to plan when cash should leave Cash and move
-              into a bond bid.
+            <p className="mt-3 max-w-2xl text-xs leading-5 sm:text-sm text-on-surface-variant md:text-base">
+              Plan upcoming auctions and review your recorded purchases. Expand an issuance for dates and allocation details.
             </p>
             <button
               onClick={logout}
@@ -401,7 +351,7 @@ export function BondIssuanceCalendar() {
             </button>
           </div>
           {nextEvent && (
-            <article className="rounded-3xl border border-primary/20 bg-primary/10 p-5 shadow-sm">
+            <article className="rounded-xl sm:rounded-2xl border border-primary/20 bg-primary/10 p-3 sm:p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
@@ -411,11 +361,11 @@ export function BondIssuanceCalendar() {
                     {nextEvent.title}
                   </h2>
                 </div>
-                <span className="rounded-2xl bg-primary px-3 py-2 text-sm font-black text-on-primary">
+                <span className="rounded-xl bg-primary px-3 py-2 text-sm font-black text-on-primary">
                   {nextEvent.tenorYears}Y
                 </span>
               </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 <DateBlock label="Open book" date={nextEvent.openBookDate} />
                 <DateBlock label="Closing book" date={nextEvent.closingBookDate} />
                 <DateBlock label="Settlement" date={nextEvent.settlementDate} />
@@ -438,36 +388,36 @@ export function BondIssuanceCalendar() {
           )}
         </div>
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/75 p-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-outline/10 bg-surface-container-lowest/75 p-4">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-on-surface-variant">
               Total auctions
             </p>
-            <p className="mt-2 text-3xl font-black text-primary">
+            <p className="mt-1 text-xl font-black sm:text-3xl text-primary">
               {BNR_TREASURY_BOND_ISSUANCE_CALENDAR.length}
             </p>
           </div>
-          <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/75 p-4">
+          <div className="rounded-xl border border-outline/10 bg-surface-container-lowest/75 p-4">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-on-surface-variant">
               Long-term 10Y+
             </p>
-            <p className="mt-2 text-3xl font-black text-primary">
+            <p className="mt-1 text-xl font-black sm:text-3xl text-primary">
               {longTermCount}
             </p>
           </div>
-          <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/75 p-4">
+          <div className="rounded-xl border border-outline/10 bg-surface-container-lowest/75 p-4">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-on-surface-variant">
               Reopenings
             </p>
-            <p className="mt-2 text-3xl font-black text-primary">
+            <p className="mt-1 text-xl font-black sm:text-3xl text-primary">
               {reopenCount}
             </p>
           </div>
-          <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/75 p-4">
+          <div className="rounded-xl border border-outline/10 bg-surface-container-lowest/75 p-4">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-on-surface-variant">
               Your recorded principal
             </p>
-            <p className="mt-2 text-3xl font-black text-primary">
+            <p className="mt-1 text-xl font-black sm:text-3xl text-primary">
               {formatRwf(submittedPrincipal, true)}
             </p>
           </div>
@@ -475,8 +425,25 @@ export function BondIssuanceCalendar() {
       </section>
 
       <section className="border-y border-outline/10 bg-surface-container-low/70">
-        <div className="mx-auto max-w-7xl px-4 py-10 md:px-8 md:py-14">
-          <div className="bond-scrollbar overflow-x-auto rounded-3xl border border-outline/10 bg-surface-container-lowest/75">
+        <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 md:px-8 md:py-8">
+          <div className="overflow-hidden rounded-xl border border-outline/10 bg-surface-container-lowest/75 lg:hidden">
+            {BNR_TREASURY_BOND_ISSUANCE_CALENDAR.map((event) => {
+              const status = getIssuanceStatus(event, today);
+              const matching = purchasesByEvent.get(event.id) ?? [];
+              return <details key={event.id} className="group border-b border-outline/10 last:border-0">
+                <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 [&::-webkit-details-marker]:hidden">
+                  <div className="min-w-0"><p className="truncate text-sm font-black">{event.title}</p><p className="mt-1 text-[11px] text-on-surface-variant">Closing {formatCalendarDate(event.closingBookDate)} · {event.tenorYears}Y</p></div>
+                  <div className="flex shrink-0 items-center gap-2"><StatusBadge label={status.label} tone={status.tone} /><ChevronDown size={15} className="text-outline transition group-open:rotate-180" /></div>
+                </summary>
+                <div className="space-y-3 border-t border-outline/10 px-3 py-3">
+                  <div className="grid grid-cols-2 gap-2"><DateBlock label="Announcement" date={event.announcementDate} /><DateBlock label="Open book" date={event.openBookDate} /><DateBlock label="Settlement" date={event.settlementDate} /><DateBlock label="Maturity" date={event.maturityDate} /></div>
+                  <p className="text-xs text-on-surface-variant">{event.kind === "new" ? "New issue" : "Reopening"} · {event.sourceDescription}</p>
+                  {portfolioState.error ? <p role="alert" className="text-xs text-error">Purchase data unavailable. Reload to try again.</p> : matching.length ? matching.map((purchase) => <Link key={purchase.id} href={`/purchases/${purchase.id}`} className="block text-xs font-bold text-primary">{purchase.bondName} · {formatRwf(purchase.faceValue)} · View purchase</Link>) : <Link href={portfolioPrefillHref(event)} className="inline-flex items-center gap-2 text-xs font-bold text-primary">No recorded purchase · Add PDF <ArrowRight size={14} /></Link>}
+                </div>
+              </details>;
+            })}
+          </div>
+          <div className="bond-scrollbar hidden overflow-x-auto lg:block rounded-xl sm:rounded-2xl border border-outline/10 bg-surface-container-lowest/75">
             <table className="w-full min-w-[1180px] border-collapse text-left">
               <thead className="text-[10px] uppercase tracking-[0.15em] text-on-surface-variant">
                 <tr>
@@ -507,7 +474,7 @@ export function BondIssuanceCalendar() {
                     >
                       <td className="px-5 py-4">
                         <div className="flex items-start gap-3">
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                             <Landmark size={18} />
                           </span>
                           <div>
@@ -580,7 +547,7 @@ export function BondIssuanceCalendar() {
             </table>
           </div>
 
-          <div className="mt-6 rounded-3xl border border-outline/10 bg-surface-container-lowest/75 p-5 text-sm leading-6 text-on-surface-variant">
+          <div className="mt-6 rounded-xl sm:rounded-2xl border border-outline/10 bg-surface-container-lowest/75 p-3 sm:p-5 text-sm leading-6 text-on-surface-variant">
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 text-primary" size={18} />
               <div>
@@ -626,17 +593,7 @@ export function BondIssuanceCalendar() {
         </div>
       </footer>
 
-      <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-outline/10 bg-[var(--md-sys-color-background)]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
-        <Link href="/portfolio" aria-label="Portfolio" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
-          <WalletCards size={18} />
-        </Link>
-        <Link href="/calendar" aria-label="Calendar" className="grid place-items-center rounded-xl bg-primary p-3 text-on-primary">
-          <CalendarClock size={18} />
-        </Link>
-        <Link href="/documents" aria-label="Documents" className="grid place-items-center rounded-xl p-3 text-[var(--md-sys-color-outline)]">
-          <FileText size={18} />
-        </Link>
-      </nav>
+
     </main>
   );
 }

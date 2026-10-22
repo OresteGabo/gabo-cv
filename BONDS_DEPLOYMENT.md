@@ -20,7 +20,7 @@ subdomain URL, preserving bookmarks while keeping one public bond-site address.
 - Existing owner login for JSON deployments; invite-only accounts with revocable sessions in database mode
 - Responsive layout suitable for installation from a phone browser
 
-## PDF bond import
+## PDF purchase import
 
 In the private portfolio, choose **Add purchase → Choose PDF**, or drop one PDF
 into the highlighted upload area. New-purchase fields appear only after a
@@ -29,8 +29,9 @@ new purchases, and no issuance template is loaded. The browser checks
 the filename/MIME type, size, header, ending and parsed PDF structure. It rejects
 scripts, attachments and interactive annotations; passive signature widgets are
 allowed after checking their actions. Flatten annotated PDFs before importing.
-It requires a bond identity, at least two recognizable terms and BNR/result context,
-and extracts BNR result fields and coupon dates. Scanned pages use local English
+For bonds it requires a bond identity, at least two recognizable terms and BNR/result context,
+and extracts BNR result fields and coupon dates. RSE equity purchase contract notes
+are detected automatically and extract shares, executed price, dates and fees for review. Scanned pages use local English
 OCR. The PDF and recognized text stay on the device; only the reviewed purchase
 form is sent to the existing save endpoint. The original PDF is not stored in the
 document library by this feature.
@@ -64,7 +65,8 @@ Reader exceptions are mapped to fixed application messages. Raw exception text,
 stack traces and document content are never displayed as upload errors, and
 cleanup failures cannot replace the original user-facing error.
 Import saves into the signed-in user’s portfolio. Existing bundled documents
-and equities remain private to the owner account.
+and original equity JSON records remain private to the owner account. New share imports
+are saved separately for each signed-in account.
 
 ## Portfolio storage
 
@@ -453,3 +455,34 @@ project and continues serving the portfolio website.
 - Static files under `private/` and `.data/` remain readable by anyone with
   repository, build-artifact, or host filesystem access; website authorization
   does not change those infrastructure permissions.
+
+## Purchase PDF imports
+
+The portfolio's **Add purchase** dialog detects a BNR bond result or a single
+RSE equity purchase contract note. It reads the PDF on the device, then sends
+only reviewed purchase fields to the authenticated API. Original PDF bytes and
+extracted text are never stored by this flow. Documents remains the existing
+private document library; importing a purchase does not archive its PDF there.
+Unknown equity symbols require entering the RSE ticker during review. Sale notes,
+unsupported currencies/exchanges, unrelated PDFs, ambiguous multi-note files,
+scripts and attachments are rejected with fixed messages.
+
+Build migrations add `equity_purchases` and a bond duplicate index. Equity
+purchases use the connected account database, including for the owner. Existing
+owner equity JSON remains visible only to the owner and also participates in
+duplicate detection. Local development without a database uses separate files
+under the ignored `.data/bonds-users/` directory. Account deletion removes both
+bond and equity purchases. Manage Accounts includes share count, cash cost and
+the latest company alongside bond activity.
+
+Duplicate identities are scoped to the account and enforced by database unique
+indexes (or the local file write queue). Renaming a PDF does not bypass them.
+Bond identity uses security, currency, market, settlement date, principal and
+executed price; secondary-market identity also includes trade date. For primary
+allocations, changing fees or the default trade date does not create a second
+allocation. Equity checks use transaction values plus available contract-note
+and trade-report identifiers. Distinct dates, quantities or executed prices
+remain separate purchases unless an existing contract/report identifies the
+same transaction. Historical duplicates are retained, with one indexed record
+per legacy group preventing further repeats. No saved purchase is deleted by
+the migration.

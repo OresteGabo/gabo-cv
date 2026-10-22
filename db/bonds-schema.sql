@@ -182,3 +182,32 @@ CREATE TABLE IF NOT EXISTS equity_market_collection (
   market_date DATE,
   status TEXT NOT NULL CHECK (status IN ('saved', 'database-unavailable', 'unusable-source', 'missing-market-date', 'collection-failed'))
 );
+
+-- Keep one duplicate key for each legacy group without deleting any old records.
+ALTER TABLE bond_purchases ADD COLUMN IF NOT EXISTS dedup_key TEXT;
+WITH keys AS (
+  SELECT id, owner_id, concat(
+    regexp_replace(upper(bond_name), '[^A-Z0-9]', '', 'g'), '|', currency, '|', market, '|', CASE WHEN market = 'primary' THEN '' ELSE purchase_date::text END, '|', COALESCE(settlement_date, purchase_date), '|',
+    face_value::numeric(18,2)::text, '|', price_percent::numeric(10,6)::text
+  ) AS identity FROM bond_purchases
+), ranked AS (
+  SELECT *, row_number() OVER (PARTITION BY owner_id, identity ORDER BY id) AS position FROM keys
+)
+UPDATE bond_purchases p SET dedup_key = ranked.identity FROM ranked
+WHERE p.id = ranked.id AND ranked.position = 1 AND p.dedup_key IS NULL
+  AND NOT EXISTS (SELECT 1 FROM bond_purchases existing WHERE existing.owner_id = ranked.owner_id AND existing.dedup_key = ranked.identity);
+CREATE UNIQUE INDEX IF NOT EXISTS bond_purchases_duplicate_idx ON bond_purchases(owner_id, dedup_key);
+
+CREATE TABLE IF NOT EXISTS equity_purchases (
+  id UUID PRIMARY KEY,
+  owner_id TEXT NOT NULL,
+  dedup_key TEXT NOT NULL,
+  contract_key TEXT,
+  report_key TEXT,
+  holding JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (owner_id, dedup_key),
+  UNIQUE (owner_id, contract_key),
+  UNIQUE (owner_id, report_key)
+);
+CREATE INDEX IF NOT EXISTS equity_purchases_owner_idx ON equity_purchases(owner_id, created_at DESC);

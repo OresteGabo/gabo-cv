@@ -1,19 +1,16 @@
 "use client";
 
 import {
-  ArrowLeft,
   CalendarDays,
   ChevronDown,
   Download,
   FileText,
   LockKeyhole,
   ShieldCheck,
-  WalletCards,
 } from "lucide-react";
-import Link from "next/link";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
-import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
+import { BondPortfolioChrome } from "./BondSiteChrome";
 
 type DocumentSummary = {
   id: string;
@@ -45,28 +42,6 @@ function displayDate(value: string) {
   }).format(new Date(`${value}T00:00:00.000Z`));
 }
 
-function NavLink({
-  href,
-  active = false,
-  children,
-}: {
-  href: string;
-  active?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-xl px-3 py-2 text-xs font-black transition ${
-        active
-          ? "bg-primary text-on-primary"
-          : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
-      }`}
-    >
-      {children}
-    </Link>
-  );
-}
 
 function DetailGrid({
   title,
@@ -180,6 +155,7 @@ function FilterTab({
 export function BondDocumentsLibrary() {
   const [authenticated, setAuthenticated] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [error, setError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -191,6 +167,7 @@ export function BondDocumentsLibrary() {
     fetch("/api/bonds/auth/session", { cache: "no-store" })
       .then((response) => response.json())
       .then((data) => setAuthenticated(Boolean(data.authenticated)))
+      .catch(() => setError("Could not check document access. Reload to try again."))
       .finally(() => setSessionLoading(false));
   }, []);
 
@@ -209,10 +186,11 @@ export function BondDocumentsLibrary() {
           return;
         }
         setDocuments(data.documents);
+        setError("");
       })
       .catch(() => {
         if (active) setError("Could not load documents.");
-      });
+      }).finally(() => { if (active) setDocumentsLoading(false); });
     return () => {
       active = false;
     };
@@ -292,31 +270,11 @@ export function BondDocumentsLibrary() {
   }
 
   return (
-    <main className="bond-app relative min-h-screen overflow-x-hidden bg-background text-on-background">
+    <main className="bond-app relative min-h-screen overflow-x-hidden pb-24 bg-background text-on-background">
       <ImigongoBackground />
-      <header className="sticky top-0 z-50 border-b border-outline/5 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-8">
-          <div className="flex items-center gap-4">
-            <GaboBrand />
-            <Link
-              href="/portfolio"
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-on-surface-variant hover:text-primary"
-            >
-              <ArrowLeft size={15} /> Portfolio
-            </Link>
-          </div>
-          <nav className="hidden items-center gap-1 md:flex">
-            <NavLink href="/portfolio">Portfolio</NavLink>
-            <NavLink href="/calendar">Calendar</NavLink>
-            <NavLink href="/documents" active>
-              Documents
-            </NavLink>
-          </nav>
-          <BondThemeToggle />
-        </div>
-      </header>
+      <BondPortfolioChrome active="/documents" />
 
-      <section className="mx-auto max-w-7xl px-4 py-10 md:px-8 md:py-16">
+      <section className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 md:px-8">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <div className="flex items-center gap-2 text-primary">
@@ -325,7 +283,7 @@ export function BondDocumentsLibrary() {
                 Private records
               </p>
             </div>
-            <h1 className="mt-3 text-4xl font-black uppercase leading-[0.9] tracking-tighter md:text-6xl">
+            <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-4xl">
               Documents
             </h1>
           </div>
@@ -337,22 +295,22 @@ export function BondDocumentsLibrary() {
         </div>
 
         {error && (
-          <div className="mt-6 rounded-2xl border border-error/20 bg-error-container/30 px-4 py-3 text-sm text-on-error-container">
+          <div className="mt-6 rounded-xl border border-error/20 bg-error-container/30 px-4 py-3 text-sm text-on-error-container">
             {error}
           </div>
         )}
 
         {sessionLoading ? (
-          <div className="mt-8 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-8 text-sm text-on-surface-variant">
+          <div className="mt-8 rounded-xl sm:rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4 sm:p-8 text-sm text-on-surface-variant">
             Checking private session...
           </div>
         ) : !authenticated ? (
           <form
             onSubmit={login}
-            className="mt-8 max-w-lg rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-5 md:p-7"
+            className="mt-8 max-w-lg rounded-xl sm:rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-3 sm:p-5 md:p-7"
           >
             <div className="mb-6 flex items-center gap-3">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary">
                 <ShieldCheck size={21} />
               </span>
               <div>
@@ -384,9 +342,9 @@ export function BondDocumentsLibrary() {
               Open documents <FileText size={16} />
             </button>
           </form>
-        ) : documents.length > 0 ? (
+        ) : documentsLoading ? <p role="status" className="mt-5 rounded-xl border border-outline/10 p-4 text-sm text-on-surface-variant">Loading documents…</p> : error ? <p className="mt-4 text-sm text-on-surface-variant">Reload this page to try again.</p> : documents.length > 0 ? (
           <div className="mt-8 space-y-6">
-            <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest/75 p-2 shadow-sm">
+            <div className="rounded-xl border border-outline/10 bg-surface-container-lowest/75 p-2 shadow-sm">
               <div className="grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)]">
                 <section>
                   <p className="px-1 pb-1 text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant">
@@ -453,7 +411,7 @@ export function BondDocumentsLibrary() {
             </div>
 
             {visibleDocuments.length === 0 ? (
-              <div className="rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-8 text-sm text-on-surface-variant">
+              <div className="rounded-xl sm:rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4 sm:p-8 text-sm text-on-surface-variant">
                 No documents match this view.
               </div>
             ) : (
@@ -469,14 +427,14 @@ export function BondDocumentsLibrary() {
                     {groupDocuments.length === 1 ? "file" : "files"}
                   </span>
                 </div>
-                <div className="overflow-hidden rounded-2xl border border-outline/10 bg-surface-container-lowest/75">
+                <div className="overflow-hidden rounded-xl border border-outline/10 bg-surface-container-lowest/75">
                   {groupDocuments.map((document) => (
                     <details
                       key={document.id}
                       className="group border-b border-outline/10 last:border-b-0"
                     >
-                      <summary className="grid cursor-pointer list-none grid-cols-1 gap-3 px-4 py-3 transition hover:bg-surface-container/60 marker:hidden md:grid-cols-[8.5rem_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] md:items-center md:px-5 [&::-webkit-details-marker]:hidden">
-                        <div className="flex items-center gap-2 text-[11px] font-black uppercase text-primary md:text-xs">
+                      <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 px-3 py-3 transition hover:bg-surface-container/60 marker:hidden md:grid-cols-[8.5rem_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] md:items-center md:px-5 [&::-webkit-details-marker]:hidden">
+                        <div className="col-span-2 flex items-center gap-2 text-[10px] font-bold text-on-surface-variant md:col-span-1 md:text-xs">
                           <CalendarDays size={13} />
                           {displayDate(document.documentDate)}
                         </div>
@@ -488,7 +446,7 @@ export function BondDocumentsLibrary() {
                             {document.instrumentName}
                           </p>
                         </div>
-                        <p className="truncate text-xs font-bold text-on-surface-variant md:text-sm">
+                        <p className="hidden truncate text-xs font-bold text-on-surface-variant md:block md:text-sm">
                           {document.issuer}
                         </p>
                         <span className="inline-flex w-fit items-center rounded-full bg-surface-container px-2.5 py-1 text-[10px] font-black uppercase text-on-surface-variant">
@@ -500,7 +458,7 @@ export function BondDocumentsLibrary() {
                         </span>
                         <a
                           href={document.downloadUrl}
-                          className="inline-flex w-fit shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-black text-on-primary transition hover:opacity-90"
+                          className="hidden w-fit shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--md-sys-color-primary)] px-3 py-2 text-xs font-black text-[var(--md-sys-color-on-primary)] md:inline-flex"
                           onClick={(event) => event.stopPropagation()}
                         >
                           <Download size={14} />
@@ -509,6 +467,7 @@ export function BondDocumentsLibrary() {
                       </summary>
                       <div className="border-t border-outline/10 bg-surface-container-low/45 px-4 py-3 md:px-5">
                         <div className="space-y-4">
+                          <a href={document.downloadUrl} className="inline-flex items-center gap-2 rounded-lg border border-outline/15 px-3 py-2 text-xs font-bold md:hidden"><Download size={14} />Download PDF</a>
                           <p className="max-w-4xl text-sm leading-6 text-on-surface-variant">
                             {document.details?.summary ??
                               document.description}
@@ -540,24 +499,12 @@ export function BondDocumentsLibrary() {
             )}
           </div>
         ) : (
-          <div className="mt-8 rounded-3xl border border-outline/10 bg-surface-container-lowest/70 p-8 text-sm text-on-surface-variant">
+          <div className="mt-8 rounded-xl sm:rounded-2xl border border-outline/10 bg-surface-container-lowest/70 p-4 sm:p-8 text-sm text-on-surface-variant">
             No documents saved.
           </div>
         )}
 
-        {authenticated && (
-          <nav className="fixed inset-x-4 bottom-4 z-40 mx-auto grid max-w-sm grid-cols-3 gap-2 rounded-2xl border border-outline/10 bg-surface-container-lowest/90 p-2 shadow-2xl backdrop-blur-xl md:hidden">
-            <Link href="/portfolio" aria-label="Portfolio" className="grid place-items-center rounded-xl p-3 text-outline">
-              <WalletCards size={18} />
-            </Link>
-            <Link href="/calendar" aria-label="Calendar" className="grid place-items-center rounded-xl p-3 text-outline">
-              <CalendarDays size={18} />
-            </Link>
-            <Link href="/documents" aria-label="Documents" className="grid place-items-center rounded-xl bg-primary p-3 text-on-primary">
-              <FileText size={18} />
-            </Link>
-          </nav>
-        )}
+
       </section>
     </main>
   );

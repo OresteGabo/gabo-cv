@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowDownToLine,
   BarChart3,
   BookOpenText,
   CalendarClock,
@@ -16,7 +15,6 @@ import {
   Settings,
   LockKeyhole,
   LogOut,
-  Menu,
   Pencil,
   Plus,
   RefreshCcw,
@@ -77,7 +75,7 @@ import {
   catalogEntryForPurchase,
 } from "@/lib/bonds/catalog";
 import { ImigongoBackground } from "@/component/shared/ImigongoBackground";
-import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
+import { BondPortfolioChrome, GaboBrand } from "./BondSiteChrome";
 import { calculateBondTracking } from "@/lib/bonds/tracking";
 import { BondAccountAccess, type BondAccountUser } from "./BondAccountAccess";
 import { BondRegistrationSettings } from "./BondRegistrationSettings";
@@ -87,6 +85,10 @@ import { useDeferredMarket } from "./useDeferredMarket";
 import type { BondQuotes } from "@/lib/bonds/market-quotes";
 import { BondPdfUpload } from "./BondPdfUpload";
 import { BondPurchaseDialog } from "./BondPurchaseDialog";
+import { EquityPurchaseReview } from "./EquityPurchaseReview";
+import { bondPurchaseKey, sameEquityPurchase } from "@/lib/bonds/purchase-identity";
+import { parseEquityPurchase } from "@/lib/bonds/equity-validation";
+import type { PurchasePdfImport, EquityPdfImport } from "@/lib/bonds/equity-pdf-parser";
 import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
 
 type PlannerView = "simulator" | "portfolio";
@@ -605,34 +607,8 @@ function GrowthChart({
   );
 }
 
-function NavLink({
-  active,
-  href,
-  icon,
-  children,
-}: {
-  active: boolean;
-  href: string;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black transition ${
-        active
-          ? "bg-primary text-on-primary"
-          : "text-[var(--md-sys-color-on-surface-variant)] hover:bg-surface-container hover:text-on-surface"
-      }`}
-    >
-      {icon}
-      <span>{children}</span>
-    </Link>
-  );
-}
 
 export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerView }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [assumptions, setAssumptions] =
     useState<BondAssumptions>(DEFAULT_ASSUMPTIONS);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
@@ -673,6 +649,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   const [savingPurchase, setSavingPurchase] = useState(false);
   const [importingPdf, setImportingPdf] = useState(false);
   const [pdfReview, setPdfReview] = useState<(BondPdfImport & { fileName: string }) | null>(null);
+  const [equityReview, setEquityReview] = useState<(EquityPdfImport & { fileName: string }) | null>(null);
   const [pdfReviewed, setPdfReviewed] = useState(false);
   const [additionalCouponDate, setAdditionalCouponDate] = useState("");
   const [portfolioSettingsOpen, setPortfolioSettingsOpen] = useState(false);
@@ -732,6 +709,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     queueMicrotask(() => {
       setPurchase({ ...EMPTY_PURCHASE, couponDates: [] });
       setPdfReview(null);
+      setEquityReview(null);
       setPdfReviewed(false);
       setPurchasePanelOpen(true);
     });
@@ -933,6 +911,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
         purchase.feesPaid) *
         100,
     ) / 100;
+  const duplicateImport = equityReview ? equities.some((item) => sameEquityPurchase(item, { ...equityReview.fields, id: "", createdAt: "" })) : pdfReview ? purchases.some((item) => item.id !== editingPurchaseId && bondPurchaseKey(item) === bondPurchaseKey({ ...purchase, amountInvested: purchaseCashCost })) : false;
   const purchaseAnnualNetCoupon =
     purchase.status === "submitted" && purchase.couponRate === 0
       ? 0
@@ -1196,6 +1175,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       setPurchasePanelOpen(false);
       setPurchase({ ...EMPTY_PURCHASE, couponDates: [] });
       setPdfReview(null);
+      setEquityReview(null);
       setPurchasePendingDelete(null);
       setPortfolioSettingsOpen(false);
       setPortfolioLoadedFor(null);
@@ -1206,7 +1186,24 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
 
   async function savePurchase(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!editingPurchaseId && !pdfReview) return;
+    if (equityReview) {
+      if (savingPurchase || importingPdf || !pdfReviewed || duplicateImport) return;
+      const input = parseEquityPurchase(equityReview.fields);
+      if (!input) { setPortfolioError("Check the share details, dates and fee totals before saving."); return; }
+      setSavingPurchase(true);
+      setPortfolioError("");
+      try {
+        const response = await fetch("/api/bonds/equities", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+        const data = await response.json();
+        if (!response.ok) { setPortfolioError(data.error ?? "The share purchase could not be saved."); return; }
+        setEquities((current) => [data.holding, ...current]);
+        setEquityReview(null);
+        setPurchasePanelOpen(false);
+      } catch { setPortfolioError("The share purchase could not be saved. Please try again."); }
+      finally { setSavingPurchase(false); }
+      return;
+    }
+    if (duplicateImport || (!editingPurchaseId && !pdfReview)) return;
     if (savingPurchase || importingPdf || (pdfReview && !pdfReviewed)) return;
     setSavingPurchase(true);
     setPortfolioError("");
@@ -1268,6 +1265,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   function editPurchase(item: BondPurchase) {
     setPortfolioError("");
     setPdfReview(null);
+    setEquityReview(null);
     setPdfReviewed(false);
     const { id, createdAt, ...input } = item;
     void id;
@@ -1292,13 +1290,22 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
     setPortfolioError("");
     setEditingPurchaseId(null);
     setPdfReview(null);
+    setEquityReview(null);
     setPdfReviewed(false);
     setAdditionalCouponDate("");
     setPurchase({ ...EMPTY_PURCHASE, couponDates: [] });
     setPurchasePanelOpen(true);
   }
 
-  function applyPdfImport(result: BondPdfImport, fileName: string) {
+  function applyPdfImport(result: PurchasePdfImport, fileName: string) {
+    setPdfReviewed(false);
+    setPortfolioError("");
+    if (result.kind === "equity") {
+      setPdfReview(null);
+      setEquityReview({ ...result, fileName });
+      return;
+    }
+    setEquityReview(null);
     setAdditionalCouponDate("");
     setPurchase({ ...EMPTY_PURCHASE, couponDates: [], ...result.fields });
     setPdfReview({ ...result, fileName });
@@ -1423,58 +1430,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   return (
     <main className="bond-app relative min-h-screen overflow-x-clip bg-background font-sans text-on-background">
       <ImigongoBackground />
-      <header className="sticky top-0 z-50 mx-auto w-full max-w-7xl border-b border-outline/5 bg-background/80 px-1 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:block"><GaboBrand /></span>
-            <span className="sm:hidden"><GaboBrand compact /></span>
-            <span className="hidden h-5 w-px bg-outline/20 sm:block" />
-            <span className="hidden text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant sm:block">
-              Treasury Bond Lab
-            </span>
-          </div>
-
-          <nav className="hidden items-center gap-1 lg:flex">
-            <NavLink active={view === "portfolio"} href="/portfolio" icon={<WalletCards size={15} />}>
-              Portfolio
-            </NavLink>
-            <NavLink active={false} href="/calendar" icon={<CalendarClock size={15} />}>
-              Calendar
-            </NavLink>
-            <NavLink active={false} href="/documents" icon={<FileText size={15} />}>
-              Documents
-            </NavLink>
-            <Link href="/stocks" prefetch={false} className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant hover:bg-surface-container"><BarChart3 size={15} />Stocks</Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <BondThemeToggle />
-            {view === "simulator" && (
-              <button
-                onClick={exportProjection}
-                className="hidden items-center gap-2 rounded-xl border border-outline/10 px-3 py-2 text-xs font-black text-[var(--md-sys-color-on-surface)] transition hover:border-[var(--md-sys-color-primary)]/40 hover:text-[var(--md-sys-color-primary)] sm:flex"
-              >
-                <ArrowDownToLine size={15} /> Export CSV
-              </button>
-            )}
-            <button
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label="Open navigation"
-              className="rounded-xl border border-outline/10 p-2.5 lg:hidden"
-            >
-              {menuOpen ? <X size={19} /> : <Menu size={19} />}
-            </button>
-          </div>
-        </div>
-        {menuOpen && (
-          <nav className="grid grid-cols-3 gap-2 border-t border-outline/10 p-3 lg:hidden">
-            <NavLink active={view === "portfolio"} href="/portfolio" icon={<WalletCards size={15} />}>Portfolio</NavLink>
-            <NavLink active={false} href="/calendar" icon={<CalendarClock size={15} />}>Calendar</NavLink>
-            <NavLink active={false} href="/documents" icon={<FileText size={15} />}>Documents</NavLink>
-            <Link href="/stocks" prefetch={false} className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-on-surface-variant"><BarChart3 size={15} />Stocks</Link>
-          </nav>
-        )}
-      </header>
+      <BondPortfolioChrome active={view === "portfolio" ? "/portfolio" : "/simulator"} actions={view === "simulator" ? <button onClick={exportProjection} className="rounded-lg border border-outline/15 px-3 py-2 text-xs font-bold">Export CSV</button> : undefined} />
 
       {view === "simulator" && (
         <>
@@ -2827,9 +2783,9 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                           ? purchaseTermsLocked
                             ? "Update purchase record"
                             : "Edit Treasury bond purchase"
-                          : "Add bond purchase"}
+                          : "Add purchase"}
                       </h3>
-                      <p className="mt-1 text-xs text-on-surface-variant">{importingPdf ? "Reading your PDF. Details will appear below when ready." : editingPurchaseId || pdfReview ? "Review the bond details, then confirm to save." : "Upload your bond result to get started."}</p>
+                      <p className="mt-1 text-xs text-on-surface-variant">{importingPdf ? "Reading your PDF. Details will appear below when ready." : editingPurchaseId || pdfReview || equityReview ? "Review the purchase details, then confirm to save." : "Upload a bond result or share contract note to get started."}</p>
                     </div>
                     </div>
                     <button
@@ -2843,7 +2799,17 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                     </button>
                   </div>
                   {portfolioError && <p role="alert" className="mt-4 rounded-xl border border-error/20 bg-error-container/20 p-3 text-sm text-error">{portfolioError}</p>}
-                  {!editingPurchaseId && <BondPdfUpload onImport={applyPdfImport} onBusyChange={setImportingPdf} />}
+                  {!editingPurchaseId && <BondPdfUpload onImport={applyPdfImport} onBusyChange={setImportingPdf} onSelectFile={() => { setPdfReview(null); setEquityReview(null); setPdfReviewed(false); setPortfolioError(""); }} />}
+                  {duplicateImport && <p role="alert" className="mt-4 rounded-lg border border-error/25 p-3 text-sm text-error">This purchase is already saved in your portfolio. You can close this dialog or choose another PDF.</p>}
+                  {equityReview && <>
+                    <div className="mt-4 rounded-xl border border-primary/20 p-3" role="status">
+                      <p className="text-sm font-black">Share purchase detected</p>
+                      <p className="mt-1 break-all text-xs text-on-surface-variant">{equityReview.fileName} · {equityReview.usedOcr ? "Text recognition" : "PDF text"}</p>
+                      {equityReview.missingFields.length > 0 && <p className="mt-2 text-xs text-error">Complete missing values: {equityReview.missingFields.join(", ")}.</p>}
+                      {equityReview.warnings.map((warning) => <p key={warning} className="mt-2 text-xs text-on-surface-variant">{warning}</p>)}
+                    </div>
+                    <EquityPurchaseReview value={equityReview.fields} onChange={(fields) => { setEquityReview({ ...equityReview, fields }); setPdfReviewed(false); }} disabled={savingPurchase || importingPdf} />
+                  </>}
                   {pdfReview && !editingPurchaseId && (
                     <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4" role="status">
                       <p className="text-sm font-black">Review imported details</p>
@@ -3130,7 +3096,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   </fieldset>
                   )}
                   <div className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-4 space-y-3 border-t border-outline/10 bg-[var(--md-sys-color-surface-container-lowest)] px-5 py-4">
-                    {pdfReview && !editingPurchaseId && (
+                    {(pdfReview || equityReview) && !editingPurchaseId && (
                       <label className="flex items-start gap-2 text-xs font-bold">
                         <input type="checkbox" checked={pdfReviewed} disabled={importingPdf || savingPurchase} onChange={(event) => setPdfReviewed(event.target.checked)} className="mt-0.5 shrink-0 accent-primary" />
                         I have checked the imported details and completed any missing values.
@@ -3145,7 +3111,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       >
                         Cancel
                       </button>
-                    {(editingPurchaseId || pdfReview) && <button disabled={savingPurchase || importingPdf || Boolean(pdfReview && !pdfReviewed)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-on-primary transition hover:opacity-90 disabled:opacity-50">
+                    {(editingPurchaseId || pdfReview || equityReview) && <button disabled={duplicateImport || savingPurchase || importingPdf || Boolean((pdfReview || equityReview) && !pdfReviewed)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-sm font-black text-[var(--md-sys-color-on-primary)] transition hover:opacity-90 disabled:opacity-50">
                       <Database size={16} />{" "}
                       {savingPurchase
                         ? "Saving…"
@@ -3429,14 +3395,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
         </div>
       </footer>
 
-      <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-2xl border border-outline/10 bg-[var(--md-sys-color-background)]/95 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
-        <Link href="/portfolio" aria-label="Open portfolio" className={`rounded-xl p-3 ${view === "portfolio" ? "bg-primary text-on-primary" : "text-[var(--md-sys-color-outline)]"}`}>
-          <WalletCards size={18} />
-        </Link>
-        <Link href="/calendar" aria-label="Open issuance calendar" className="rounded-xl p-3 text-[var(--md-sys-color-outline)]">
-          <CalendarClock size={18} />
-        </Link>
-      </nav>
+
     </main>
   );
 }

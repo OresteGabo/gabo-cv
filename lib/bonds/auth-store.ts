@@ -77,7 +77,7 @@ export async function deleteAccount(id: string, email: string): Promise<boolean>
       data.sessions = data.sessions.filter((session) => session.userId !== id);
       return true;
     }, true);
-    if (removed) await rm(join(process.cwd(), ".data", "bonds-users", `${id}.json`), { force: true });
+    if (removed) await Promise.all([rm(join(process.cwd(), ".data", "bonds-users", `${id}.json`), { force: true }), rm(join(process.cwd(), ".data", "bonds-users", `${id}-equities.json`), { force: true })]);
     return removed;
   }
   // Delete the account, its purchases, and every session in one atomic statement.
@@ -86,6 +86,8 @@ export async function deleteAccount(id: string, email: string): Promise<boolean>
       DELETE FROM bond_users WHERE id = ${id} AND email = ${email} RETURNING id
     ), purchases AS (
       DELETE FROM bond_purchases WHERE owner_id IN (SELECT id FROM removed)
+    ), equities AS (
+      DELETE FROM equity_purchases WHERE owner_id IN (SELECT id FROM removed)
     ), sessions AS (
       DELETE FROM bond_sessions WHERE user_id IN (SELECT id FROM removed)
     ) SELECT id FROM removed`;

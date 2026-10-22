@@ -4,6 +4,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { neon } from "@neondatabase/serverless";
 import { bondsDatabaseUrl } from "./database-config";
+import { bondPurchaseKey, DuplicatePurchaseError } from "./purchase-identity";
 import { canonicalPurchaseFromCatalog } from "./catalog";
 import type { AccountPortfolioSummary, BondPurchase, BondPurchaseInput } from "./types";
 
@@ -155,6 +156,7 @@ async function createFilePurchase(
 ): Promise<BondPurchase> {
   return updateFileDatabase(userId, (fileDatabase) => {
     const purchase = purchaseFromInput(input);
+    if (fileDatabase.purchases.some((item) => bondPurchaseKey(item) === bondPurchaseKey(purchase))) throw new DuplicatePurchaseError();
     fileDatabase.purchases = sortPurchases([
       purchase,
       ...fileDatabase.purchases,
@@ -190,6 +192,7 @@ async function updateFilePurchase(
     );
     if (index === -1) return null;
     const purchase = purchaseFromInput(input, fileDatabase.purchases[index]);
+    if (fileDatabase.purchases.some((item) => item.id !== id && bondPurchaseKey(item) === bondPurchaseKey(purchase))) throw new DuplicatePurchaseError();
     fileDatabase.purchases[index] = purchase;
     fileDatabase.purchases = sortPurchases(fileDatabase.purchases);
     return purchase;
@@ -287,10 +290,12 @@ export async function createPurchase(
   input: BondPurchaseInput,
 ): Promise<BondPurchase> {
   if (shouldUseFileDatabase(userId)) return createFilePurchase(userId, input);
+  input = purchaseFromInput(input);
 
   const sql = database();
   const rows = await sql`
     INSERT INTO bond_purchases (
+      dedup_key,
       owner_id,
       instrument_type,
       issuer,
@@ -320,6 +325,7 @@ export async function createPurchase(
       notes
     )
     VALUES (
+      ${bondPurchaseKey(input)},
       ${userId},
       ${input.instrumentType},
       ${input.issuer},
@@ -442,11 +448,13 @@ export async function updatePurchase(
   input: BondPurchaseInput,
 ): Promise<BondPurchase | null> {
   if (shouldUseFileDatabase(userId)) return updateFilePurchase(userId, id, input);
+  input = purchaseFromInput(input);
 
   const sql = database();
   const rows = await sql`
     UPDATE bond_purchases
     SET
+      dedup_key = ${bondPurchaseKey(input)},
       instrument_type = ${input.instrumentType},
       issuer = ${input.issuer},
       currency = ${input.currency},

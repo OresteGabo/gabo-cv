@@ -11,7 +11,7 @@
     "predev": "node scripts/prepare-bond-auth.mjs && npm run prepare:bond-import",
     "prebuild": "node scripts/prepare-bond-auth.mjs && node scripts/prepare-bond-database.mjs && npm run prepare:bond-import",
     "db:prepare:bonds": "node scripts/prepare-bond-database.mjs",
-    "test:bond-import": "node --experimental-strip-types --test tests/bond-pdf-import.test.mjs tests/bond-pdf-security.test.mjs",
+    "test:bond-import": "node --experimental-strip-types --test tests/bond-pdf-import.test.mjs tests/bond-pdf-security.test.mjs tests/purchase-import.test.mjs",
     "test:accounts": "node --test tests/bond-accounts.test.mjs tests/bond-file-owner.test.mjs",
     "test:accounts:http": "node --test tests/bond-auth-http.test.mjs",
     "test:market": "node --test tests/bond-market.test.mjs"

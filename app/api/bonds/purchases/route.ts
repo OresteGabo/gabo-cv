@@ -1,3 +1,4 @@
+import { isDuplicatePurchaseError } from "@/lib/bonds/purchase-identity";
 import { NextRequest, NextResponse } from "next/server";
 import { getBondSession } from "@/lib/bonds/auth";
 import { createPurchase, listPurchases } from "@/lib/bonds/db";
@@ -13,7 +14,8 @@ export async function GET() {
   if (!session) return unauthorized();
   try {
     return NextResponse.json({ purchases: await listPurchases(session.userId) });
-  } catch {
+  } catch (error) {
+    if (isDuplicatePurchaseError(error)) return NextResponse.json({ error: "This purchase is already saved in your portfolio." }, { status: 409 });
     return NextResponse.json(
       { error: "The portfolio database is not available." },
       { status: 503 },
@@ -47,7 +49,8 @@ export async function POST(request: NextRequest) {
       { purchase: await createPurchase(session.userId, purchase) },
       { status: 201 },
     );
-  } catch {
+  } catch (error) {
+    if (isDuplicatePurchaseError(error)) return NextResponse.json({ error: "This purchase is already saved in your portfolio." }, { status: 409 });
     return NextResponse.json(
       { error: "The purchase could not be saved." },
       { status: 503 },

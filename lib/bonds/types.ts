@@ -147,6 +147,7 @@ export type BondPurchase = {
 export type BondPurchaseInput = Omit<BondPurchase, "id" | "createdAt">;
 
 export type AccountPortfolioSummary = {
+  equityActivity?: { purchaseCount: number; cashCost: number; latestSecurity: string | null };
   purchaseCount: number;
   principalByCurrency: { currency: string; amount: number }[];
   latestPurchase: Pick<BondPurchase, "bondName" | "isin" | "purchaseDate" | "createdAt"> | null;
@@ -180,3 +181,5 @@ export type EquityHolding = {
   notes: string;
   createdAt: string;
 };
+
+export type EquityHoldingInput = Omit<EquityHolding, "id" | "createdAt">;

@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, BarChart3, RefreshCw } from "lucide-react";
+import { BarChart3, RefreshCw } from "lucide-react";
 import { BondAccountAccess } from "./BondAccountAccess";
-import { BondThemeToggle, GaboBrand } from "./BondSiteChrome";
+import { BondPortfolioChrome } from "./BondSiteChrome";
 import { useDeferredMarket } from "./useDeferredMarket";
 import { equityValuation, type EquityObservation, type EquityQuotes } from "@/lib/bonds/market-quotes";
 import type { EquityHolding } from "@/lib/bonds/types";
@@ -37,8 +37,8 @@ export function StockPerformance() {
   for (const holding of active) { const key = `${holding.ticker}-${holding.currency}`; groups.set(key, [...(groups.get(key) ?? []), holding]); }
   const unavailable = market.error || market.data?.source.status === "error";
   const reset = () => { setStatus("loading"); setAttempt((value) => value + 1); };
-  return <main className="bond-app min-h-screen bg-background pb-16 text-on-background">
-    <header className="mx-auto flex max-w-6xl items-center justify-between border-b border-outline/10 px-4 py-5"><GaboBrand /><div className="flex items-center gap-4"><Link href="/portfolio" prefetch={false} className="inline-flex items-center gap-2 text-sm font-bold"><ArrowLeft size={16} />Portfolio</Link><BondThemeToggle /></div></header>
+  return <main className="bond-app min-h-screen bg-background pb-28 text-on-background">
+    <BondPortfolioChrome active="/stocks" />
     <section className="mx-auto max-w-6xl px-4 py-10">
       <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary"><BarChart3 size={16} />Your stocks</p>
       <h1 className="mt-3 text-3xl font-black tracking-tight">Stock performance</h1>

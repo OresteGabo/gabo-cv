@@ -88,7 +88,7 @@ test('unexpected reader errors and cleanup failures never expose raw diagnostics
     await assert.rejects(importPdf(file(),new AbortController().signal,()=>{}),error=>error.code==='unreadable'&&!error.message.includes(cause.message));
     assert.equal(policy.bondPdfImportErrorMessage(cause),policy.bondPdfImportErrorMessage(null));
     const known=new policy.BondPdfImportError('invalid_pdf');known.message='private engine details';
-    assert.equal(policy.bondPdfImportErrorMessage(known),'This is not a valid PDF document. Export a new PDF and try again.');
+    assert.equal(policy.bondPdfImportErrorMessage(known),'❌Wrong file.');
     assert.equal(policy.bondPdfImportErrorMessage({code:'invalid_pdf',message:'private'}),policy.bondPdfImportErrorMessage(null));
   }
   const {importPdf}=scenario({document:{numPages:11},failCleanup:true});
