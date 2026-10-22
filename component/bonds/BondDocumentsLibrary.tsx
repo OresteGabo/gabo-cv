@@ -272,7 +272,7 @@ export function BondDocumentsLibrary() {
   return (
     <main className="bond-app relative min-h-screen overflow-x-hidden pb-24 bg-background text-on-background">
       <ImigongoBackground />
-      <BondPortfolioChrome active="/documents" />
+      <BondPortfolioChrome active="/documents" authenticated={authenticated && !sessionLoading} />
 
       <section className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 md:px-8">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">

@@ -55,7 +55,7 @@ const portfolioLinks = [
   { href: "/stocks", label: "Stocks", Icon: BarChart3 },
 ];
 
-export function BondPortfolioChrome({ active, actions }: { active: string; actions?: React.ReactNode }) {
+export function BondPortfolioChrome({ active, authenticated, actions }: { active: string; authenticated: boolean; actions?: React.ReactNode }) {
   return <>
     <header className="sticky top-0 z-50 border-b border-outline/10 bg-background/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:px-6 md:px-8">
@@ -66,8 +66,8 @@ export function BondPortfolioChrome({ active, actions }: { active: string; actio
         <div className="flex items-center gap-2">{actions}<BondThemeToggle /></div>
       </div>
     </header>
-    <nav aria-label="Mobile portfolio navigation" className="fixed inset-x-3 bottom-3 z-40 mx-auto grid max-w-sm grid-cols-4 gap-1 rounded-xl border border-outline/15 bg-[var(--md-sys-color-background)]/95 p-1 shadow-xl backdrop-blur-xl lg:hidden" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+    {authenticated && <nav aria-label="Mobile portfolio navigation" className="fixed inset-x-3 bottom-3 z-40 mx-auto grid max-w-sm grid-cols-4 gap-1 rounded-xl border border-outline/15 bg-[var(--md-sys-color-background)]/95 p-1 shadow-xl backdrop-blur-xl lg:hidden" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
       {portfolioLinks.map(({ href, label, Icon }) => <Link key={href} href={href} prefetch={false} aria-current={active === href ? "page" : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-bold ${active === href ? "bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]" : "text-on-surface-variant"}`}><Icon size={17} />{label}</Link>)}
-    </nav>
+    </nav>}
   </>;
 }

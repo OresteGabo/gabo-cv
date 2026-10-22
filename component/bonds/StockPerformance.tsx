@@ -16,15 +16,16 @@ const money = (amount: number, currency = "RWF") => `${currency} ${amount.toLoca
 export function StockPerformance() {
   const [holdings, setHoldings] = useState<EquityHolding[]>([]);
   const [status, setStatus] = useState<"loading" | "signed-out" | "ready" | "error">("loading");
+  const [authenticated, setAuthenticated] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [period, setPeriod] = useState<"month" | "year" | "all">("all");
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/bonds/equities", { cache: "no-store", signal: controller.signal }).then(async (response) => {
-      if (response.status === 401) { setHoldings([]); setStatus("signed-out"); return; }
+      if (response.status === 401) { setAuthenticated(false); setHoldings([]); setStatus("signed-out"); return; }
       if (!response.ok) throw new Error("Holdings unavailable.");
       const data = await response.json();
-      if (!controller.signal.aborted) { setHoldings(data.holdings); setStatus("ready"); }
+      if (!controller.signal.aborted) { setAuthenticated(true); setHoldings(data.holdings); setStatus("ready"); }
     }).catch(() => { if (!controller.signal.aborted) setStatus("error"); });
     return () => controller.abort();
   }, [attempt]);
@@ -38,13 +39,13 @@ export function StockPerformance() {
   const unavailable = market.error || market.data?.source.status === "error";
   const reset = () => { setStatus("loading"); setAttempt((value) => value + 1); };
   return <main className="bond-app min-h-screen bg-background pb-28 text-on-background">
-    <BondPortfolioChrome active="/stocks" />
+    <BondPortfolioChrome active="/stocks" authenticated={authenticated} />
     <section className="mx-auto max-w-6xl px-4 py-10">
       <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary"><BarChart3 size={16} />Your stocks</p>
       <h1 className="mt-3 text-3xl font-black tracking-tight">Stock performance</h1>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-on-surface-variant">See how your shares compare with their purchase cost. Holdings load first; optional RSE prices and graphs follow when the page is idle. Estimated values exclude dividends and selling fees.</p>
       {status === "loading" && <p role="status" className="mt-8 rounded-2xl border border-outline/10 p-6">Loading your saved shares…</p>}
-      {status === "signed-out" && <div className="mt-6 max-w-lg"><BondAccountAccess onAuthenticated={reset} /></div>}
+      {status === "signed-out" && <div className="mt-6 max-w-lg"><BondAccountAccess onAuthenticated={() => { setAuthenticated(true); reset(); }} /></div>}
       {status === "error" && <div role="alert" className="mt-8 rounded-2xl border border-outline/10 p-6">Your holdings could not be loaded. <button type="button" onClick={reset} className="font-bold underline">Try again</button></div>}
       {status === "ready" && !active.length && <div className="mt-8 rounded-3xl border border-outline/10 p-8"><h2 className="text-xl font-black">No active stock holdings</h2><p className="mt-3 text-sm text-on-surface-variant">Your account has no saved active shares to chart. Your bonds remain available in the portfolio.</p><Link href="/portfolio" prefetch={false} className="mt-4 inline-block text-sm font-bold underline">Back to portfolio</Link></div>}
       {status === "ready" && active.length > 0 && <>

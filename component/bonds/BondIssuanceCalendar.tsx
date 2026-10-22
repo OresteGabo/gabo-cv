@@ -254,7 +254,7 @@ export function BondIssuanceCalendar() {
   return (
     <main className="bond-app relative min-h-screen overflow-x-clip pb-24 bg-background font-sans text-on-background">
       <ImigongoBackground />
-      <BondPortfolioChrome active="/calendar" />
+      <BondPortfolioChrome active="/calendar" authenticated={portfolioState.authenticated && !portfolioState.loading} />
 
       {portfolioState.loading ? (
         <section className="mx-auto max-w-3xl px-6 py-20 md:px-8 md:py-28">

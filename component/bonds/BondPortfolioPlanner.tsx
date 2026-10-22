@@ -1430,7 +1430,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   return (
     <main className="bond-app relative min-h-screen overflow-x-clip bg-background font-sans text-on-background">
       <ImigongoBackground />
-      <BondPortfolioChrome active={view === "portfolio" ? "/portfolio" : "/simulator"} actions={view === "simulator" ? <button onClick={exportProjection} className="rounded-lg border border-outline/15 px-3 py-2 text-xs font-bold">Export CSV</button> : undefined} />
+      <BondPortfolioChrome active={view === "portfolio" ? "/portfolio" : "/simulator"} authenticated={authenticated && !sessionLoading} actions={view === "simulator" ? <button onClick={exportProjection} className="rounded-lg border border-outline/15 px-3 py-2 text-xs font-bold">Export CSV</button> : undefined} />
 
       {view === "simulator" && (
         <>
