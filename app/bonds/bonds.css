@@ -206,6 +206,10 @@
     margin-bottom: 0;
   }
 
+  .portfolio-table tr:not([data-expanded="true"]) td[data-tile-caption]::before {
+    content: attr(data-tile-caption);
+  }
+
   .portfolio-table tr:not([data-expanded="true"]) .holding-disclosure {
     position: static;
     min-height: 0;

@@ -236,6 +236,12 @@ function HoldingAmount({ value }: { value: number }) {
   return <>{formatRwf(value).split(/\s+/).map((part, index) => <Fragment key={index}>{index > 0 && " "}<span className="inline-block">{part}</span></Fragment>)}</>;
 }
 
+function formatHoldingDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "Date unavailable";
+  const [year, month, day] = value.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 function DetailLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-[11px]">
@@ -2778,7 +2784,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                                 {formatRwf(item.pricePerShare)} per share
                               </span>
                             </td>
-                            <td role="cell" aria-colindex={3} data-label="Cash cost" className="px-4 py-4">
+                            <td role="cell" aria-colindex={3} data-label="Cash cost" data-tile-caption={formatHoldingDate(item.tradeDate)} className="px-4 py-4">
                               <strong className="block"><HoldingAmount value={item.netAmountPayable} /></strong>
                               <span data-mobile-detail className="text-[10px] text-on-surface-variant">
                                 {formatRwf(item.totalCharges)} charges
@@ -3194,14 +3200,14 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                               );
                           const nextCouponDate = displayItem.status === "sold" || displayItem.status === "matured" ? null : tracking?.nextCouponDate;
                           const nextCouponAmount = !couponPending && nextCouponDate ? displayItem.faceValue * netRate / displayItem.couponFrequency : null;
-                          const nextPaymentLabel = nextCouponDate ?? (couponPending ? "Pending issuance" : "No future coupons");
+                          const nextPaymentLabel = nextCouponDate ? formatHoldingDate(nextCouponDate) : (couponPending ? "Pending issuance" : "No future coupons");
                           return (
                             <tr role="row" key={item.id} data-expanded={expandedHoldings.has(`bond-${item.id}`)} className="border-t border-outline/10 text-xs">
                               <td role="cell" aria-colindex={1} data-label="Bond" className="px-4 py-4">
                                 <HoldingDisclosure label={issuanceNumber} expanded={expandedHoldings.has(`bond-${item.id}`)} controls={`bond-${item.id}-links bond-${item.id}-price bond-${item.id}-schedule bond-${item.id}-market`} onToggle={() => toggleHolding(`bond-${item.id}`)} />
                                 <span className="holding-tile-caption hidden">
-                                  {couponPending ? "Coupon pending" : nextCouponAmount !== null ? <span className="inline-block">Coupon <HoldingAmount value={nextCouponAmount} /></span> : "No future coupons"}
-                                  {nextCouponDate && <> · <time dateTime={nextCouponDate} className="inline-block">{nextCouponDate}</time></>}
+                                  {couponPending ? "Coupon pending" : nextCouponAmount !== null ? <span className="inline-block">({formatPercent(netRate)}) <HoldingAmount value={nextCouponAmount} /></span> : "No future coupons"}
+                                  {nextCouponDate && <> · <time dateTime={nextCouponDate} className="inline-block">{formatHoldingDate(nextCouponDate)}</time></>}
                                 </span>
                                 {displayItem.status !== "active" && <span className="text-[10px] font-bold uppercase text-on-surface-variant sm:hidden">{displayItem.status}</span>}
                                 <div id={`bond-${item.id}-links`} data-mobile-detail>
