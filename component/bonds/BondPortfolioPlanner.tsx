@@ -2606,7 +2606,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   type="button"
                   onClick={startNewPurchase}
                   disabled={importingPdf}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-sm font-black text-[var(--md-sys-color-on-primary)] transition hover:opacity-90"
+                  className="order-last ml-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-sm font-black text-[var(--md-sys-color-on-primary)] transition hover:opacity-90 sm:order-none sm:ml-0"
                 >
                   <Plus size={17} />
                   Add purchase
