@@ -26,7 +26,10 @@ In the private portfolio, choose **Add purchase → Choose PDF**, or drop one PD
 into the highlighted upload area. New-purchase fields appear only after a
 successful PDF import. Manual-entry and calendar-prefill paths do not populate
 new purchases, and no issuance template is loaded. The browser checks
-the PDF signature and structure, rejects detected JavaScript or embedded files,
+the filename/MIME type, size, header, ending and parsed PDF structure. It rejects
+scripts, attachments and interactive annotations; passive signature widgets are
+allowed after checking their actions. Flatten annotated PDFs before importing.
+It requires a bond identity, at least two recognizable terms and BNR/result context,
 and extracts BNR result fields and coupon dates. Scanned pages use local English
 OCR. The PDF and recognized text stay on the device; only the reviewed purchase
 form is sent to the existing save endpoint. The original PDF is not stored in the
@@ -54,6 +57,12 @@ WASM assets on first use. The production CSP permits same-origin workers and
 WASM compilation.
 
 Run parser regression checks with `npm run test:bond-import` (Node 22.13+).
+These also exercise the real reader with malformed PDFs, compressed JavaScript,
+attachments and signatures. Both the browser API and worker use PDF.js's legacy
+compatibility build, including the Map-method polyfills required by Safari.
+Reader exceptions are mapped to fixed application messages. Raw exception text,
+stack traces and document content are never displayed as upload errors, and
+cleanup failures cannot replace the original user-facing error.
 Import saves into the signed-in user’s portfolio. Existing bundled documents
 and equities remain private to the owner account.
 

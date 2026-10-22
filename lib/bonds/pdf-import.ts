@@ -1,6 +1,7 @@
-import { parseBondPdfText, type BondPdfImport } from "./pdf-import-parser";
+import { isRecognizedBondResult, parseBondPdfText, type BondPdfImport } from "./pdf-import-parser";
+import { BondPdfImportError, hasPdfEntries, validateBondPdfEnvelope, validateBondPdfMetadata } from "./pdf-import-errors";
 
-export const MAX_BOND_PDF_BYTES = 10 * 1024 * 1024;
+export { MAX_BOND_PDF_BYTES } from "./pdf-import-errors";
 const MAX_PAGES = 10;
 const MAX_OCR_PAGES = 5;
 const MAX_TEXT = 200_000;
@@ -11,38 +12,13 @@ export async function importBondPdf(
   signal: AbortSignal,
   onProgress: (message: string) => void,
 ): Promise<BondPdfImport> {
-  if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== "application/pdf")) {
-    throw new Error("Choose a PDF file. Renaming another file to .pdf will not work.");
-  }
-  if (!file.size || file.size > MAX_BOND_PDF_BYTES) throw new Error("Choose a PDF smaller than 10 MB.");
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  signal.throwIfAborted();
-  if (!/^%PDF-\d\.\d/.test(new TextDecoder().decode(bytes.subarray(0, 8))) ||
-      !new TextDecoder().decode(bytes.subarray(Math.max(0, bytes.length - 1024))).includes("%%EOF")) {
-    throw new Error("This file does not have a valid PDF header and ending.");
-  }
-
-  onProgress("Checking PDF structure…");
-  const pdfjs = await import("pdfjs-dist");
-  signal.throwIfAborted();
-  pdfjs.GlobalWorkerOptions.workerSrc = "/bond-import/pdf.worker.min.mjs";
-  const loading = pdfjs.getDocument({
-    data: bytes,
-    stopAtErrors: true,
-    cMapUrl: "/bond-import/cmaps/",
-    cMapPacked: true,
-    standardFontDataUrl: "/bond-import/standard_fonts/",
-    wasmUrl: "/bond-import/wasm/",
-    useWorkerFetch: true,
-    maxImageSize: 16_000_000,
-    canvasMaxAreaInBytes: 32_000_000,
-  });
+  let loading: import("pdfjs-dist").PDFDocumentLoadingTask | undefined;
   let ocr: Awaited<ReturnType<typeof import("tesseract.js")["createWorker"]>> | undefined;
-  const abort = () => {
-    void loading.destroy();
-    void ocr?.terminate();
-  };
-  signal.addEventListener("abort", abort, { once: true });
+  const cleanup = () => Promise.allSettled([
+    Promise.resolve().then(() => loading?.destroy()),
+    Promise.resolve().then(() => ocr?.terminate()),
+  ]);
+  const abort = () => { void cleanup(); };
   const wait = <T,>(promise: Promise<T>): Promise<T> => {
     signal.throwIfAborted();
     return new Promise<T>((resolve, reject) => {
@@ -55,28 +31,68 @@ export async function importBondPdf(
   let ocrPages = 0;
   const texts: string[] = [];
   try {
+    validateBondPdfMetadata(file);
+    signal.throwIfAborted();
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    signal.throwIfAborted();
+    validateBondPdfEnvelope(bytes);
+    onProgress("Checking PDF structure…");
+    // Safari needs PDF.js's supported compatibility build in both threads.
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    signal.throwIfAborted();
+    pdfjs.GlobalWorkerOptions.workerSrc = "/bond-import/pdf.worker.legacy.min.mjs";
+    loading = pdfjs.getDocument({
+      data: bytes,
+      stopAtErrors: true,
+      enableXfa: false,
+      disableFontFace: true,
+      cMapUrl: "/bond-import/cmaps/",
+      cMapPacked: true,
+      standardFontDataUrl: "/bond-import/standard_fonts/",
+      wasmUrl: "/bond-import/wasm/",
+      useWorkerFetch: true,
+      maxImageSize: 16_000_000,
+      canvasMaxAreaInBytes: 32_000_000,
+      verbosity: pdfjs.VerbosityLevel.ERRORS,
+    });
+    signal.addEventListener("abort", abort, { once: true });
     const pdf = await wait(loading.promise);
     signal.throwIfAborted();
-    if (pdf.numPages > MAX_PAGES) throw new Error("Use a bond result PDF with at most 10 pages.");
-    const [actions, attachments] = await wait(Promise.all([pdf.getJSActions(), pdf.getAttachments()]));
-    if (actions?.size || attachments?.size) throw new Error("PDFs with scripts or embedded files are not accepted. Export a plain PDF and try again.");
+    if (pdf.numPages > MAX_PAGES) throw new BondPdfImportError("page_limit");
+    if (pdf.numPages < 1) throw new BondPdfImportError("invalid_pdf");
+    const [actions, attachments, fieldObjects] = await wait(Promise.all([pdf.getJSActions(), pdf.getAttachments(), pdf.getFieldObjects()]));
+    const fields = [...(fieldObjects?.values() ?? [])].flat() as { id?: string; type?: string; actions?: unknown }[];
+    if (hasPdfEntries(actions) || hasPdfEntries(attachments) || fields.some((field) => field.type !== "signature" || !field.id || hasPdfEntries(field.actions))) throw new BondPdfImportError("unsafe_content");
+    const signatures = new Set<string>();
     for (let index = 1; index <= pdf.numPages; index++) {
       signal.throwIfAborted();
       onProgress(`Reading page ${index} of ${pdf.numPages}…`);
       const page = await wait(pdf.getPage(index));
-      if ((await wait(page.getJSActions()))?.size) throw new Error("PDFs with scripts are not accepted.");
+      const [pageActions, annotations] = await wait(Promise.all([page.getJSActions(), page.getAnnotations({ intent: "any" })]));
+      // Non-widget annotations can hide actions omitted by PDF.js's public output.
+      // Accept passive signature widgets only; never mount annotation/scripting UI.
+      if (hasPdfEntries(pageActions) || annotations.some((annotation) =>
+        annotation.annotationType !== pdfjs.AnnotationType.WIDGET || annotation.fieldType !== "Sig" ||
+        hasPdfEntries(annotation.actions) || annotation.file || annotation.attachment || annotation.attachmentId,
+      )) throw new BondPdfImportError("unsafe_content");
+      for (const annotation of annotations) signatures.add(annotation.id);
       const content = await wait(page.getTextContent());
+      if (content.items.length > 50_000) throw new BondPdfImportError("text_limit");
       // Reconstruct rows so table columns stay together while field labels retain line breaks.
       const items = content.items.filter((item) => "str" in item);
       const rows = new Map<number, typeof items>();
+      let pageTextLength = 0;
       for (const item of items) {
+        pageTextLength += item.str.length;
+        if (pageTextLength > MAX_TEXT) throw new BondPdfImportError("text_limit");
         const y = Math.round(item.transform[5] / 3) * 3;
-        rows.set(y, [...(rows.get(y) ?? []), item]);
+        const row = rows.get(y);
+        if (row) row.push(item); else rows.set(y, [item]);
       }
       let text = [...rows.entries()].sort(([a], [b]) => b - a)
         .map(([, row]) => row.sort((a, b) => a.transform[4] - b.transform[4]).map((item) => item.str).join(" ")).join("\n");
       if (text.replace(/\s/g, "").length < 80) {
-        if (++ocrPages > MAX_OCR_PAGES) throw new Error("Use a PDF with at most 5 scanned pages. Split a larger document first.");
+        if (++ocrPages > MAX_OCR_PAGES) throw new BondPdfImportError("scan_limit");
         usedOcr = true;
         if (!ocr) {
           onProgress("Loading text recognition on your device…");
@@ -101,15 +117,16 @@ export async function importBondPdf(
           signal.throwIfAborted();
           await wait(worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT }));
         }
-        if (!ocr) throw new Error("Text recognition could not start. Please try again.");
+        if (!ocr) throw new BondPdfImportError("unreadable");
         const base = page.getViewport({ scale: 1 });
-        const scale = Math.min(3, Math.sqrt(8_000_000 / (base.width * base.height)));
+        if (!Number.isFinite(base.width * base.height) || base.width <= 0 || base.height <= 0) throw new BondPdfImportError("invalid_pdf");
+        const scale = Math.min(3, Math.sqrt(8_000_000 / (base.width * base.height)), 4096 / base.width, 4096 / base.height);
         const viewport = page.getViewport({ scale });
         const canvas = document.createElement("canvas");
         canvas.width = Math.ceil(viewport.width);
         canvas.height = Math.ceil(viewport.height);
         try {
-          await wait(page.render({ canvas, viewport }).promise);
+          await wait(page.render({ canvas, viewport, annotationMode: pdfjs.AnnotationMode.DISABLE }).promise);
           signal.throwIfAborted();
           const recognized = await wait(ocr.recognize(canvas, {}, { text: true, blocks: true }));
           text = recognized.data.text;
@@ -141,25 +158,23 @@ export async function importBondPdf(
         }
       }
       if (text.length > MAX_TEXT || texts.reduce((sum, item) => sum + item.length, 0) + text.length > MAX_TEXT) {
-        throw new Error("This PDF contains too much text. Use the bond result document only.");
+        throw new BondPdfImportError("text_limit");
       }
       texts.push(text);
       page.cleanup();
     }
     signal.throwIfAborted();
+    if (fields.some((field) => !signatures.has(field.id!))) throw new BondPdfImportError("unsafe_content");
     const result = parseBondPdfText(texts.join("\n"), usedOcr);
-    if (!result.fields.bondName && !result.fields.isin && !result.fields.couponRate && !result.fields.couponDates?.length) {
-      throw new Error("No recognizable bond details were found. Use a clear BNR bond result PDF or enter the details manually.");
-    }
+    if (!isRecognizedBondResult(result, texts.join("\n"))) throw new BondPdfImportError("not_bond_result");
     return result;
   } catch (error) {
-    if (signal.aborted) throw new Error("PDF import cancelled or timed out. You can try again with a smaller document.");
-    if (error instanceof Error && error.name === "PasswordException") throw new Error("Unlock the password-protected PDF before importing it.");
-    if (error instanceof Error && /InvalidPDF|FormatError|UnknownError/.test(error.name)) throw new Error("This PDF could not be read. Export a new plain PDF and try again.");
-    throw error;
+    if (signal.aborted) throw new BondPdfImportError("cancelled");
+    if (error instanceof BondPdfImportError) throw error;
+    if (error instanceof Error && error.name === "PasswordException") throw new BondPdfImportError("password");
+    throw new BondPdfImportError("unreadable");
   } finally {
     signal.removeEventListener("abort", abort);
-    await ocr?.terminate();
-    await loading.destroy();
+    await cleanup();
   }
 }

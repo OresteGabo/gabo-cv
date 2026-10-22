@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { CircleAlert, FileText, LoaderCircle, Upload, X } from "lucide-react";
 import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
+import { bondPdfImportErrorMessage, validateBondPdfMetadata } from "@/lib/bonds/pdf-import-errors";
 
 export function BondPdfUpload({ onImport, onBusyChange }: {
   onImport: (result: BondPdfImport, fileName: string) => void;
@@ -23,8 +24,9 @@ export function BondPdfUpload({ onImport, onBusyChange }: {
 
   async function readFile(file: File) {
     if (controller.current) return;
-    if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== "application/pdf")) {
-      setError("Choose a PDF file. Other file types are not accepted.");
+    try { validateBondPdfMetadata(file); }
+    catch (cause) {
+      setError(bondPdfImportErrorMessage(cause));
       return;
     }
     const current = new AbortController();
@@ -40,7 +42,7 @@ export function BondPdfUpload({ onImport, onBusyChange }: {
       if (!current.signal.aborted) onImport(result, file.name);
     } catch (cause) {
       if (controller.current === current) {
-        setError(cause instanceof Error ? cause.message : "The PDF could not be read. Please try another file.");
+        setError(bondPdfImportErrorMessage(cause));
       }
     } finally {
       window.clearTimeout(timeout);

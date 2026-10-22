@@ -11,6 +11,14 @@ const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "
 const DATE_PATTERN = /([\dIlioO]{1,2})\s*[-/.]?\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*[-/.]?\s*([\dIlioO]{2,4})(?!\d)/gi;
 const digits = (value: string) => value.replace(/[Ili]/g, "1").replace(/[oO]/g, "0");
 
+export function isRecognizedBondResult(result: BondPdfImport, text: string) {
+  const fields = result.fields;
+  const identity = Boolean(fields.bondName || fields.isin);
+  const terms = [fields.tenorYears, fields.couponRate, fields.settlementDate, fields.maturityDate].filter((value) => value !== undefined && value !== "").length;
+  const context = fields.issuer === "Government of Rwanda" || /INVESTOR\s+RESULTS|RESULTS\s+OF[\s\S]{0,80}TREASURY\s+BOND/i.test(text);
+  return identity && terms >= 2 && context;
+}
+
 function isoDate(year: number, month: number, day: number) {
   if (year < 2000 || year > 2199 || month < 1 || month > 12 || day < 1 || day > 31) return null;
   const date = new Date(Date.UTC(year, month - 1, day));
