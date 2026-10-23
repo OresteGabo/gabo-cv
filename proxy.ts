@@ -45,6 +45,7 @@ export function proxy(request: NextRequest) {
   const shouldRewrite =
     !pathname.startsWith("/_next") &&
     !pathname.startsWith("/api/bonds") &&
+    pathname !== "/.well-known/apple-app-site-association" &&
     !pathname.startsWith("/bonds") &&
     !/\.[a-z0-9]+$/i.test(pathname);
   const response = shouldRewrite
