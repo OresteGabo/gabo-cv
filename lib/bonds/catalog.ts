@@ -40,6 +40,8 @@ export function catalogEntryForPurchase(
 }
 
 export function canonicalPurchaseFromCatalog(purchase: BondPurchase): BondPurchase {
+  // Published terms do not prove that a submitted application was allocated.
+  if (purchase.status === "submitted") return purchase;
   const catalogEntry = catalogEntryForPurchase(purchase);
   if (!catalogEntry) return purchase;
 
@@ -54,6 +56,6 @@ export function canonicalPurchaseFromCatalog(purchase: BondPurchase): BondPurcha
         ? purchase.couponDates
         : catalogEntry.couponDates,
     scheduleConfidence: "confirmed" as const,
-    status: "active" as const,
+    status: purchase.status,
   };
 }

@@ -211,3 +211,20 @@ CREATE TABLE IF NOT EXISTS equity_purchases (
   UNIQUE (owner_id, report_key)
 );
 CREATE INDEX IF NOT EXISTS equity_purchases_owner_idx ON equity_purchases(owner_id, created_at DESC);
+
+-- Records a one-time import, so later builds cannot restore deleted seed purchases.
+CREATE TABLE IF NOT EXISTS bond_data_migrations (
+  key TEXT PRIMARY KEY,
+  applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Missing-document reminders carry observed statement debits, never investment values.
+CREATE TABLE IF NOT EXISTS bond_statement_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id TEXT NOT NULL,
+  identity TEXT NOT NULL,
+  item JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(owner_id,identity)
+);
+CREATE INDEX IF NOT EXISTS bond_statement_items_owner_idx ON bond_statement_items(owner_id,created_at DESC);

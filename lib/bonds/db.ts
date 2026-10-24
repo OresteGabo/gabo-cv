@@ -16,7 +16,9 @@ let fileWriteQueue: Promise<void> = Promise.resolve();
 
 function shouldUseFileDatabase(userId: string) {
   if (userId !== "owner" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) throw new Error("Invalid portfolio owner.");
-  return userId === "owner" ? process.env.BONDS_PORTFOLIO_DATABASE !== "database" : !bondsDatabaseUrl();
+  // A connected database is authoritative for every account, including the owner.
+  // Bundled JSON is a read-only seed on serverless hosts, never writable storage.
+  return !bondsDatabaseUrl() && (userId !== "owner" || process.env.BONDS_PORTFOLIO_DATABASE !== "database");
 }
 
 function fileDatabasePath(userId: string) {

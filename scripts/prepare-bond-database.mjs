@@ -1,5 +1,6 @@
 import nextEnv from "@next/env";
 import { readFile } from "node:fs/promises";
+import { ownerPortfolioSeed } from "./owner-portfolio-seed.mjs";
 import { neon } from "@neondatabase/serverless";
 
 // Match `next build`'s production environment-file loading.
@@ -16,11 +17,17 @@ if (!url) {
     // bodies or semicolons inside SQL strings. Apply the entire migration atomically.
     const statements = schema.split(";").map(statement => statement.trim()).filter(Boolean);
     const sql = neon(url);
+    const fileName = (process.env.BONDS_FILE_DATABASE_NAME ?? "bonds-portfolio.json").replace(/[^a-zA-Z0-9._-]/g, "_");
+    let purchases = [];
+    try { purchases = JSON.parse(await readFile(new URL(`../.data/${fileName}`, import.meta.url), "utf8")).purchases; }
+    catch (error) { if (error?.code !== "ENOENT") throw error; }
+    const seed = ownerPortfolioSeed(purchases);
     await sql.transaction([
       sql.query("SELECT pg_advisory_xact_lock(7256, 103)"),
       ...statements.map(statement => sql.query(statement)),
+      sql.query(seed.text, seed.values),
     ]);
-    console.log("Bond database schema prepared. No portfolio JSON data was uploaded.");
+    console.log("Bond database prepared; owner JSON purchases imported once without replacing existing records.");
   } catch (error) {
     const reasons = { "42501": "Database role lacks migration permissions.", "28P01": "Database credentials were rejected.", "3D000": "Database was not found." };
     console.error("Bond database preparation failed.", reasons[error?.code] || "Check the database connection and migration permissions. Raw database errors are not logged.");
