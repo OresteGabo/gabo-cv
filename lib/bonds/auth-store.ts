@@ -89,6 +89,8 @@ export async function deleteAccount(id: string, email: string): Promise<boolean>
       DELETE FROM bond_purchases WHERE owner_id IN (SELECT id FROM removed)
     ), equities AS (
       DELETE FROM equity_purchases WHERE owner_id IN (SELECT id FROM removed)
+    ), statement_items AS (
+      DELETE FROM bond_statement_items WHERE owner_id IN (SELECT id FROM removed)
     ), sessions AS (
       DELETE FROM bond_sessions WHERE user_id IN (SELECT id FROM removed)
     ), invitation AS (
