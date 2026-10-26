@@ -86,8 +86,6 @@ import type { BondQuotes } from "@/lib/bonds/market-quotes";
 import { BondPdfUpload } from "./BondPdfUpload";
 import { BondPurchaseDialog } from "./BondPurchaseDialog";
 import { EquityPurchaseReview } from "./EquityPurchaseReview";
-import { bondPurchaseKey, sameEquityPurchase } from "@/lib/bonds/purchase-identity";
-import { parseEquityPurchase } from "@/lib/bonds/equity-validation";
 import type { PurchasePdfImport, EquityPdfImport } from "@/lib/bonds/equity-pdf-parser";
 import type { BondPdfImport } from "@/lib/bonds/pdf-import-parser";
 
@@ -911,7 +909,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
         purchase.feesPaid) *
         100,
     ) / 100;
-  const duplicateImport = equityReview ? equities.some((item) => sameEquityPurchase(item, { ...equityReview.fields, id: "", createdAt: "" })) : pdfReview ? purchases.some((item) => item.id !== editingPurchaseId && bondPurchaseKey(item) === bondPurchaseKey({ ...purchase, amountInvested: purchaseCashCost })) : false;
   const purchaseAnnualNetCoupon =
     purchase.status === "submitted" && purchase.couponRate === 0
       ? 0
@@ -1187,9 +1184,8 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
   async function savePurchase(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (equityReview) {
-      if (savingPurchase || importingPdf || !pdfReviewed || duplicateImport) return;
-      const input = parseEquityPurchase(equityReview.fields);
-      if (!input) { setPortfolioError("Check the share details, dates and fee totals before saving."); return; }
+      if (savingPurchase || importingPdf || !pdfReviewed) return;
+      const input = equityReview.fields;
       setSavingPurchase(true);
       setPortfolioError("");
       try {
@@ -1203,7 +1199,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
       finally { setSavingPurchase(false); }
       return;
     }
-    if (duplicateImport || (!editingPurchaseId && !pdfReview)) return;
+    if (!editingPurchaseId && !pdfReview) return;
     if (savingPurchase || importingPdf || (pdfReview && !pdfReviewed)) return;
     setSavingPurchase(true);
     setPortfolioError("");
@@ -2800,7 +2796,6 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                   </div>
                   {portfolioError && <p role="alert" className="mt-4 rounded-xl border border-error/20 bg-error-container/20 p-3 text-sm text-error">{portfolioError}</p>}
                   {!editingPurchaseId && <BondPdfUpload onImport={applyPdfImport} onBusyChange={setImportingPdf} onSelectFile={() => { setPdfReview(null); setEquityReview(null); setPdfReviewed(false); setPortfolioError(""); }} />}
-                  {duplicateImport && <p role="alert" className="mt-4 rounded-lg border border-error/25 p-3 text-sm text-error">This purchase is already saved in your portfolio. You can close this dialog or choose another PDF.</p>}
                   {equityReview && <>
                     <div className="mt-4 rounded-xl border border-primary/20 p-3" role="status">
                       <p className="text-sm font-black">Share purchase detected</p>
@@ -3111,7 +3106,7 @@ export function BondPortfolioPlanner({ view = "portfolio" }: { view?: PlannerVie
                       >
                         Cancel
                       </button>
-                    {(editingPurchaseId || pdfReview || equityReview) && <button disabled={duplicateImport || savingPurchase || importingPdf || Boolean((pdfReview || equityReview) && !pdfReviewed)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-sm font-black text-[var(--md-sys-color-on-primary)] transition hover:opacity-90 disabled:opacity-50">
+                    {(editingPurchaseId || pdfReview || equityReview) && <button disabled={savingPurchase || importingPdf || Boolean((pdfReview || equityReview) && !pdfReviewed)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--md-sys-color-primary)] px-4 py-3 text-sm font-black text-[var(--md-sys-color-on-primary)] transition hover:opacity-90 disabled:opacity-50">
                       <Database size={16} />{" "}
                       {savingPurchase
                         ? "Saving…"

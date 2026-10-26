@@ -1,12 +1,6 @@
-import type { Metadata } from "next";
-import { BondPasswordSetup } from "@/component/bonds/BondPasswordSetup";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Choose your portfolio password | Gabo",
-  description: "Create a private password hash to send to the portfolio owner.",
-  robots: { index: false, follow: false },
-};
-
+// Old setup links now use the API-backed invitation flow.
 export default function CreatePasswordPage() {
-  return <BondPasswordSetup />;
+  redirect("/bonds/join");
 }

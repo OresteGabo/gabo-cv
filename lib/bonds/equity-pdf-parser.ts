@@ -1,5 +1,4 @@
 import type { EquityHoldingInput } from "./types";
-import { parseEquityPurchase, validEquityDate } from "./equity-validation";
 import { isRecognizedBondResult, parseBondPdfText, type BondPdfImport } from "./pdf-import-parser";
 import { BondPdfImportError } from "./pdf-import-errors";
 
@@ -10,6 +9,11 @@ export const EMPTY_EQUITY: EquityHoldingInput = {
   shares: 0, pricePerShare: 0, grossConsideration: 0, brokerageCommission: 0, rseTransactionFee: 0, csdTransactionLevy: 0,
   cmaTransactionFee: 0, totalCharges: 0, netAmountPayable: 0, broker: "", contractNote: "", cdsAccountNo: "", cdsReference: "", tradeReportId: "", currency: "RWF", status: "active", notes: "",
 };
+function validEquityDate(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+}
+
 function date(text: string) {
   const match = text.match(/(\d{1,2})[-/\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-/\s](\d{4})/i);
   if (!match) return "";
@@ -55,7 +59,6 @@ export function parseEquityPdfText(raw: string, usedOcr = false): EquityPdfImpor
   // This parser currently understands RSE purchase notes denominated in RWF only.
   if (!/All\s+figures\s+are\s+in\s+RWF/i.test(text) || !/Exchange\s*:\s*RSE\b/i.test(text)) return null;
   const warnings = usedOcr ? ["Text recognition was used. Check every number against your PDF."] : [];
-  if (!missingFields.length && !parseEquityPurchase(fields)) warnings.push("The extracted totals or dates do not agree. Correct them before saving.");
   return { kind: "equity", fields, missingFields, warnings, usedOcr };
 }
 export function parsePurchasePdfText(text: string, usedOcr = false): PurchasePdfImport {

@@ -6,31 +6,25 @@ const load = makeLoader();
 const quotes = load('lib/bonds/market-quotes.ts');
 const equityMarket = load('lib/bonds/equity-market.ts');
 const priceChart = load('lib/bonds/equity-price-chart.ts');
-const table = rows => `<table><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-const bondRows = table([
-  ['FXD1/2024/20Yrs (Re-opened)<span>TREASURY</span>','102.50','102.70','(0.19%)','3,500,000','3,587,500'],
-  ['FXD1/2024/20Yrs (Re-opened) TREASURY','103.20','102.50','(0.68%)','900,000','928,800'],
-  ['FXD0/2026/15Yrs TREASURY','0.00','0.00','0%','0','0'],
-]);
-const listedRows = table([['FXD1/2024/20Yrs TREASURY','RW-TEST','2024-01-01','2044-01-01','13%','13%']]);
-const equityRows = 'Last updated - 21 October 14:27 GMT+2' + table([
-  ['<img src="logo.png">Bank of Kigali Group PLC <span>BOK</span>','700','690','1%','0','0'],
-  ['I&amp;M Bank Rwanda PLC IMR','115','115','0%','8,100','931,500'],
-]);
-const allEquityRows = 'Last updated - 21 October 2026 14:27 GMT+2' + table([
-  ['BRALIRWA PLC BLR','526','550','-4.36%','47100','24774600'],
-  ['I&amp;M Bank Rwanda PLC IMR','115','115','0%','8100','931500'],
-  ['CIMERWA PLC CMR','165','165','0%','0','0'],
-  ['RH Bophelo PLC RHB','526','526','0%','0','0'],
-  ['Nation Media Group PLC NMG','1200','1200','0%','0','0'],
-  ['Uchumi Supermarket PLC USL','104','104','0%','0','0'],
-  ['Bank of Kigali Group PLC BOK','700','700','0%','0','0'],
-  ['Kenya Commercial Bank PLC KCB','500','500','0%','0','0'],
-  ['MTN Rwanda PLC MTNR','200','200','0%','13200','2640000'],
-  ['Equity Bank Group PLC EQTY','900','900','0%','0','0'],
-]);
+// API-shaped fixtures: upstream HTML parsing belongs to Spring.
+const bondQuotes = [
+  {bond:'FXD1/2024/20Yrs (Re-opened) TREASURY',closing:102.5,previous:102.7,volume:3500000},
+  {bond:'FXD1/2024/20Yrs (Re-opened) TREASURY',closing:103.2,previous:102.5,volume:900000},
+];
+const listings = [{bond:'FXD1/2024/20Yrs TREASURY',code:'RW-TEST'}];
+const equityQuotes = [
+  {name:'Bank of Kigali Group PLC',ticker:'BOK',closing:700,previous:690,volume:0},
+  {name:'I&M Bank Rwanda PLC',ticker:'IMR',closing:115,previous:115,volume:8100},
+];
+const allEquityQuotes = [
+  ['BRALIRWA PLC','BLR',526,550],['I&M Bank Rwanda PLC','IMR',115,115],
+  ['CIMERWA PLC','CMR',165,165],['RH Bophelo PLC','RHB',526,526],
+  ['Nation Media Group PLC','NMG',1200,1200],['Uchumi Supermarket PLC','USL',104,104],
+  ['Bank of Kigali Group PLC','BOK',700,700],['Kenya Commercial Bank PLC','KCB',500,500],
+  ['MTN Rwanda PLC','MTNR',200,200],['Equity Bank Group PLC','EQTY',900,900],
+].map(([name,ticker,closing,previous])=>({name,ticker,closing,previous,volume:0}));
 test('the requested ten companies match RSE symbols and changes retain their financial sign', () => {
-  const values = quotes.parseEquityQuotes(allEquityRows);
+  const values = allEquityQuotes;
   assert.equal(values.length,10);
   assert.deepEqual(values.map(row=>row.ticker),equityMarket.RSE_EQUITIES.map(row=>row.ticker));
   const change = equityMarket.equityPriceChange(values[0]);
@@ -88,20 +82,8 @@ test('price graph renders years and exact-date inspection, with honest empty and
   const empty=renderToStaticMarkup(createElement(Chart,{...props,observations:[]}));
   assert.equal(empty.includes('<svg'),false);assert.match(empty,/Earlier years need historical price data/);
 });
-test('parsers retain genuine prices, ignore zero placeholders, and preserve equity symbols', () => {
-  assert.equal(quotes.parseBondQuotes(bondRows).length,2);
-  assert.equal(quotes.parseBondQuotes(table([['FXD0/2026/15Yrs','0','0','0','0','0']])).length,0);
-  assert.equal(quotes.parseBondQuotes('upstream error page').length,0);
-  const equities=quotes.parseEquityQuotes(equityRows);
-  assert.deepEqual(equities.map(row=>[row.ticker,row.closing,row.volume]),[['BOK',700,0],['IMR',115,8100]]);
-  assert.equal(quotes.marketNumber('—'),null);assert.equal(quotes.marketNumber('not 100'),null);
-  assert.equal(quotes.marketNumber('1,234.50'),1234.5);
-  assert.equal(quotes.publishedEquityDate(equityRows,'2026-10-21T14:00:00Z'),'2026-10-21T12:27:00.000Z');
-  assert.equal(quotes.publishedEquityDate('Last updated - 31 December 14:00 GMT+2','2027-01-01T12:00:00Z'),'2026-12-31T12:00:00.000Z');
-  assert.equal(quotes.publishedEquityDate('Last updated - 31 February 14:00 GMT+2','2026-03-01T12:00:00Z'),null);
-});
 test('bond identity handles reopenings and exposes all listed prices without guessing a latest trade', () => {
-  const data={quotes:quotes.parseBondQuotes(bondRows),listings:quotes.parseListedBonds(listedRows)};
+  const data={quotes:bondQuotes,listings};
   assert.deepEqual(quotes.bondQuoteRange({isin:'RW-TEST',bondName:'custom investor label'},data),{low:102.5,high:103.2,rows:2});
   assert.deepEqual(quotes.bondQuoteRange({isin:'',bondName:'FXD1/2024/20YR'},data),{low:102.5,high:103.2,rows:2});
   assert.equal(quotes.bondQuoteRange({isin:'WRONG-CODE',bondName:'FXD1/2024/20YR'},data),null);
@@ -110,11 +92,11 @@ test('bond identity handles reopenings and exposes all listed prices without gue
 });
 test('equity gains compare closing value against cash cost and never convert currencies or count sold positions', () => {
   const holding={ticker:'BOK',status:'active',currency:'RWF',shares:500,netAmountPayable:340729};
-  const result=quotes.equityValuation(holding,quotes.parseEquityQuotes(equityRows));
+  const result=quotes.equityValuation(holding,equityQuotes);
   assert.equal(result.value,350000);assert.equal(result.gain,9271);
-  assert.equal(quotes.equityValuation({...holding,ticker:'UNKNOWN'},quotes.parseEquityQuotes(equityRows)),null);
-  assert.equal(quotes.equityValuation({...holding,currency:'USD'},quotes.parseEquityQuotes(equityRows)),null);
-  assert.equal(quotes.equityValuation({...holding,status:'sold'},quotes.parseEquityQuotes(equityRows)),null);
+  assert.equal(quotes.equityValuation({...holding,ticker:'UNKNOWN'},equityQuotes),null);
+  assert.equal(quotes.equityValuation({...holding,currency:'USD'},equityQuotes),null);
+  assert.equal(quotes.equityValuation({...holding,status:'sold'},equityQuotes),null);
 });
 test('monthly and yearly views use actual observations, deduplicate days, and do not invent missing or future prices', () => {
   const point=(date,closing,ticker='BOK',observedAt=date+'T14:00:00Z')=>({date,closing,ticker,observedAt});

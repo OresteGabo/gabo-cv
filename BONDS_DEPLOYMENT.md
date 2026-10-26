@@ -6,6 +6,8 @@ API source and deployment: https://github.com/OresteGabo/gabo-portfolio-api
 
 `next.config.ts` forwards every `/api/bonds/*` request to Spring before filesystem routes. The browser/mobile address stays `https://bonds.orestegabo.dev`, preserving secure session cookies and Apple Passwords. The server-rendered market page also calls Spring. There is no legacy backend fallback.
 
+Purchase uniqueness, canonical bond terms, final purchase validation and password hashing are owned by Spring. The browser submits reviewed PDF fields and displays API validation errors. Invitations use Spring’s registration flow; the former manual password-hash setup page redirects to the invitation page.
+
 ## Configuration
 
 `BONDS_API_ORIGIN` defaults to `https://gabo-portfolio-api-639858675564.europe-west1.run.app`. Production requires an HTTPS origin without a path or embedded credentials. Vercel Production is already configured.

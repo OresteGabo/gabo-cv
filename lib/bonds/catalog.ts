@@ -38,24 +38,3 @@ export function catalogEntryForPurchase(
       ),
   );
 }
-
-export function canonicalPurchaseFromCatalog(purchase: BondPurchase): BondPurchase {
-  // Published terms do not prove that a submitted application was allocated.
-  if (purchase.status === "submitted") return purchase;
-  const catalogEntry = catalogEntryForPurchase(purchase);
-  if (!catalogEntry) return purchase;
-
-  return {
-    ...purchase,
-    bondName: catalogEntry.issuanceNumber,
-    isin: purchase.isin || catalogEntry.isin,
-    couponRate: purchase.couponRate || catalogEntry.couponRate,
-    firstCouponDate: purchase.firstCouponDate || catalogEntry.firstCouponDate,
-    couponDates:
-      purchase.couponDates.length > 0
-        ? purchase.couponDates
-        : catalogEntry.couponDates,
-    scheduleConfidence: "confirmed" as const,
-    status: purchase.status,
-  };
-}
