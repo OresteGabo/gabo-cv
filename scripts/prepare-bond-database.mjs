@@ -1,3 +1,9 @@
+// The standalone Spring API owns authentication and database migrations.
+if (process.env.BONDS_API_ORIGIN?.trim()) {
+  console.log("Using the standalone Portfolio API; skipping legacy backend preparation.");
+  process.exit(0);
+}
+
 import nextEnv from "@next/env";
 import { readFile } from "node:fs/promises";
 import { ownerPortfolioSeed } from "./owner-portfolio-seed.mjs";

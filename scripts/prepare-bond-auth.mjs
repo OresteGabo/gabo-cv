@@ -1,3 +1,9 @@
+// The standalone Spring API owns authentication and database migrations.
+if (process.env.BONDS_API_ORIGIN?.trim()) {
+  console.log("Using the standalone Portfolio API; skipping legacy backend preparation.");
+  process.exit(0);
+}
+
 import { randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
