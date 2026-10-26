@@ -1,7 +1,7 @@
 import { ExternalLink, RadioTower } from "lucide-react";
 import Image from "next/image";
 import { formatPercent } from "@/lib/bonds/calculations";
-import type { RseMarketData, RseOutstandingBond } from "@/lib/bonds/rse";
+import type { RseMarketData, RseOutstandingBond } from "@/lib/bonds/market-types";
 import { RseMarketErrorTable } from "./RseMarketErrorTable";
 import { RseRankedBondTable } from "./RseRankedBondTable";
 

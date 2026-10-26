@@ -1,32 +1,19 @@
 import type { NextConfig } from "next";
 
-// Keep browser/native clients on the existing origin while Spring owns the API.
-const portfolioApiOrigin = process.env.BONDS_API_ORIGIN?.trim().replace(/\/$/, "");
-if (portfolioApiOrigin && !/^https:\/\/[^/]+$/.test(portfolioApiOrigin)) {
-  throw new Error("BONDS_API_ORIGIN must be an HTTPS origin without a path.");
-}
+import { portfolioApiOrigin } from "./lib/portfolio-api-origin";
+
+const springOrigin = portfolioApiOrigin();
 
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingExcludes: {
-    "/*": ["./.data/bonds-owner-login.txt"],
-  },
-  outputFileTracingIncludes: portfolioApiOrigin ? {} : {
-    "/*": [
-      "./.data/bonds-portfolio.json",
-      "./.data/equity-portfolio.json",
-      "./.data/bonds-deployment-key.json",
-      "./private/bonds/bond-documents.json",
-      "./private/bonds/documents/*.pdf",
-    ],
+    "/*": ["./.data/**/*", "./private/bonds/**/*"],
   },
   poweredByHeader: false,
   reactCompiler: true,
   async rewrites() {
     return {
-      beforeFiles: portfolioApiOrigin
-        ? [{ source: "/api/bonds/:path*", destination: `${portfolioApiOrigin}/api/bonds/:path*` }]
-        : [],
+      beforeFiles: [{ source: "/api/bonds/:path*", destination: `${springOrigin}/api/bonds/:path*` }],
       afterFiles: [],
       fallback: [],
     };

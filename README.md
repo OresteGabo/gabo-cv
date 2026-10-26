@@ -1,3 +1,5 @@
+Portfolio API architecture and deployment: [BONDS_DEPLOYMENT.md](BONDS_DEPLOYMENT.md).
+
 # Oreste Gabo — Software & Systems Engineering Portfolio (2026)
 
 [![Deployment: Vercel](https://img.shields.io/badge/Deployment-Vercel-black?logo=vercel)](https://vercel.com/)

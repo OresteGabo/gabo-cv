@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import type { RseOutstandingBond } from "@/lib/bonds/rse";
+import type { RseOutstandingBond } from "@/lib/bonds/market-types";
 import { RseRefreshButton } from "./RseRefreshButton";
 
 type RankedBond = RseOutstandingBond & {

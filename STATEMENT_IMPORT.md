@@ -1,3 +1,5 @@
+> Historical web-backend implementation notes. Production now uses the standalone Spring API. See [BONDS_DEPLOYMENT.md](BONDS_DEPLOYMENT.md) for current setup; the server files described below have been removed from this project.
+
 # Statement reminders and accepted purchase PDFs
 
 The mobile Add purchase screen accepts BNR bond results, RSE share purchase contracts, and BK Capital client statements. Statements check existing purchases and save missing-document reminders; they do not invent bond principal, price, coupons, share settlement dates or fee breakdowns. Deposits, transfers, sales and fees are never imported as additional purchases.

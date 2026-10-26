@@ -25,8 +25,6 @@
 .DS_Store
 *.pem
 .data/*
-!.data/bonds-portfolio.json
-!.data/equity-portfolio.json
 
 # JetBrains / Android Studio local caches
 .idea/caches/
@@ -47,3 +45,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Private legacy seed files are retained locally, never deployed.
+/private/bonds/

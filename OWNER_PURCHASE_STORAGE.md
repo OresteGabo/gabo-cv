@@ -1,3 +1,5 @@
+> Historical web-backend implementation notes. Production now uses the standalone Spring API. See [BONDS_DEPLOYMENT.md](BONDS_DEPLOYMENT.md) for current setup; the server files described below have been removed from this project.
+
 # Owner purchase storage fix
 
 Recording a pending October bond after settlement is valid. RWF 1,200,000 plus RWF 11,000 commission saves as a submitted purchase with total cash cost RWF 1,211,000. The failure is in the owner storage path: it selected the bundled JSON file even when a database connection existed. Vercel's deployed application directory cannot be rewritten at runtime.

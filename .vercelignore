@@ -1,0 +1,14 @@
+
+.data/
+private/bonds/
+
+.env
+.env.*
+node_modules/
+.git/
+.next/
+.vercel/
+build/
+coverage/
+*.log
+*.tsbuildinfo

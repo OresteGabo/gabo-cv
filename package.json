@@ -8,17 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "prepare:bond-import": "node scripts/prepare-bond-import.mjs",
-    "predev": "node scripts/prepare-bond-auth.mjs && npm run prepare:bond-import",
-    "prebuild": "node scripts/prepare-bond-auth.mjs && node scripts/prepare-bond-database.mjs && npm run prepare:bond-import",
-    "db:prepare:bonds": "node scripts/prepare-bond-database.mjs",
+    "predev": "npm run prepare:bond-import",
+    "prebuild": "npm run prepare:bond-import",
     "test:bond-import": "node --experimental-strip-types --test tests/bond-pdf-import.test.mjs tests/bond-pdf-security.test.mjs tests/purchase-import.test.mjs tests/pdf-import-diagnostics.test.mjs",
-    "test:accounts": "node --test tests/bond-accounts.test.mjs tests/bond-file-owner.test.mjs",
-    "test:accounts:http": "node --test tests/bond-auth-http.test.mjs",
-    "test:market": "node --test tests/bond-market.test.mjs"
+    "test:market": "node --test tests/bond-market.test.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
-    "@next/env": "^16.4.2",
     "@tesseract.js-data/eng": "^1.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.35.0",
@@ -32,7 +28,6 @@
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.10",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
