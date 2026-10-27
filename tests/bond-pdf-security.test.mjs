@@ -51,6 +51,15 @@ test('renamed executables, HTML, empty/oversized files and invalid PDF envelopes
   assert.equal(calls.reader,0);
 });
 
+test('PDF.js field dictionaries accept passive signatures and reject interactive fields', async () => {
+  const signature={id:'sig',type:'signature'};
+  const accepted=scenario({document:{getFieldObjects:async()=>({Signature2:[signature]})},
+    page:{getAnnotations:async()=>[{id:'sig',annotationType:20,fieldType:'Sig'}]}});
+  assert.equal((await accepted.importPdf(file(),new AbortController().signal,()=>{})).usedOcr,false);
+  const rejected=scenario({document:{getFieldObjects:async()=>({text:[{id:'text',type:'text'}]})}});
+  await assert.rejects(rejected.importPdf(file(),new AbortController().signal,()=>{}),error=>error.code==='unsafe_content');
+});
+
 test('scanned results keep OCR local, disable rendered annotations, bound canvas dimensions and terminate workers', async () => {
   const originalDocument=global.document;let renders=0,terminated=0;const canvas={width:0,height:0};
   const worker={setParameters:async()=>{},recognize:async()=>({data:{text:terms}}),terminate:async()=>{terminated++;}};
