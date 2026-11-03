@@ -7,9 +7,7 @@ import {
     CheckCircle2,
     Layers,
     Zap,
-    Briefcase,
-    GraduationCap,
-    Smartphone
+    GraduationCap
 } from 'lucide-react';
 import { Locale } from '@/lib/constants';
 
@@ -20,87 +18,39 @@ export const Experience = ({ lang }: ExperienceProps) => {
         title: { en: "Engineering", fr: "Parcours" },
         subtitle: { en: "Experience.", fr: "Ingénieur." },
 
-        mainRole: {
-            en: "Software Engineer — Digital Platforms & Systems",
-            fr: "Ingénieur Logiciel — Plateformes Numériques & Systèmes"
-        },
-        mainModernLabel: {
-            en: "Production: Citizen Services & Realtime Mobile",
-            fr: "Production : Services Citoyens & Mobile Temps Réel"
-        },
-        mobileTasks: {
-            en: [
-                "Developed and deployed a citizen-facing mobile platform for secure access to city services and documents.",
-                "Built native user experiences with Jetpack Compose and SwiftUI for real mobile workflows.",
-                "Integrated LiveKit (WebRTC) for secure real-time video consultations between citizens and public-service staff.",
-                "Worked across mobile clients and backend APIs to support reliable service journeys end to end."
-            ],
-            fr: [
-                "Développement et déploiement d'une plateforme mobile orientée citoyens pour l'accès sécurisé aux services et documents.",
-                "Conception d'expériences natives avec Jetpack Compose et SwiftUI pour des parcours mobiles concrets.",
-                "Intégration de LiveKit (WebRTC) pour des consultations vidéo temps réel sécurisées entre citoyens et agents.",
-                "Travail sur les clients mobiles et les API backend pour assurer des parcours fiables de bout en bout."
-            ]
-        },
-        systemsLabel: {
-            en: "Security & Performance",
-            fr: "Sécurité & Performance"
-        },
-        mainPeriod: {
-            en: "Jun 2023 — Present",
-            fr: "Juin 2023 — Aujourd’hui"
-        },
-        mainBadge: { en: "Professional Career", fr: "Parcours Professionnel" },
-        mainStack: ["Kotlin", "Java", "Jetpack Compose", "SwiftUI", "LiveKit / WebRTC", "Spring Boot", "REST APIs", "JWT"],
-
-
         internRole: {
-            en: "Web Developer Intern",
-            fr: "Stagiaire Développeur Web"
+            en: "Fullstack Developer Intern",
+            fr: "Stagiaire Développeur Fullstack"
         },
-        internCompany: "CDAFAL / Mulhouse City / France",
-        internBadge: { en: "Academic Internship", fr: "Stage de Licence" },
+        internCompany: "CDAFAL 68",
+        internBadge: { en: "End-of-degree Internship · 6 months", fr: "Stage de fin de Licence · 6 mois" },
+        internStack: ["Spring Boot", "Vue.js", "REST APIs", "JWT", "SQL", "Git", "GitHub Actions", "Docker"],
         legacyLabel: { en: "Mission Scope", fr: "Périmètre de Mission" },
         modernLabel: { en: "Delivery: Digitalization System", fr: "Livraison : Système de Numérisation" },
         legacyPoints: {
             en: [
-                "Member registration and fee tracking were still heavily manual.",
-                "Student records for foreign residents depended on fragmented processes.",
-                "National exam and language-course data needed a reliable migration path."
+                "Business processes relied on paper, Excel, and Access.",
+                "The workflow needed to support simultaneous users.",
+                "Access security, profile-based permissions, and data consistency needed improvement."
             ],
             fr: [
-                "Les inscriptions et le suivi des frais restaient largement manuels.",
-                "Les dossiers des résidents étrangers dépendaient de processus fragmentés.",
-                "Les données d'examens nationaux et de cours de langue demandaient une migration fiable."
+                "Les processus métier reposaient sur le papier, Excel et Access.",
+                "Le fonctionnement devait permettre le travail simultané des utilisateurs.",
+                "La sécurisation des accès, les droits par profil et la cohérence des données devaient être améliorés."
             ]
         },
         internTasks: {
             en: [
-                "Engineered internal automation tools for member registration and fee tracking.",
-                "Built a responsive Vue.js interface backed by Spring Boot services.",
-                "Developed a custom C++ ETL tool to migrate and process exam and language-course data.",
-                "Digitalized student-record management for foreign residents, replacing manual workflows."
+                "Digitalized a paper/Excel/Access business process into a Spring Boot and Vue.js web application supporting simultaneous users.",
+                "Secured access with JWT, managed profile-based permissions, and improved data consistency.",
+                "Contributed to requirements analysis, data structuring, and REST API design.",
+                "Delivered functional fixes and progressively improved the application based on user feedback."
             ],
             fr: [
-                "Conception d'outils internes d'automatisation pour les inscriptions et le suivi des frais.",
-                "Développement d'une interface Vue.js connectée à un backend Spring Boot.",
-                "Création d'un outil ETL sur mesure en C++ pour migrer et traiter les données d'examens et de cours.",
-                "Numérisation de la gestion des dossiers étudiants pour remplacer les processus manuels."
-            ]
-        },
-
-        systemsTasks: {
-            en: [
-                "Implemented JWT-secured API flows to protect sensitive personal data.",
-                "Optimized app stability and responsiveness for low-bandwidth environments.",
-                "Improved the experience for users on entry-level smartphones and constrained devices.",
-                "Focused on production-ready reliability for public-service and citizen-support use cases."
-            ],
-            fr: [
-                "Mise en place de flux API sécurisés par JWT pour protéger les données sensibles.",
-                "Optimisation de la stabilité et de la réactivité en environnement à faible bande passante.",
-                "Amélioration de l'expérience sur smartphones d'entrée de gamme et appareils contraints.",
-                "Priorité donnée à une fiabilité de niveau production pour des usages de service public."
+                "Digitalisation d’un processus métier papier/Excel/Access vers une application web Spring Boot et Vue.js permettant le travail simultané des utilisateurs.",
+                "Sécurisation des accès par JWT, gestion des droits par profil et amélioration de la cohérence des données.",
+                "Participation à l’analyse du besoin, à la structuration des données et à la conception d’API REST.",
+                "Corrections fonctionnelles et amélioration progressive de l’outil selon les retours utilisateurs."
             ]
         }
     };
@@ -116,75 +66,7 @@ export const Experience = ({ lang }: ExperienceProps) => {
                 </h2>
             </div>
 
-            {/* --- PROFESSIONAL CAREER (Parallel with Masters) --- */}
-            <div className="mb-24">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container border border-primary/20 text-[10px] font-black uppercase tracking-[0.2em] mb-6">
-                    <Briefcase size={14} />
-                    {t.mainBadge[lang]}
-                </div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="p-10 md:p-14 rounded-[3rem] border-2 border-solid border-primary/40 bg-surface-container-high/80 backdrop-blur-3xl relative overflow-hidden shadow-2xl"
-                >
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-10 text-primary font-black text-xs uppercase tracking-[0.3em]">
-                            <Smartphone size={18} />
-                            {t.mainModernLabel[lang]}
-                        </div>
-
-                        <h3 className="text-4xl md:text-5xl font-black tracking-tight mb-4 text-on-surface leading-[0.9]">
-                            {t.mainRole[lang]}
-                        </h3>
-
-                        <p className="mb-8 text-on-surface-variant font-mono text-sm uppercase">{t.mainPeriod[lang]}</p>
-
-                        {/* Combined Tech Stack */}
-                        <div className="flex flex-wrap gap-2 mb-12">
-                            {t.mainStack.map((tech) => (
-                                <span key={tech} className="px-3 py-1 rounded-full border border-tertiary/30 bg-tertiary-container/40 text-[10px] font-black text-on-tertiary-container uppercase tracking-tight">
-                        {tech}
-                    </span>
-                            ))}
-                        </div>
-
-                        {/* Combined Tasks - Grouped by Domain */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 pt-10 border-t border-outline-variant">
-
-                            {/* Mobile & Realtime Domain */}
-                            <div className="space-y-6">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Mobile & Real-Time Systems</h4>
-                                {t.mobileTasks[lang].map((task, i) => (
-                                    <div key={i} className="flex gap-4 items-start group">
-                                        <div className="mt-1 p-1 rounded-md bg-primary-container text-on-primary-container shadow-sm group-hover:scale-110 transition-transform">
-                                            <CheckCircle2 size={14} />
-                                        </div>
-                                        <p className="text-sm font-medium text-on-surface leading-snug">{task}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Security & Performance Domain */}
-                            <div className="space-y-6">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-tertiary mb-2 italic">{t.systemsLabel[lang]}</h4>
-                                {t.systemsTasks[lang].map((task, i) => (
-                                    <div key={i} className="flex gap-4 items-start group">
-                                        <div className="mt-1 p-1 rounded-md bg-tertiary-container text-on-tertiary-container shadow-sm group-hover:scale-110 transition-transform">
-                                            <CheckCircle2 size={14} />
-                                        </div>
-                                        <p className="text-sm font-medium text-on-surface leading-snug">{task}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                        </div>
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* --- BLOCK 2: INTERNSHIP (LEGACY VS MODERN) --- */}
+            {/* Internship */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary-container text-on-secondary-container border border-outline-variant text-[10px] font-black uppercase tracking-[0.2em] mb-6">
                 <GraduationCap size={14} />
                 {t.internBadge[lang]}
@@ -218,6 +100,13 @@ export const Experience = ({ lang }: ExperienceProps) => {
                     </div>
                     <h3 className="text-3xl font-black tracking-tight mb-2 text-on-surface">{t.internRole[lang]}</h3>
                     <p className="text-primary font-bold mb-8 uppercase tracking-widest text-xs">{t.internCompany}</p>
+                    <div className="flex flex-wrap gap-2 mb-8">
+                        {t.internStack.map((tech) => (
+                            <span key={tech} className="px-3 py-1 rounded-full border border-tertiary/30 bg-tertiary-container/40 text-[10px] font-black text-on-tertiary-container uppercase tracking-tight">
+                                {tech}
+                            </span>
+                        ))}
+                    </div>
                     <div className="grid grid-cols-1 gap-4 pt-6 border-t border-outline-variant">
                         {t.internTasks[lang].map((task, i) => (
                             <div key={i} className="flex gap-4 items-start">

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useEffect } from "react";
+import Image from "next/image";
 import { PROJECTS, ProjectCategory, UI_STRINGS, Locale } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -85,6 +86,12 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: Project | 
                                 <span className="text-[10px] font-bold uppercase tracking-[0.2em]">{project.category}</span>
                             </div>
 
+                            {project.logo && (
+                                <Image src={project.logo} alt={`${project.title} logo`} width={96} height={96} className="mb-6 rounded-2xl" />
+                            )}
+                            {project.status && (
+                                <p className="mb-4 text-xs font-black uppercase tracking-widest text-primary">{project.status[lang]}</p>
+                            )}
                             <h2 id="project-detail-title" className="text-4xl md:text-6xl font-black uppercase mb-10 leading-[1.1] tracking-tight text-on-surface">
                                 {project.title}
                             </h2>
@@ -138,13 +145,15 @@ const ProjectDrawer = ({ project, isOpen, onClose, lang }: { project: Project | 
                             <div className="mt-20 pb-10">
                                 <a
                                     href={project.link}
-                                    aria-label={`View ${project.title} on GitHub`}
+                                    aria-label={project.website
+                                        ? `${lang === "en" ? "Visit" : "Visiter"} ${project.title}`
+                                        : `View ${project.title} on GitHub`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center justify-center gap-4 w-full py-6 rounded-3xl bg-on-surface text-surface font-black uppercase tracking-[0.2em] hover:bg-primary hover:text-on-primary transition-all active:scale-[0.98]"
                                 >
-                                    <Github size={24} />
-                                    {t.viewSource[lang]}
+                                    {project.website ? <ArrowUpRight size={24} /> : <Github size={24} />}
+                                    {project.website ? (lang === "en" ? "Visit website" : "Voir le site") : t.viewSource[lang]}
                                 </a>
                             </div>
                         </div>
@@ -209,6 +218,12 @@ const ProjectCard = ({
                         )}
                     </div>
 
+                    {project.logo && (
+                        <Image src={project.logo} alt={`${project.title} logo`} width={88} height={88} className="mb-5 rounded-2xl" />
+                    )}
+                    {project.status && (
+                        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-primary">{project.status[lang]}</p>
+                    )}
                     <h3 className={clsx(
                         "max-w-2xl font-black tracking-tighter text-on-surface transition-colors group-hover:text-primary",
                         featured ? "text-4xl md:text-6xl" : "text-3xl md:text-4xl"

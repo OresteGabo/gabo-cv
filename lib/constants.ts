@@ -81,7 +81,38 @@ export const ENGINEERING_CARDS: ServiceCard[] = [
 ];
 
 // --- Projects ---
-export const PROJECTS = [
+export interface PortfolioProject {
+    title: string;
+    category: ProjectCategory;
+    description: Localized;
+    patterns: string[];
+    impact: Localized;
+    tech: string[];
+    link: string;
+    website?: boolean;
+    logo?: string;
+    status?: Localized;
+}
+
+export const PROJECTS: PortfolioProject[] = [
+    {
+        title: "Struct Capital",
+        category: "Web & Cloud",
+        status: { en: "In development", fr: "En développement" },
+        logo: "/brands/struct-capital/struct-capital-icon-light.svg",
+        website: true,
+        description: {
+            en: "An independent portfolio management app I’m developing for investors in Rwanda, bringing Treasury bonds, shares, investment income, and supporting documents into one organized view across brokers.",
+            fr: "Une application indépendante de suivi de portefeuille que je développe pour les investisseurs au Rwanda, réunissant obligations du Trésor, actions, revenus et justificatifs dans une vue organisée, quel que soit le courtier."
+        },
+        patterns: ["Document-backed records", "Reviewed PDF imports", "Confirmed vs estimated income", "Cross-broker portfolio view"],
+        impact: {
+            en: "Ongoing product work connecting holdings, coupon and maturity schedules, supported PDF imports, and portfolio reports with the records behind each figure.",
+            fr: "Un produit en cours de développement reliant positions, échéances de coupons et de remboursement, import de PDF compatibles et rapports de portefeuille aux pièces justificatives."
+        },
+        tech: ["Portfolio Management", "PDF Import", "Income Schedules", "Reporting"],
+        link: "https://structcapital.net"
+    },
     {
         title: "Kaze Event Platform",
         category: "Mobile" as ProjectCategory,
