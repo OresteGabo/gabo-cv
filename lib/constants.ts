@@ -97,20 +97,20 @@ export interface PortfolioProject {
 export const PROJECTS: PortfolioProject[] = [
     {
         title: "Struct Capital",
-        category: "Web & Cloud",
+        category: "Mobile",
         status: { en: "In development", fr: "En développement" },
         logo: "/brands/struct-capital/struct-capital-icon-light.svg",
         website: true,
         description: {
-            en: "An independent portfolio management app I’m developing for investors in Rwanda, bringing Treasury bonds, shares, investment income, and supporting documents into one organized view across brokers.",
-            fr: "Une application indépendante de suivi de portefeuille que je développe pour les investisseurs au Rwanda, réunissant obligations du Trésor, actions, revenus et justificatifs dans une vue organisée, quel que soit le courtier."
+            en: "A Kotlin Multiplatform app I’m developing for Android and iPhone, with shared Compose Multiplatform screens for tracking Treasury bonds, shares, income schedules, and supporting documents across brokers in Rwanda.",
+            fr: "Une application Kotlin Multiplatform que je développe pour Android et iPhone, avec des écrans Compose Multiplatform partagés pour suivre obligations du Trésor, actions, revenus et justificatifs auprès de plusieurs courtiers au Rwanda."
         },
-        patterns: ["Document-backed records", "Reviewed PDF imports", "Confirmed vs estimated income", "Cross-broker portfolio view"],
+        patterns: ["Shared UI & domain logic", "Native platform adapters", "Local PDF extraction & OCR", "Document-backed records"],
         impact: {
-            en: "Ongoing product work connecting holdings, coupon and maturity schedules, supported PDF imports, and portfolio reports with the records behind each figure.",
-            fr: "Un produit en cours de développement reliant positions, échéances de coupons et de remboursement, import de PDF compatibles et rapports de portefeuille aux pièces justificatives."
+            en: "Shared Android and iOS product development covering portfolio tracking, reviewed PDF imports, coupon calendars, and reports. The product showcase is available at structcapital.net.",
+            fr: "Développement partagé Android et iOS : suivi de portefeuille, import de PDF avec vérification, calendrier des coupons et rapports. Le site vitrine est disponible sur structcapital.net."
         },
-        tech: ["Portfolio Management", "PDF Import", "Income Schedules", "Reporting"],
+        tech: ["Kotlin Multiplatform", "Compose Multiplatform", "Ktor Client", "Coroutines", "Material 3", "PDF / OCR"],
         link: "https://structcapital.net"
     },
     {

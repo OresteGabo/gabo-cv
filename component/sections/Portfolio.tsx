@@ -15,6 +15,7 @@ import {
     Database,
     ArrowUpRight,
     Boxes,
+    ChevronDown,
 } from "lucide-react";
 import clsx from "clsx";
 import { TechIcon } from "@/component/shared/TechIcon";
@@ -293,6 +294,7 @@ const ProjectCard = ({
 // Update: Accepting 'lang' as a prop from page.tsx
 export const Portfolio = ({ lang }: { lang: Locale }) => {
     const [activeTab, setActiveTab] = React.useState<(ProjectCategory | "All")>("All");
+    const [expanded, setExpanded] = React.useState(false);
     const [selectedProject, setSelectedProject] = React.useState<Project | null>(null);
 
     const categories: (ProjectCategory | "All")[] = ["All", "AI & ML", "Web & Cloud", "Mobile", "C++ & Graphics"];
@@ -301,6 +303,8 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
         return PROJECTS.filter((p) => activeTab === "All" || p.category === activeTab);
     }, [activeTab]);
 
+    const visibleProjects = expanded ? filteredProjects : filteredProjects.slice(0, 3);
+    const hiddenCount = filteredProjects.length - 3;
     const t = UI_STRINGS;
 
     return (
@@ -326,7 +330,7 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
                     {categories.map((cat) => (
                         <button
                             key={cat}
-                            onClick={() => setActiveTab(cat)}
+                            onClick={() => { setActiveTab(cat); setExpanded(false); }}
                             className={clsx(
                                 "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                                 activeTab === cat
@@ -340,9 +344,9 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div id="portfolio-project-list" className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <AnimatePresence mode="popLayout">
-                    {filteredProjects.map((project, index) => (
+                    {visibleProjects.map((project, index) => (
                         <ProjectCard
                             key={project.title}
                             project={project}
@@ -354,6 +358,23 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
                 </AnimatePresence>
             </div>
 
+            {hiddenCount > 0 && (
+                <div className="mt-8 flex justify-center">
+                    <button
+                        type="button"
+                        aria-expanded={expanded}
+                        aria-controls="portfolio-project-list"
+                        onClick={() => setExpanded((value) => !value)}
+                        className="inline-flex items-center gap-3 rounded-full border border-primary/20 bg-primary/10 px-6 py-3 text-xs font-black uppercase tracking-widest text-primary transition-colors hover:bg-primary/20"
+                    >
+                        {expanded
+                            ? (lang === "en" ? "Show fewer projects" : "Voir moins de projets")
+                            : (lang === "en" ? `Show ${hiddenCount} more projects` : `Voir ${hiddenCount} autres projets`)}
+                        <ChevronDown size={16} className={clsx("transition-transform", expanded && "rotate-180")} />
+                    </button>
+                </div>
+            )}
+
             <ProjectDrawer
                 project={selectedProject}
                 isOpen={!!selectedProject}
@@ -362,7 +383,7 @@ export const Portfolio = ({ lang }: { lang: Locale }) => {
             />
 
             <div className="mt-12 flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.22em] text-on-surface-variant/45">
-                <span>{filteredProjects.length} {lang === "en" ? "selected systems" : "systèmes sélectionnés"}</span>
+                <span>{visibleProjects.length} / {filteredProjects.length} {lang === "en" ? "projects" : "projets"}</span>
                 <span className="h-px flex-1 bg-outline/10" />
             </div>
         </section>
